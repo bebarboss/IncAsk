@@ -45,7 +45,8 @@ Key ถูกเก็บใน **Windows Credential Manager** (ชื่อ `In
 ## ที่เก็บข้อมูล
 
 - `%APPDATA%\IncAsk\app.json` — ค่าโปรแกรม (ไม่มี key)
-- `%APPDATA%\IncAsk\projects\` — ฐานข้อมูล SQLite หนึ่งไฟล์ต่อโปรเจกต์ (ขั้นที่ 3)
+- `%APPDATA%\IncAsk\projects\<id>.sqlite` — ฐานข้อมูล SQLite หนึ่งไฟล์ต่อโปรเจกต์
+- `%APPDATA%\IncAsk\projects\index.json` — รายการโปรเจกต์ (ชื่อ สี ลำดับ) ถ้าหายจะสร้างใหม่จากไฟล์ `.sqlite` เอง
 
 ## แก้ปัญหาที่พบบ่อย
 
