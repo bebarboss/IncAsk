@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>IncAsk · ตั้งค่าโปรเจกต์</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai+Looped:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F5F6F8}
+a{color:#217346}a:hover{color:#17532F}
+.btn{min-height:36px;padding:0 12px;border-radius:10px;border:1px solid #E3E6EB;background:#FFFFFF;color:#16181D;font:inherit;font-size:13px;font-weight:600;display:inline-flex;align-items:center;justify-content:center;gap:6px;cursor:pointer}
+.btn:hover{background:#EDEFF3}
+.btn-primary{background:#217346;border-color:#217346;color:#FFFFFF}
+.btn-primary:hover{background:#1B5E3A;border-color:#1B5E3A}
+.sub{min-height:36px;padding:0 10px;border-radius:10px;color:#3B414C;display:flex;align-items:center;font-size:13px;text-decoration:none}
+.sub:hover{background:#E9ECF2;color:#16181D}
+.sub-on{background:#E6F2EB;color:#17532F;font-weight:600}
+.sub-on:hover{background:#DCEEE3;color:#17532F}
+.svc{display:flex;align-items:center;gap:10px;width:100%;min-height:44px;padding:0 12px;border:0;border-bottom:1px solid #EEF0F3;background:#FFFFFF;font:inherit;font-size:13px;color:#16181D;text-align:left;cursor:pointer}
+.svc:hover{background:#F5FAF7}
+.svc-on{background:#E6F2EB;font-weight:600}
+.svc-on:hover{background:#E6F2EB}
+.th{padding:10px 12px;text-align:left;font-size:12px;font-weight:600;color:#3B414C;background:#F0F2F5;border-bottom:1px solid #E3E6EB;white-space:nowrap}
+.td{padding:10px 12px;border-bottom:1px solid #EEF0F3;font-size:13px;vertical-align:top}
+.sw{width:28px;height:28px;border-radius:8px;border:2px solid #FFFFFF;cursor:pointer;padding:0}
+</style>
+</helmet>
+<div style="min-height: 100vh; display: flex; flex-wrap: wrap; font-family: 'IBM Plex Sans Thai Looped', 'IBM Plex Sans Thai', system-ui, sans-serif; font-size: 14px; line-height: 1.5; color: #16181D; background: #F5F6F8">
+  <div style="flex: 1 1 252px; max-width: 100%; display: flex; flex-direction: column">
+    <dc-import name="Sidebar" hint-size="252px,900px"></dc-import>
+  </div>
+  <div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+    <dc-import name="TopNav" active="settings" hint-size="100%,56px"></dc-import>
+
+    <main style="padding: 28px 28px 32px; display: flex; flex-direction: column; gap: 20px; min-width: 0">
+      <h1 style="margin: 0; font-size: 26px; font-weight: 700">ตั้งค่าโปรเจกต์</h1>
+
+      <div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start">
+        <nav aria-label="หมวดการตั้งค่า" style="flex: 1 1 180px; max-width: 220px; display: flex; flex-direction: column; gap: 2px">
+          <a href="#" class="sub sub-on" aria-current="page">เซอร์วิสและหมวดหมู่</a>
+          <a href="#" class="sub">รูปแบบรีพอร์ต</a>
+          <a href="#" class="sub">คอลัมน์ผลลัพธ์</a>
+          <a href="#" class="sub">สีและการแสดงผล</a>
+          <a href="#" class="sub">ชื่อและการแชร์โปรเจกต์</a>
+        </nav>
+
+        <div style="flex: 999 1 560px; min-width: 0; display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start">
+
+          <section aria-label="เซอร์วิส" style="flex: 1 1 220px; max-width: 260px; background: #FFFFFF; border: 1px solid #E3E6EB; border-radius: 14px; overflow: hidden">
+            <div style="padding: 12px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #E3E6EB">
+              <h2 style="margin: 0; font-size: 14px; font-weight: 600">เซอร์วิส</h2>
+              <button type="button" class="btn" style="min-height: 32px; padding: 0 10px">+ เพิ่ม</button>
+            </div>
+            <button type="button" class="svc svc-on" aria-pressed="true"><span style="width: 10px; height: 10px; border-radius: 3px; background: #2F6FB0"></span><span style="flex: 1">Internet</span><span style="font-size: 12px; color: #3B414C">9 หัวข้อ</span></button>
+            <button type="button" class="svc" aria-pressed="false"><span style="width: 10px; height: 10px; border-radius: 3px; background: #7B4FB0"></span><span style="flex: 1">IPTV</span><span style="font-size: 12px; color: #5B6270">6 หัวข้อ</span></button>
+            <button type="button" class="svc" aria-pressed="false"><span style="width: 10px; height: 10px; border-radius: 3px; background: #C2631A"></span><span style="flex: 1">Mobile</span><span style="font-size: 12px; color: #5B6270">6 หัวข้อ</span></button>
+            <button type="button" class="svc" aria-pressed="false"><span style="width: 10px; height: 10px; border-radius: 3px; background: #5B6270"></span><span style="flex: 1">Fixed Line</span><span style="font-size: 12px; color: #5B6270">5 หัวข้อ</span></button>
+          </section>
+
+          <div style="flex: 999 1 460px; min-width: 0; display: flex; flex-direction: column; gap: 16px">
+            <section aria-label="หมวดหมู่ของ Internet" style="background: #FFFFFF; border: 1px solid #E3E6EB; border-radius: 14px; overflow: hidden">
+              <div style="padding: 14px 16px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; border-bottom: 1px solid #E3E6EB">
+                <div style="display: flex; flex-direction: column">
+                  <h2 style="margin: 0; font-size: 16px; font-weight: 600">หมวดหมู่ของ Internet</h2>
+                  <span style="font-size: 12px; color: #5B6270">คอลัมน์ที่กำหนดเอง: หัวข้อหลัก · หัวข้อย่อย · คำอธิบาย · ตัวอย่าง</span>
+                </div>
+                <div style="display: flex; flex-wrap: wrap; gap: 6px">
+                  <button type="button" class="btn">จัดการคอลัมน์</button>
+                  <button type="button" class="btn">ดาวน์โหลดเทมเพลต</button>
+                  <button type="button" class="btn">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V4M7 9l5-5 5 5M4 20h16"/></svg>
+                    นำเข้าจาก Excel
+                  </button>
+                  <button type="button" class="btn btn-primary">+ เพิ่มหัวข้อ</button>
+                </div>
+              </div>
+              <div style="overflow-x: auto">
+                <table style="border-collapse: separate; border-spacing: 0; width: 100%; min-width: 720px">
+                  <thead>
+                    <tr>
+                      <th scope="col" class="th">หัวข้อหลัก</th>
+                      <th scope="col" class="th">หัวข้อย่อย</th>
+                      <th scope="col" class="th">คำอธิบาย (AI ใช้ตัดสินใจ)</th>
+                      <th scope="col" class="th">ตัวอย่าง</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <sc-for list="{{ rows }}" as="r" hint-placeholder-count="9">
+                      <tr>
+                        <td class="td" style="font-weight: 600; white-space: nowrap">{{ r.main }}</td>
+                        <td class="td" style="white-space: nowrap">{{ r.sub }}</td>
+                        <td class="td" style="color: #3B414C; min-width: 240px">{{ r.desc }}</td>
+                        <td class="td" style="color: #5B6270; min-width: 200px">{{ r.ex }}</td>
+                      </tr>
+                    </sc-for>
+                  </tbody>
+                </table>
+              </div>
+            </section>
+
+            <section aria-label="สีประจำเซอร์วิส" style="background: #FFFFFF; border: 1px solid #E3E6EB; border-radius: 14px; padding: 14px 16px; display: flex; flex-wrap: wrap; align-items: center; gap: 12px">
+              <div style="flex: 1 1 240px; display: flex; flex-direction: column">
+                <h2 style="margin: 0; font-size: 14px; font-weight: 600">สีประจำ Internet</h2>
+                <span style="font-size: 12px; color: #5B6270">ใช้ในกราฟและ pivot ทุกที่ และติดไปกับไฟล์ .incask และรายงาน HTML</span>
+              </div>
+              <div style="display: flex; gap: 6px">
+                <button type="button" class="sw" aria-label="น้ำเงิน (เลือกอยู่)" aria-pressed="true" style="background: #2F6FB0; outline: 2px solid #16181D"></button>
+                <button type="button" class="sw" aria-label="ม่วง" aria-pressed="false" style="background: #7B4FB0"></button>
+                <button type="button" class="sw" aria-label="ส้ม" aria-pressed="false" style="background: #C2631A"></button>
+                <button type="button" class="sw" aria-label="ฟ้าอมเขียว" aria-pressed="false" style="background: #0E7C74"></button>
+                <button type="button" class="sw" aria-label="ชมพู" aria-pressed="false" style="background: #B83E78"></button>
+                <button type="button" class="sw" aria-label="เทา" aria-pressed="false" style="background: #5B6270"></button>
+              </div>
+            </section>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":1100}}'>
+var ROWS = [
+  ['การเชื่อมต่อ', 'เน็ตหลุดเป็นช่วง', 'ใช้งานได้แต่หลุดเป็นระยะ กลับมาใช้ได้เอง', 'เน็ตหลุดทุกคืน, ประชุมแล้วหลุด'],
+  ['การเชื่อมต่อ', 'ไม่มีอินเทอร์เน็ต', 'ใช้งานไม่ได้เลยต่อเนื่อง ไม่กลับมาเอง', 'เช้านี้ใช้เน็ตไม่ได้ทั้งบ้าน'],
+  ['การเชื่อมต่อ', 'สัญญาณไฟเบอร์ขาด', 'ไฟ LOS แดงหรือสายไฟเบอร์เสียหาย', 'ไฟ LOS กะพริบแดง'],
+  ['ความเร็ว', 'ความเร็วต่ำกว่าแพ็กเกจ', 'วัดความเร็วได้ต่ำกว่าที่สมัครอย่างชัดเจน', 'สมัคร 1 Gbps วัดได้ 200'],
+  ['ความเร็ว', 'Wi-Fi ช้า', 'ช้าเฉพาะผ่าน Wi-Fi ต่อสาย LAN ปกติ', 'ห้องนอนเน็ตช้ามาก'],
+  ['ความเร็ว', 'เล่นเกมแล้วแลค', 'ปิงสูงหรือกระตุกเฉพาะเกมออนไลน์', 'เล่นเกมปิงพุ่ง'],
+  ['บริการติดตั้ง', 'ย้ายจุดติดตั้ง', 'ขอย้ายที่อยู่หรือตำแหน่งติดตั้ง', 'ย้ายไปบ้านใหม่ปลายเดือน'],
+  ['บริการติดตั้ง', 'นัดช่างไม่ได้', 'ช่างไม่มาตามนัดหรือนัดคิวไม่ได้', 'ช่างนัดแล้วไม่มา'],
+  ['บริการติดตั้ง', 'ติดตั้งใหม่ล่าช้า', 'สมัครใหม่แล้วยังไม่ได้ติดตั้งตามกำหนด', 'สมัครสองอาทิตย์ยังไม่ติดตั้ง']
+];
+class Component extends DCLogic {
+  renderVals() {
+    return { rows: ROWS.map(function (r) { return { main: r[0], sub: r[1], desc: r[2], ex: r[3] }; }) };
+  }
+}
+</script>
+</body>
+</html>

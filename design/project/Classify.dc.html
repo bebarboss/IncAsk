@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>IncAsk · จัดหมวด</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai+Looped:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F5F6F8}
+a{color:#217346}a:hover{color:#17532F}
+.btn{min-height:40px;padding:0 16px;border-radius:10px;border:1px solid #E3E6EB;background:#FFFFFF;color:#16181D;font:inherit;font-size:13px;font-weight:600;display:inline-flex;align-items:center;justify-content:center;gap:6px;cursor:pointer}
+.btn:hover{background:#EDEFF3}
+.btn-danger{color:#9B1C12;border-color:#F1C4BF}
+.btn-danger:hover{background:#FDECEA}
+</style>
+</helmet>
+<div style="min-height: 100vh; display: flex; flex-wrap: wrap; font-family: 'IBM Plex Sans Thai Looped', 'IBM Plex Sans Thai', system-ui, sans-serif; font-size: 14px; line-height: 1.5; color: #16181D; background: #F5F6F8">
+  <div style="flex: 1 1 252px; max-width: 100%; display: flex; flex-direction: column">
+    <dc-import name="Sidebar" hint-size="252px,900px"></dc-import>
+  </div>
+  <div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+    <dc-import name="TopNav" active="classify" hint-size="100%,56px"></dc-import>
+
+    <main style="padding: 28px 28px 32px; display: flex; flex-direction: column; gap: 20px; min-width: 0">
+      <header style="display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px">
+        <div style="display: flex; flex-direction: column; gap: 6px">
+          <h1 style="margin: 0; font-size: 26px; font-weight: 700">จัดหมวด</h1>
+          <p style="margin: 0; color: #5B6270">incident_report_oct2026.xlsx · รูปแบบ "รีพอร์ตอินซิเดนต์รายเดือน"</p>
+        </div>
+        <div style="display: flex; gap: 8px">
+          <button type="button" class="btn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>
+            หยุดชั่วคราว
+          </button>
+          <button type="button" class="btn btn-danger">ยกเลิก</button>
+        </div>
+      </header>
+
+      <section aria-label="ความคืบหน้า" style="background: #FFFFFF; border: 1px solid #E3E6EB; border-radius: 14px; padding: 20px 22px; display: flex; flex-direction: column; gap: 16px">
+        <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 8px">
+          <div style="display: flex; align-items: baseline; gap: 10px">
+            <span style="font-size: 32px; font-weight: 700; font-variant-numeric: tabular-nums">62%</span>
+            <span style="color: #5B6270">2,984 จาก 4,812 แถว</span>
+          </div>
+          <span style="font-size: 13px; color: #5B6270">เหลืออีกประมาณ 6 นาที · ส่งพร้อมกัน 8 คำขอ</span>
+        </div>
+        <div role="progressbar" aria-valuenow="62" aria-valuemin="0" aria-valuemax="100" aria-label="ความคืบหน้าการจัดหมวด" style="height: 10px; border-radius: 5px; background: #E3E6EB; overflow: hidden">
+          <div style="height: 100%; width: 62%; background: #217346; border-radius: 5px"></div>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px">
+          <div style="display: flex; flex-direction: column; gap: 2px; padding: 12px 14px; border: 1px solid #E3E6EB; border-radius: 12px">
+            <span style="font-size: 12px; color: #5B6270">AI จัดแล้ว</span>
+            <span style="font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums">2,516</span>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 2px; padding: 12px 14px; border: 1px solid #E3E6EB; border-radius: 12px">
+            <span style="font-size: 12px; color: #5B6270">ใช้ผลจากแคช (ข้อความซ้ำ)</span>
+            <span style="font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums">368</span>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 2px; padding: 12px 14px; border: 1px solid #F2D49B; background: #FFF7E8; border-radius: 12px">
+            <span style="font-size: 12px; color: #7A4A00">AI ไม่มั่นใจ · ควรตรวจ</span>
+            <span style="font-size: 20px; font-weight: 700; color: #7A4A00; font-variant-numeric: tabular-nums">97</span>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 2px; padding: 12px 14px; border: 1px solid #F1C4BF; background: #FDECEA; border-radius: 12px">
+            <span style="font-size: 12px; color: #9B1C12">ผิดพลาด · จะลองใหม่</span>
+            <span style="font-size: 20px; font-weight: 700; color: #9B1C12; font-variant-numeric: tabular-nums">3</span>
+          </div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: #3B414C; background: #F0F2F5; border-radius: 10px; padding: 10px 12px">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10 21h4"/></svg>
+          ปิดหน้านี้หรือไปทำอย่างอื่นได้ ระบบจะแจ้งเตือนเมื่อจัดหมวดเสร็จ ถ้าหยุดกลางทาง กดทำต่อจากแถวเดิมได้
+        </div>
+      </section>
+
+      <section aria-label="ล่าสุด" style="background: #FFFFFF; border: 1px solid #E3E6EB; border-radius: 14px; overflow: hidden">
+        <div style="padding: 14px 18px; border-bottom: 1px solid #E3E6EB; display: flex; justify-content: space-between; align-items: center; gap: 8px">
+          <h2 style="margin: 0; font-size: 16px; font-weight: 600">เพิ่งจัดเสร็จ</h2>
+          <a href="Results.dc.html" style="font-size: 13px; font-weight: 600; text-decoration: none">ดูผลลัพธ์ทั้งหมด</a>
+        </div>
+        <ul style="list-style: none; margin: 0; padding: 0">
+          <sc-for list="{{ feed }}" as="f" hint-placeholder-count="6">
+            <li style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; padding: 12px 18px; border-bottom: 1px solid #EEF0F3">
+              <span style="font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 12.5px; color: #3B414C; width: 96px">{{ f.id }}</span>
+              <span style="font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 6px; background: #F0F2F5; color: #3B414C">{{ f.svc }}</span>
+              <span style="flex: 1 1 260px; min-width: 0; color: #3B414C; font-size: 13px">{{ f.text }}</span>
+              <span style="display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: #17532F">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+                {{ f.cat }}
+              </span>
+              <sc-if value="{{ f.low }}" hint-placeholder-val="{{ false }}">
+                <span style="font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 999px; background: #FFF7E8; border: 1px solid #F2D49B; color: #7A4A00">ไม่มั่นใจ</span>
+              </sc-if>
+              <sc-if value="{{ f.cache }}" hint-placeholder-val="{{ false }}">
+                <span style="font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 999px; background: #F0F2F5; color: #3B414C">แคช</span>
+              </sc-if>
+            </li>
+          </sc-for>
+        </ul>
+      </section>
+    </main>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":1000}}'>
+var FEED = [
+  ['INC0105320', 'Internet', 'เน็ตหลุดทุกเช้า ไฟ LOS กะพริบแดง', 'การเชื่อมต่อ › สัญญาณไฟเบอร์ขาด', 0, 0],
+  ['INC0105319', 'Mobile', 'โดนตัดเงินค่าบริการเสริมที่ไม่ได้สมัคร', 'บิลและค่าบริการ › บริการเสริมไม่ได้สมัคร', 0, 1],
+  ['INC0105318', 'IPTV', 'กล่องรีสตาร์ทเองตอนดูหนัง', 'อุปกรณ์ › กล่องรีสตาร์ทเอง', 1, 0],
+  ['INC0105317', 'Internet', 'อยากเปลี่ยนชื่อ Wi-Fi แต่เข้าหน้าเราเตอร์ไม่ได้', 'อุปกรณ์ › ตั้งค่าเราเตอร์', 0, 0],
+  ['INC0105316', 'Fixed Line', 'โทรเข้ามีเสียงซ่า', 'สายโทรศัพท์ › เสียงรบกวน', 0, 0],
+  ['INC0105315', 'Mobile', 'ในคอนโดสัญญาณหายบางชั้น', 'สัญญาณ › สัญญาณอ่อนในอาคาร', 0, 1]
+];
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      feed: FEED.map(function (r) { return { id: r[0], svc: r[1], text: r[2], cat: r[3], low: !!r[4], cache: !!r[5] }; })
+    };
+  }
+}
+</script>
+</body>
+</html>

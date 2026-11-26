@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>IncAsk · นำเข้าหมวดหมู่</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai+Looped:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F5F6F8}
+a{color:#217346}a:hover{color:#17532F}
+.btn{min-height:44px;padding:0 20px;border-radius:12px;border:1px solid #E3E6EB;background:#FFFFFF;color:#16181D;font:inherit;font-size:14px;font-weight:600;display:inline-flex;align-items:center;justify-content:center;gap:8px;cursor:pointer}
+.btn:hover{background:#EDEFF3}
+.btn-ghost{border-color:transparent;background:transparent;color:#3B414C}
+.btn-primary{background:#217346;border-color:#217346;color:#FFFFFF}
+.btn-primary:hover{background:#1B5E3A;border-color:#1B5E3A}
+</style>
+</helmet>
+<div style="min-height: 100vh; display: flex; justify-content: center; align-items: flex-start; padding: 56px 16px; box-sizing: border-box; font-family: 'IBM Plex Sans Thai Looped', 'IBM Plex Sans Thai', system-ui, sans-serif; font-size: 14px; line-height: 1.5; color: #16181D; background: #F5F6F8">
+  <div style="width: 100%; max-width: 640px; display: flex; flex-direction: column; gap: 24px">
+
+    <ol aria-label="ขั้นตอน" style="list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px">
+      <li style="display: flex; flex-direction: column; gap: 6px"><span style="height: 4px; border-radius: 2px; background: #217346"></span><span style="font-size: 13px; color: #17532F">✓ เชื่อมต่อ Gateway</span></li>
+      <li style="display: flex; flex-direction: column; gap: 6px"><span style="height: 4px; border-radius: 2px; background: #217346"></span><span style="font-size: 13px; font-weight: 600; color: #17532F">2 · นำเข้าหมวดหมู่</span></li>
+      <li style="display: flex; flex-direction: column; gap: 6px"><span style="height: 4px; border-radius: 2px; background: #E3E6EB"></span><span style="font-size: 13px; color: #5B6270">3 · พร้อมใช้งาน</span></li>
+    </ol>
+
+    <section aria-label="นำเข้าหมวดหมู่" style="background: #FFFFFF; border: 1px solid #E3E6EB; border-radius: 14px; padding: 24px; display: flex; flex-direction: column; gap: 18px">
+      <div style="display: flex; flex-direction: column; gap: 4px">
+        <h1 style="margin: 0; font-size: 20px; font-weight: 700">สร้างโปรเจกต์แรกและนำเข้าหมวดหมู่</h1>
+        <p style="margin: 0; font-size: 13px; color: #5B6270">ไฟล์ Excel หนึ่งไฟล์ต่อหนึ่งเซอร์วิส หรือไฟล์เดียวที่มีคอลัมน์ "เซอร์วิส" ก็ได้</p>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 6px">
+        <label for="pname" style="font-weight: 600; font-size: 13px">ชื่อโปรเจกต์</label>
+        <input id="pname" type="text" defaultValue="Call Center A" style="min-height: 44px; border: 1px solid #E3E6EB; border-radius: 10px; font: inherit; font-size: 14px; padding: 9px 12px; box-sizing: border-box; width: 100%">
+      </div>
+
+      <div style="border: 2px dashed #CDE6D6; background: #F5FAF7; border-radius: 12px; padding: 22px; display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center">
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#217346" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V4M7 9l5-5 5 5M4 20h16"/></svg>
+        <span style="font-weight: 600">ลากไฟล์ Excel หมวดหมู่มาวางที่นี่</span>
+        <span style="font-size: 13px; color: #5B6270">หรือ <a href="#" style="font-weight: 600">เลือกไฟล์</a> · <a href="#" style="font-weight: 600">ดาวน์โหลดเทมเพลต</a></span>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <span style="font-size: 13px; font-weight: 600">นำเข้าแล้ว</span>
+        <div style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid #E3E6EB; border-radius: 10px">
+          <span style="width: 10px; height: 10px; border-radius: 3px; background: #2F6FB0"></span>
+          <span style="flex: 1; font-weight: 600">Internet</span>
+          <span style="font-size: 12px; color: #3B414C">3 หัวข้อหลัก · 9 หัวข้อย่อย</span>
+          <span style="font-size: 12px; font-weight: 600; color: #12663C">✓ ครบ</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid #E3E6EB; border-radius: 10px">
+          <span style="width: 10px; height: 10px; border-radius: 3px; background: #7B4FB0"></span>
+          <span style="flex: 1; font-weight: 600">IPTV</span>
+          <span style="font-size: 12px; color: #3B414C">2 หัวข้อหลัก · 6 หัวข้อย่อย</span>
+          <span style="font-size: 12px; font-weight: 600; color: #12663C">✓ ครบ</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid #F2D49B; background: #FFF7E8; border-radius: 10px">
+          <span style="width: 10px; height: 10px; border-radius: 3px; background: #C2631A"></span>
+          <span style="flex: 1; font-weight: 600">Mobile</span>
+          <span style="font-size: 12px; color: #7A4A00">2 หัวข้อย่อยไม่มีคำอธิบาย · AI อาจจัดได้แม่นน้อยลง</span>
+        </div>
+      </div>
+    </section>
+
+    <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px">
+      <button type="button" class="btn btn-ghost">‹ ย้อนกลับ</button>
+      <div style="display: flex; gap: 8px">
+        <button type="button" class="btn">ข้ามไปก่อน</button>
+        <button type="button" class="btn btn-primary">ถัดไป ›</button>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

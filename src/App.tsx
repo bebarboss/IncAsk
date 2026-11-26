@@ -1,0 +1,81 @@
+import { FolderPlus } from "lucide-react";
+import { api } from "./lib/api";
+import { th } from "./i18n/th";
+import { useApp } from "./state";
+import { Sidebar } from "./components/Sidebar";
+import { TopNav } from "./components/TopNav";
+import { ExportDialog } from "./components/ExportDialog";
+import { EmptyState, ErrorState, Logo, SkeletonList } from "./components/ui";
+import SetupPage from "./pages/Setup";
+import ImportPage from "./pages/Import";
+import ClassifyPage from "./pages/Classify";
+import ResultsPage from "./pages/Results";
+import SummaryPage from "./pages/Summary";
+import ProjectSettingsPage from "./pages/ProjectSettings";
+import AppSettingsPage from "./pages/AppSettings";
+
+export default function App() {
+  const app = useApp();
+  const { page, ready, loadError, activeProject } = app;
+  const badge = api.mock && <span className="mock-badge">{th.mock}</span>;
+
+  if (loadError) {
+    return (
+      <div className="setup" style={{ flexDirection: "column", alignItems: "center", gap: 20 }}>
+        <Logo />
+        <div style={{ maxWidth: 520, width: "100%" }}><ErrorState message={loadError} onRetry={app.reload} /></div>
+        {badge}
+      </div>
+    );
+  }
+
+  if (!ready) {
+    return (
+      <div className="app" aria-busy="true">
+        <aside className="sidebar"><Logo /><SkeletonList rows={5} h={32} /></aside>
+        <main className="main" style={{ padding: 40 }}><SkeletonList rows={3} h={72} /></main>
+      </div>
+    );
+  }
+
+  if (page.name === "setup") {
+    return (
+      <div className="app">
+        <SetupPage />
+        {badge}
+      </div>
+    );
+  }
+
+  return (
+    <div className="app">
+      <Sidebar />
+      <main className="main">
+        {page.name === "project" && (
+          activeProject ? (
+            <>
+              <TopNav />
+              <div className="scroll" style={{ display: "flex", flexDirection: "column" }}>
+                {page.tab === "import" && <ImportPage key={activeProject.id} project={activeProject} />}
+                {page.tab === "classify" && <ClassifyPage key={activeProject.id} project={activeProject} />}
+                {page.tab === "results" && <ResultsPage key={activeProject.id} project={activeProject} />}
+                {page.tab === "summary" && <SummaryPage key={activeProject.id} project={activeProject} />}
+                {page.tab === "settings" && <ProjectSettingsPage key={activeProject.id} project={activeProject} />}
+              </div>
+            </>
+          ) : (
+            <EmptyState
+              icon={<FolderPlus size={36} strokeWidth={1.6} aria-hidden="true" />}
+              title="ยังไม่มีโปรเจกต์"
+              body="แยกงานเป็นโปรเจกต์ เช่น Call Center A หรือ NOC Incident แต่ละโปรเจกต์มีเซอร์วิส หมวดหมู่ และข้อมูลของตัวเอง"
+              action={<button className="btn btn-lg btn-primary" onClick={() => app.toast("สร้างโปรเจกต์ — ทำในขั้นที่ 3")}>สร้างโปรเจกต์แรก</button>}
+            />
+          )
+        )}
+        {page.name === "app" && <div className="scroll"><AppSettingsPage section={page.section} /></div>}
+      </main>
+      <ExportDialog />
+      {badge}
+    </div>
+  );
+}

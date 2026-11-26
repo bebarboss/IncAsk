@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>เมนูชื่อผู้ใช้</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai+Looped:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.mi{display:flex;align-items:center;gap:10px;width:100%;min-height:40px;padding:0 12px;border:0;border-radius:8px;background:transparent;font:inherit;font-size:13px;color:#16181D;text-align:left;cursor:pointer;text-decoration:none;box-sizing:border-box}
+.mi:hover{background:#F0F2F5;color:#16181D}
+</style>
+</helmet>
+<div style="width: 360px; height: 560px; background: #EDEFF3; position: relative; font-family: 'IBM Plex Sans Thai Looped', 'IBM Plex Sans Thai', system-ui, sans-serif; font-size: 14px; line-height: 1.5; color: #16181D">
+
+  <div role="menu" aria-label="เมนูผู้ใช้" style="position: absolute; left: 10px; right: 10px; bottom: 138px; background: #FFFFFF; border: 1px solid #E3E6EB; border-radius: 12px; box-shadow: 0 8px 28px rgba(20, 30, 50, 0.14); padding: 6px; display: flex; flex-direction: column">
+    <div style="padding: 8px 12px 10px; border-bottom: 1px solid #EEF0F3; margin-bottom: 4px; display: flex; flex-direction: column">
+      <span style="font-weight: 600">Navarit</span>
+      <span style="font-size: 12px; color: #5B6270">IncAsk เวอร์ชัน [x.y.z]</span>
+    </div>
+    <a href="AppSettings.dc.html" role="menuitem" class="mi">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5a9 9 0 0 1 14 0M8.5 16a4.5 4.5 0 0 1 7 0"/><circle cx="12" cy="19.5" r="1"/></svg>
+      Gateway และโมเดล
+    </a>
+    <a href="Usage.dc.html" role="menuitem" class="mi">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 20V11M11 20V5M17 20v-6M3 20h18"/></svg>
+      การใช้งานและประวัติการรัน
+    </a>
+    <a href="AppSettings.dc.html" role="menuitem" class="mi">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9 7 7 0 0 1-9-9z"/></svg>
+      ธีม · สว่าง
+    </a>
+    <a href="AppSettings.dc.html" role="menuitem" class="mi">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16v13H4zM8 7V4h8v3M12 11v5M9.5 13.5L12 16l2.5-2.5"/></svg>
+      สำรองและนำเข้าคอนฟิก
+    </a>
+    <a href="AppSettings.dc.html" role="menuitem" class="mi">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7M21 4v5h-5"/></svg>
+      ตรวจหาอัปเดต
+    </a>
+  </div>
+
+  <div style="position: absolute; left: 0; right: 0; bottom: 0; padding: 0 10px 0; display: flex; flex-direction: column">
+    <div style="padding: 0 8px 6px">
+      <div style="display: flex; flex-direction: column; gap: 5px; padding: 8px 10px; border: 1px solid #E3E6EB; border-radius: 10px; background: #FFFFFF">
+        <span style="display: flex; justify-content: space-between; font-size: 12px; color: #5B6270"><span>การใช้งาน Key</span><span style="font-weight: 600; color: #16181D">$18.40 / $50.00</span></span>
+        <span style="display: block; height: 5px; border-radius: 3px; background: #E3E6EB; overflow: hidden"><span style="display: block; height: 100%; width: 37%; background: #217346"></span></span>
+      </div>
+    </div>
+    <button type="button" aria-expanded="true" aria-haspopup="menu" style="display: flex; align-items: center; gap: 10px; padding: 10px; border: 0; border-top: 1px solid #E3E6EB; background: #E9ECF2; font: inherit; color: #16181D; cursor: pointer; text-align: left; margin-bottom: 10px; border-radius: 0 0 10px 10px">
+      <span style="width: 32px; height: 32px; border-radius: 16px; background: #D7DCE5; color: #3B414C; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 12px" aria-hidden="true">N</span>
+      <span style="flex: 1; font-size: 13px; font-weight: 600">Navarit</span>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5B6270" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg>
+    </button>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":360,"height":560}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

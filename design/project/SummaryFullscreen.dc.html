@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>IncAsk · สรุปผลเต็มจอ</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai+Looped:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.tb{min-height:34px;padding:0 12px;border-radius:8px;border:1px solid #3B414C;background:#262A31;color:#ECEEF2;font:inherit;font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:6px;cursor:pointer}
+.tb:hover{background:#30353D}
+.tb-on{background:#217346;border-color:#217346;color:#FFFFFF}
+.th{padding:10px 14px;font-size:13px;font-weight:600;color:#3B414C;background:#F0F2F5;border-bottom:1px solid #E3E6EB;text-align:right}
+.g td,.g th{background:#F7F8FA;font-weight:700;border-bottom:1px solid #E3E6EB}
+td,th{padding:9px 14px;font-size:14px;border-bottom:1px solid #EEF0F3;font-variant-numeric:tabular-nums}
+.c{text-align:right}
+.h1{background:#EEF6F1}.h2{background:#D7EBDF}.h3{background:#B5D9C3}.h4{background:#8CC5A4}
+</style>
+</helmet>
+<div style="width: 1280px; height: 900px; position: relative; overflow: hidden; background: #F5F6F8; font-family: 'IBM Plex Sans Thai Looped', 'IBM Plex Sans Thai', system-ui, sans-serif; font-size: 14px; line-height: 1.5; color: #16181D">
+
+  <div role="toolbar" aria-label="แถบเครื่องมือโหมดเต็มจอ" style="position: absolute; top: 14px; left: 50%; transform: translateX(-50%); z-index: 2; display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 12px; background: #16181D; box-shadow: 0 8px 28px rgba(20, 24, 32, 0.3)">
+    <span style="font-size: 12px; color: #C9CDD5; padding: 0 4px">ส.ค. – ต.ค. 2569</span>
+    <button type="button" class="tb tb-on" aria-pressed="true">รายงานประจำเดือน</button>
+    <button type="button" class="tb" aria-pressed="false">แนวโน้มรายเดือน</button>
+    <button type="button" class="tb" aria-pressed="true">Heatmap</button>
+    <span style="width: 1px; height: 22px; background: #3B414C"></span>
+    <button type="button" class="tb">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg>
+      ออกจากเต็มจอ · Esc
+    </button>
+  </div>
+  <span style="position: absolute; top: 66px; left: 50%; transform: translateX(-50%); font-size: 12px; color: #5B6270">แถบนี้โผล่เมื่อเลื่อนเมาส์ขึ้นไปขอบบน</span>
+
+  <div style="padding: 100px 40px 32px; display: flex; flex-direction: column; gap: 20px; height: 100%; box-sizing: border-box">
+    <div style="display: flex; align-items: baseline; gap: 14px">
+      <h1 style="margin: 0; font-size: 28px; font-weight: 700">Call Center A · รายงานประจำเดือน</h1>
+      <span style="color: #5B6270">ต.ค. 2569 · 626 ทิกเก็ต · ▲ 10% จาก ก.ย.</span>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px">
+      <div style="padding: 14px 16px; background: #FFFFFF; border: 1px solid #E3E6EB; border-top: 4px solid #2F6FB0; border-radius: 12px"><div style="font-size: 13px; color: #5B6270">Internet</div><div style="font-size: 26px; font-weight: 700">342 <span style="font-size: 14px; color: #9B4508">▲ 13%</span></div></div>
+      <div style="padding: 14px 16px; background: #FFFFFF; border: 1px solid #E3E6EB; border-top: 4px solid #C2631A; border-radius: 12px"><div style="font-size: 13px; color: #5B6270">Mobile</div><div style="font-size: 26px; font-weight: 700">157 <span style="font-size: 14px; color: #9B4508">▲ 12%</span></div></div>
+      <div style="padding: 14px 16px; background: #FFFFFF; border: 1px solid #E3E6EB; border-top: 4px solid #7B4FB0; border-radius: 12px"><div style="font-size: 13px; color: #5B6270">IPTV</div><div style="font-size: 26px; font-weight: 700">110 <span style="font-size: 14px; color: #9B4508">▲ 4%</span></div></div>
+      <div style="padding: 14px 16px; background: #FFFFFF; border: 1px solid #E3E6EB; border-top: 4px solid #5B6270; border-radius: 12px"><div style="font-size: 13px; color: #5B6270">Fixed Line</div><div style="font-size: 26px; font-weight: 700">17 <span style="font-size: 14px; color: #12663C">▼ 11%</span></div></div>
+    </div>
+
+    <section aria-label="ตาราง pivot" style="flex: 1; background: #FFFFFF; border: 1px solid #E3E6EB; border-radius: 14px; overflow: hidden">
+      <table style="border-collapse: separate; border-spacing: 0; width: 100%">
+        <thead><tr><th scope="col" class="th" style="text-align: left">เซอร์วิส › หัวข้อหลัก</th><th scope="col" class="th">ส.ค. 69</th><th scope="col" class="th">ก.ย. 69</th><th scope="col" class="th">ต.ค. 69</th><th scope="col" class="th">รวม</th><th scope="col" class="th">เทียบเดือนก่อน</th></tr></thead>
+        <tbody>
+          <tr class="g"><th scope="row" style="text-align: left">Internet</th><td class="c">286</td><td class="c">303</td><td class="c">342</td><td class="c">931</td><td class="c" style="color: #9B4508">▲ 13%</td></tr>
+          <tr><th scope="row" style="text-align: left; font-weight: 500; padding-left: 32px">การเชื่อมต่อ</th><td class="c h3">148</td><td class="c h4">163</td><td class="c h4">201</td><td class="c">512</td><td class="c" style="color: #9B4508">▲ 23%</td></tr>
+          <tr><th scope="row" style="text-align: left; font-weight: 500; padding-left: 32px">ความเร็ว</th><td class="c h2">97</td><td class="c h3">102</td><td class="c h2">96</td><td class="c">295</td><td class="c" style="color: #12663C">▼ 6%</td></tr>
+          <tr><th scope="row" style="text-align: left; font-weight: 500; padding-left: 32px">บริการติดตั้ง</th><td class="c h1">41</td><td class="c">38</td><td class="c h1">45</td><td class="c">124</td><td class="c" style="color: #9B4508">▲ 18%</td></tr>
+          <tr class="g"><th scope="row" style="text-align: left">Mobile</th><td class="c">142</td><td class="c">140</td><td class="c">157</td><td class="c">439</td><td class="c" style="color: #9B4508">▲ 12%</td></tr>
+          <tr><th scope="row" style="text-align: left; font-weight: 500; padding-left: 32px">บิลและค่าบริการ</th><td class="c h2">88</td><td class="c h2">79</td><td class="c h2">84</td><td class="c">251</td><td class="c" style="color: #9B4508">▲ 6%</td></tr>
+          <tr><th scope="row" style="text-align: left; font-weight: 500; padding-left: 32px">สัญญาณ</th><td class="c h1">54</td><td class="c h1">61</td><td class="c h2">73</td><td class="c">188</td><td class="c" style="color: #9B4508">▲ 20%</td></tr>
+          <tr class="g"><th scope="row" style="text-align: left">IPTV</th><td class="c">95</td><td class="c">106</td><td class="c">110</td><td class="c">311</td><td class="c" style="color: #9B4508">▲ 4%</td></tr>
+          <tr class="g"><th scope="row" style="text-align: left">Fixed Line</th><td class="c">23</td><td class="c">19</td><td class="c">17</td><td class="c">59</td><td class="c" style="color: #12663C">▼ 11%</td></tr>
+        </tbody>
+      </table>
+    </section>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

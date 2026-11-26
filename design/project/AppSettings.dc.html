@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>IncAsk · ตั้งค่าโปรแกรม</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai+Looped:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F5F6F8}
+a{color:#217346}a:hover{color:#17532F}
+.btn{min-height:40px;padding:0 14px;border-radius:10px;border:1px solid #E3E6EB;background:#FFFFFF;color:#16181D;font:inherit;font-size:13px;font-weight:600;display:inline-flex;align-items:center;justify-content:center;gap:6px;cursor:pointer}
+.btn:hover{background:#EDEFF3}
+.btn-primary{background:#217346;border-color:#217346;color:#FFFFFF}
+.btn-primary:hover{background:#1B5E3A;border-color:#1B5E3A}
+.sub{min-height:36px;padding:0 10px;border-radius:10px;color:#3B414C;display:flex;align-items:center;font-size:13px;text-decoration:none}
+.sub:hover{background:#E9ECF2;color:#16181D}
+.sub-on{background:#E6F2EB;color:#17532F;font-weight:600}
+.sub-on:hover{background:#DCEEE3;color:#17532F}
+.card{background:#FFFFFF;border:1px solid #E3E6EB;border-radius:14px;padding:20px;display:flex;flex-direction:column;gap:14px}
+.lbl{font-weight:600;font-size:13px}
+.in{width:100%;min-height:40px;padding:9px 12px;border-radius:10px;border:1px solid #E3E6EB;background:#FFFFFF;color:#16181D;font:inherit;font-size:14px;box-sizing:border-box}
+.seg{display:inline-flex;gap:2px;padding:3px;background:#F0F2F5;border:1px solid #E3E6EB;border-radius:10px}
+.seg button{padding:6px 14px;border:none;background:none;color:#5B6270;font:inherit;font-size:13px;font-weight:600;border-radius:7px;cursor:pointer}
+.seg .on{background:#217346;color:#FFFFFF}
+</style>
+</helmet>
+<div style="min-height: 100vh; display: flex; flex-wrap: wrap; font-family: 'IBM Plex Sans Thai Looped', 'IBM Plex Sans Thai', system-ui, sans-serif; font-size: 14px; line-height: 1.5; color: #16181D; background: #F5F6F8">
+  <div style="flex: 1 1 252px; max-width: 100%; display: flex; flex-direction: column">
+    <dc-import name="Sidebar" hint-size="252px,900px"></dc-import>
+  </div>
+  <main style="flex: 999 1 560px; min-width: 0; padding: 32px 28px; box-sizing: border-box; display: flex; flex-direction: column; gap: 20px">
+    <div style="display: flex; flex-direction: column; gap: 4px">
+      <h1 style="margin: 0; font-size: 26px; font-weight: 700">ตั้งค่าโปรแกรม</h1>
+      <p style="margin: 0; color: #5B6270">ใช้กับทุกโปรเจกต์ในเครื่องนี้</p>
+    </div>
+    <div style="display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start">
+      <nav aria-label="หมวดการตั้งค่า" style="flex: 1 1 180px; max-width: 220px; display: flex; flex-direction: column; gap: 2px">
+        <a href="#gw" class="sub sub-on" aria-current="page">Gateway และโมเดล</a>
+        <a href="Usage.dc.html" class="sub">การใช้งาน</a>
+        <a href="#theme" class="sub">ธีม</a>
+        <a href="#backup" class="sub">สำรองและนำเข้าคอนฟิก</a>
+        <a href="#about" class="sub">เกี่ยวกับและอัปเดต</a>
+      </nav>
+      <div style="flex: 999 1 520px; min-width: 0; max-width: 760px; display: flex; flex-direction: column; gap: 16px">
+
+        <section id="gw" class="card" aria-labelledby="gw-h">
+          <h2 id="gw-h" style="margin: 0; font-size: 16px; font-weight: 700">Gateway และโมเดล</h2>
+          <div style="display: flex; flex-direction: column; gap: 6px"><label class="lbl" for="u">Gateway URL</label><input id="u" class="in" defaultValue="https://[gateway-ของบริษัท]" style="font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 13px"></div>
+          <div style="display: flex; flex-direction: column; gap: 6px"><label class="lbl" for="k">API Key</label>
+            <div style="display: flex; gap: 8px"><input id="k" class="in" type="password" defaultValue="sk-xxxxxxxxxxxxxxxx" style="font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 13px"><button type="button" class="btn">เปลี่ยน</button></div>
+            <span style="font-size: 12px; color: #5B6270">เก็บใน keyring ของเครื่อง</span>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px">
+            <div style="display: flex; flex-direction: column; gap: 6px"><label class="lbl" for="m">โมเดลที่ใช้จัดหมวด</label><select id="m" class="in"><option>[โมเดลจาก Gateway]</option></select></div>
+            <div style="display: flex; flex-direction: column; gap: 6px"><label class="lbl" for="c">ส่งคำขอพร้อมกัน</label><select id="c" class="in" defaultValue="8"><option value="4">4 คำขอ</option><option value="8">8 คำขอ</option><option value="16">16 คำขอ</option></select></div>
+          </div>
+          <div><button type="button" class="btn">ทดสอบการเชื่อมต่อ</button></div>
+        </section>
+
+        <section id="theme" class="card" aria-labelledby="th-h">
+          <h2 id="th-h" style="margin: 0; font-size: 16px; font-weight: 700">ธีม</h2>
+          <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px">
+            <span class="lbl">โหมดสี</span>
+            <div class="seg" role="radiogroup" aria-label="โหมดสี"><button type="button" role="radio" aria-checked="true" class="on">สว่าง</button><button type="button" role="radio" aria-checked="false">มืด</button><button type="button" role="radio" aria-checked="false">ตามระบบ</button></div>
+          </div>
+          <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px">
+            <span class="lbl">ฟอนต์</span>
+            <div class="seg" role="radiogroup" aria-label="ฟอนต์"><button type="button" role="radio" aria-checked="true" class="on">Plex Looped</button><button type="button" role="radio" aria-checked="false">Sarabun</button><button type="button" role="radio" aria-checked="false">ระบบ</button></div>
+          </div>
+        </section>
+
+        <section id="backup" class="card" aria-labelledby="bk-h">
+          <h2 id="bk-h" style="margin: 0; font-size: 16px; font-weight: 700">สำรองและนำเข้าคอนฟิก</h2>
+          <p style="margin: 0; font-size: 13px; color: #3B414C">รวมหมวดหมู่ รูปแบบรีพอร์ต และสีของทุกโปรเจกต์ไว้ในไฟล์เดียว ให้เพื่อนในทีมนำเข้าแล้วใช้ชุดเดียวกัน ไม่รวม API key และข้อมูลทิกเก็ต</p>
+          <div style="display: flex; flex-wrap: wrap; gap: 8px"><button type="button" class="btn">ส่งออกคอนฟิก</button><button type="button" class="btn">นำเข้าคอนฟิก</button></div>
+        </section>
+
+        <section id="about" class="card" aria-labelledby="ab-h">
+          <h2 id="ab-h" style="margin: 0; font-size: 16px; font-weight: 700">เกี่ยวกับและอัปเดต</h2>
+          <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px">
+            <div style="display: flex; flex-direction: column"><span style="font-weight: 600">IncAsk เวอร์ชัน [x.y.z]</span><span style="font-size: 13px; color: #12663C">✓ เป็นเวอร์ชันล่าสุด</span></div>
+            <button type="button" class="btn">ตรวจหาอัปเดต</button>
+          </div>
+          <label style="display: flex; align-items: center; gap: 10px; font-size: 13px; color: #3B414C; cursor: pointer"><input type="checkbox" defaultChecked="{{ true }}" style="width: 18px; height: 18px; margin: 0; accent-color: #217346">อัปเดตอัตโนมัติเมื่อมีเวอร์ชันใหม่</label>
+        </section>
+      </div>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

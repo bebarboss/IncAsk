@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>IncAsk · ส่งออก</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai+Looped:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.btn{min-height:44px;padding:0 20px;border-radius:12px;border:1px solid #E3E6EB;background:#FFFFFF;color:#16181D;font:inherit;font-size:14px;font-weight:600;display:inline-flex;align-items:center;justify-content:center;gap:8px;cursor:pointer}
+.btn:hover{background:#EDEFF3}
+.btn-primary{background:#217346;border-color:#217346;color:#FFFFFF}
+.btn-primary:hover{background:#1B5E3A;border-color:#1B5E3A}
+.opt{display:flex;align-items:flex-start;gap:12px;width:100%;text-align:left;padding:14px;border-radius:12px;font:inherit;color:#16181D;cursor:pointer;background:#FFFFFF;border:1px solid #E3E6EB}
+.opt:hover{border-color:#217346}
+.opt-on{border:2px solid #217346;background:#F5FAF7;padding:13px}
+.sel{min-height:40px;border:1px solid #E3E6EB;border-radius:10px;background:#FFFFFF;font:inherit;font-size:13px;color:#16181D;padding:0 10px}
+</style>
+</helmet>
+<div style="width: 1280px; height: 820px; position: relative; overflow: hidden; background: #8A8F99; display: flex; align-items: center; justify-content: center; font-family: 'IBM Plex Sans Thai Looped', 'IBM Plex Sans Thai', system-ui, sans-serif; font-size: 14px; line-height: 1.5; color: #16181D">
+  <div role="dialog" aria-modal="true" aria-labelledby="exp-title" style="width: 580px; background: #FFFFFF; border-radius: 16px; box-shadow: 0 12px 40px rgba(20, 24, 32, 0.25); padding: 24px; display: flex; flex-direction: column; gap: 18px">
+    <div style="display: flex; align-items: flex-start; gap: 12px">
+      <div style="flex: 1; display: flex; flex-direction: column; gap: 2px">
+        <h2 id="exp-title" style="margin: 0; font-size: 18px; font-weight: 700">ส่งออกโปรเจกต์ Call Center A</h2>
+        <span style="font-size: 13px; color: #5B6270">เลือกรูปแบบตามคนที่จะเอาไปใช้ต่อ</span>
+      </div>
+      <button type="button" aria-label="ปิด" style="width: 36px; height: 36px; border-radius: 10px; border: 0; background: transparent; color: #5B6270; cursor: pointer; display: inline-flex; align-items: center; justify-content: center">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+
+    <div role="radiogroup" aria-label="รูปแบบไฟล์" style="display: flex; flex-direction: column; gap: 8px">
+      <sc-for list="{{ opts }}" as="o" hint-placeholder-count="3">
+        <button type="button" role="radio" aria-checked="{{ o.on }}" class="{{ o.cls }}" onClick="{{ o.pick }}">
+          <span style="width: 40px; height: 40px; border-radius: 10px; background: #E6F2EB; color: #17532F; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex: none">{{ o.ext }}</span>
+          <span style="flex: 1; display: flex; flex-direction: column; gap: 2px">
+            <span style="font-size: 14px; font-weight: 600">{{ o.title }}</span>
+            <span style="font-size: 13px; color: #3B414C">{{ o.desc }}</span>
+            <span style="font-size: 12px; color: #5B6270">{{ o.who }}</span>
+          </span>
+          <sc-if value="{{ o.on }}" hint-placeholder-val="{{ false }}">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="#217346" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M7 12.5l3.2 3.2L17 9" fill="none" stroke="#FFFFFF" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </sc-if>
+        </button>
+      </sc-for>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px">
+      <label style="display: flex; flex-direction: column; gap: 4px; font-size: 13px; font-weight: 600">ช่วงเดือน
+        <select class="sel"><option>ส.ค. – ต.ค. 2569</option></select>
+      </label>
+      <label style="display: flex; flex-direction: column; gap: 4px; font-size: 13px; font-weight: 600">เซอร์วิส
+        <select class="sel"><option>ทุกเซอร์วิส</option></select>
+      </label>
+    </div>
+
+    <div style="display: flex; justify-content: flex-end; gap: 10px">
+      <button type="button" class="btn">ยกเลิก</button>
+      <button type="button" class="btn btn-primary">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M4 20h16"/></svg>
+        {{ cta }}
+      </button>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":820}}'>
+var OPTS = [
+  { id: 'incask', ext: '.incask', title: 'ไฟล์โปรเจกต์', desc: 'ทั้งฐานข้อมูล หมวดหมู่ รูปแบบรีพอร์ต สี และมุมมองที่บันทึก เปิดแล้วเห็นเหมือนเราทุกอย่าง', who: 'สำหรับคนที่มีโปรแกรม IncAsk', cta: 'บันทึกไฟล์ .incask' },
+  { id: 'html', ext: 'HTML', title: 'รายงาน HTML', desc: 'ไฟล์เดียว ดับเบิลคลิกเปิดในเบราว์เซอร์ ปรับ pivot และดูรายละเอียดทิกเก็ตได้ แต่แก้หมวดไม่ได้', who: 'สำหรับหัวหน้าหรือคนนอกทีม', cta: 'บันทึกรายงาน HTML' },
+  { id: 'csv', ext: 'CSV', title: 'CSV ดิบ', desc: 'ข้อมูลทีละแถวพร้อมหมวดหมู่ เข้ารหัส UTF-8 พร้อม BOM เปิดใน Excel แล้วภาษาไทยไม่เพี้ยน', who: 'สำหรับคนที่จะเอาข้อมูลไปทำต่อเอง', cta: 'บันทึกไฟล์ CSV' }
+];
+class Component extends DCLogic {
+  renderVals() {
+    var self = this;
+    var sel = (this.state && this.state.sel) || 'incask';
+    var cta = '';
+    var opts = OPTS.map(function (o) {
+      if (o.id === sel) cta = o.cta;
+      return {
+        ext: o.ext, title: o.title, desc: o.desc, who: o.who,
+        on: o.id === sel, cls: 'opt' + (o.id === sel ? ' opt-on' : ''),
+        pick: function () { self.setState({ sel: o.id }); }
+      };
+    });
+    return { opts: opts, cta: cta };
+  }
+}
+</script>
+</body>
+</html>

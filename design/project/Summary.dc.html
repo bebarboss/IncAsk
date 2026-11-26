@@ -1,0 +1,387 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>IncAsk · สรุปผล</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai+Looped:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F5F6F8}
+a{color:#217346}a:hover{color:#17532F}
+.btn{min-height:36px;padding:0 12px;border-radius:10px;border:1px solid #E3E6EB;background:#FFFFFF;color:#16181D;font:inherit;font-size:13px;font-weight:600;display:inline-flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;text-decoration:none}
+.btn:hover{background:#EDEFF3;color:#16181D}
+.btn-primary{background:#217346;border-color:#217346;color:#FFFFFF}
+.btn-primary:hover{background:#1B5E3A;border-color:#1B5E3A;color:#FFFFFF}
+.icon-btn{width:36px;height:36px;border-radius:10px;border:1px solid #E3E6EB;background:#FFFFFF;display:inline-flex;align-items:center;justify-content:center;color:#3B414C;cursor:pointer}
+.icon-btn:hover{background:#EDEFF3}
+.sel{min-height:36px;border:1px solid #E3E6EB;border-radius:10px;background:#FFFFFF;font:inherit;font-size:13px;color:#16181D;padding:0 10px}
+.seg{display:inline-flex;gap:2px;padding:3px;background:#F0F2F5;border:1px solid #E3E6EB;border-radius:10px;flex-wrap:wrap}
+.seg button{padding:5px 12px;border:none;background:none;color:#5B6270;font:inherit;font-size:13px;font-weight:600;border-radius:7px;cursor:pointer}
+.seg button:hover{color:#16181D}
+.seg .on{background:#217346;color:#FFFFFF}
+.seg .on:hover{color:#FFFFFF}
+.pth{padding:10px 12px;font-size:12px;font-weight:600;color:#3B414C;background:#F0F2F5;border-bottom:1px solid #E3E6EB;text-align:right;white-space:nowrap}
+.ptd{padding:3px 4px;border-bottom:1px solid #EEF0F3}
+.pvbtn{width:100%;min-height:34px;border:0;border-radius:6px;font:inherit;font-size:13px;font-variant-numeric:tabular-nums;text-align:right;padding:0 10px;cursor:pointer;color:#16181D}
+.pvbtn:hover{outline:2px solid #217346;outline-offset:-2px}
+.h0{background:#FFFFFF}.h1{background:#EEF6F1}.h2{background:#D7EBDF}.h3{background:#B5D9C3}.h4{background:#8CC5A4}
+.pvsel{outline:2px solid #17532F;outline-offset:-2px;font-weight:700}
+.tk{display:flex;flex-direction:column;gap:4px;width:100%;text-align:left;padding:12px 16px;border:0;border-bottom:1px solid #EEF0F3;background:#FFFFFF;font:inherit;color:#16181D;cursor:pointer}
+.tk:hover{background:#F5FAF7}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:600;border:1px dashed #B7BDC7;background:#FFFFFF;color:#3B414C}
+.chip-on{border-style:solid;border-color:#CDE6D6;background:#E6F2EB;color:#17532F}
+.fld{display:flex;flex-direction:column;gap:2px}
+.sw{display:inline-block;width:10px;height:10px;border-radius:3px}
+.sw0{background:#2F6FB0}.sw1{background:#7B4FB0}.sw2{background:#C2631A}.sw3{background:#5B6270}
+.fld span:first-child{font-size:12px;color:#5B6270}
+</style>
+</helmet>
+<div style="min-height: 100vh; display: flex; flex-wrap: wrap; font-family: 'IBM Plex Sans Thai Looped', 'IBM Plex Sans Thai', system-ui, sans-serif; font-size: 14px; line-height: 1.5; color: #16181D; background: #F5F6F8">
+  <div style="flex: 1 1 252px; max-width: 100%; display: flex; flex-direction: column">
+    <dc-import name="Sidebar" hint-size="252px,900px"></dc-import>
+  </div>
+  <div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+    <dc-import name="TopNav" active="summary" hint-size="100%,56px"></dc-import>
+
+    <div style="display: flex; flex-wrap: wrap; align-items: flex-start; min-width: 0">
+      <main style="flex: 999 1 560px; min-width: 0; padding: 24px 24px 32px; display: flex; flex-direction: column; gap: 16px">
+
+        <header style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px">
+          <h1 style="margin: 0; font-size: 26px; font-weight: 700">สรุปผล</h1>
+          <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px">
+            <select class="sel" aria-label="ตั้งแต่เดือน"><option>ส.ค. 2569</option></select>
+            <span style="color: #5B6270">ถึง</span>
+            <select class="sel" aria-label="ถึงเดือน"><option>ต.ค. 2569</option></select>
+            <a href="Export.dc.html" class="btn">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M4 20h16"/></svg>
+              ส่งออก
+            </a>
+            <button type="button" class="icon-btn" aria-label="แสดงเต็มจอ">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
+            </button>
+          </div>
+        </header>
+
+        <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px">
+          <span style="font-size: 12px; font-weight: 600; color: #5B6270">มุมมองที่บันทึก</span>
+          <div class="seg" role="tablist" aria-label="มุมมองที่บันทึก">
+            <button type="button" role="tab" aria-selected="true" class="on">รายงานประจำเดือน</button>
+            <button type="button" role="tab" aria-selected="false">แนวโน้มรายเดือน</button>
+            <button type="button" role="tab" aria-selected="false">เฉพาะ Internet</button>
+          </div>
+          <button type="button" class="btn" style="min-height: 32px">+ บันทึกมุมมอง</button>
+        </div>
+
+        <section aria-label="ตั้งค่า pivot" style="background: #FFFFFF; border: 1px solid #E3E6EB; border-radius: 14px; padding: 12px 16px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; font-size: 12px">
+          <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 6px"><span style="font-weight: 600; color: #5B6270">แถว</span><span class="chip chip-on">เซอร์วิส</span><span class="chip chip-on">หัวข้อหลัก</span></div>
+          <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 6px"><span style="font-weight: 600; color: #5B6270">คอลัมน์</span><span class="chip chip-on">เดือน</span></div>
+          <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 6px"><span style="font-weight: 600; color: #5B6270">ค่า</span><span class="chip chip-on">จำนวนทิกเก็ต</span></div>
+          <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 6px"><span style="font-weight: 600; color: #5B6270">ตัวกรอง</span><span class="chip">+ ลากฟิลด์มาวาง</span></div>
+          <label style="margin-left: auto; display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: #3B414C; cursor: pointer">
+            <input type="checkbox" checked="{{ heat }}" onChange="{{ toggleHeat }}" style="width: 18px; height: 18px; margin: 0; accent-color: #217346">
+            Heatmap
+          </label>
+        </section>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px">
+          <section aria-label="ห้าหมวดที่พบบ่อยที่สุด" style="background: #FFFFFF; border: 1px solid #E3E6EB; border-radius: 14px; padding: 16px 18px; display: flex; flex-direction: column; gap: 12px">
+            <h2 style="margin: 0; font-size: 14px; font-weight: 600; color: #3B414C">5 หมวดที่พบบ่อยที่สุด · ต.ค. 69</h2>
+            <div style="display: flex; flex-direction: column; gap: 10px">
+              <div style="display: flex; flex-direction: column; gap: 3px"><div style="display: flex; justify-content: space-between; font-size: 12px"><span>Internet › การเชื่อมต่อ</span><span style="font-weight: 600">201</span></div><div style="height: 10px; border-radius: 3px; background: #2F6FB0; width: 100%"></div></div>
+              <div style="display: flex; flex-direction: column; gap: 3px"><div style="display: flex; justify-content: space-between; font-size: 12px"><span>Internet › ความเร็ว</span><span style="font-weight: 600">96</span></div><div style="height: 10px; border-radius: 3px; background: #2F6FB0; width: 48%"></div></div>
+              <div style="display: flex; flex-direction: column; gap: 3px"><div style="display: flex; justify-content: space-between; font-size: 12px"><span>Mobile › บิลและค่าบริการ</span><span style="font-weight: 600">84</span></div><div style="height: 10px; border-radius: 3px; background: #C2631A; width: 42%"></div></div>
+              <div style="display: flex; flex-direction: column; gap: 3px"><div style="display: flex; justify-content: space-between; font-size: 12px"><span>Mobile › สัญญาณ</span><span style="font-weight: 600">73</span></div><div style="height: 10px; border-radius: 3px; background: #C2631A; width: 36%"></div></div>
+              <div style="display: flex; flex-direction: column; gap: 3px"><div style="display: flex; justify-content: space-between; font-size: 12px"><span>IPTV › คุณภาพภาพ</span><span style="font-weight: 600">58</span></div><div style="height: 10px; border-radius: 3px; background: #7B4FB0; width: 29%"></div></div>
+            </div>
+          </section>
+          <section aria-label="แนวโน้มรายเดือน" style="background: #FFFFFF; border: 1px solid #E3E6EB; border-radius: 14px; padding: 16px 18px; display: flex; flex-direction: column; gap: 8px">
+            <h2 style="margin: 0; font-size: 14px; font-weight: 600; color: #3B414C">แนวโน้มรายเดือนตามเซอร์วิส</h2>
+            <svg viewBox="0 0 520 210" role="img" aria-label="กราฟเส้นจำนวนทิกเก็ตต่อเดือน Internet เพิ่มจาก 286 เป็น 342" style="width: 100%; height: auto">
+              <g stroke="#EEF0F3" stroke-width="1"><path d="M40 180H510M40 140H510M40 100H510M40 60H510M40 20H510"/></g>
+              <g fill="#5B6270" font-size="11" font-family="IBM Plex Sans Thai Looped, sans-serif"><text x="32" y="184" text-anchor="end">0</text><text x="32" y="104" text-anchor="end">200</text><text x="32" y="24" text-anchor="end">400</text><text x="80" y="202" text-anchor="middle">ส.ค.</text><text x="275" y="202" text-anchor="middle">ก.ย.</text><text x="470" y="202" text-anchor="middle">ต.ค.</text></g>
+              <polyline points="80,65.6 275,58.8 470,43.2" fill="none" stroke="#2F6FB0" stroke-width="2.5"/>
+              <polyline points="80,123.2 275,124 470,117.2" fill="none" stroke="#C2631A" stroke-width="2.5"/>
+              <polyline points="80,142 275,137.6 470,136" fill="none" stroke="#7B4FB0" stroke-width="2.5"/>
+              <polyline points="80,170.8 275,172.4 470,173.2" fill="none" stroke="#5B6270" stroke-width="2.5"/>
+              <g fill="#FFFFFF" stroke-width="2"><circle cx="470" cy="43.2" r="4" stroke="#2F6FB0"/><circle cx="470" cy="117.2" r="4" stroke="#C2631A"/><circle cx="470" cy="136" r="4" stroke="#7B4FB0"/><circle cx="470" cy="173.2" r="4" stroke="#5B6270"/></g>
+            </svg>
+            <div style="display: flex; flex-wrap: wrap; gap: 12px; font-size: 12px; color: #3B414C">
+              <span style="display: inline-flex; align-items: center; gap: 5px"><span style="width: 10px; height: 10px; border-radius: 3px; background: #2F6FB0"></span>Internet</span>
+              <span style="display: inline-flex; align-items: center; gap: 5px"><span style="width: 10px; height: 10px; border-radius: 3px; background: #C2631A"></span>Mobile</span>
+              <span style="display: inline-flex; align-items: center; gap: 5px"><span style="width: 10px; height: 10px; border-radius: 3px; background: #7B4FB0"></span>IPTV</span>
+              <span style="display: inline-flex; align-items: center; gap: 5px"><span style="width: 10px; height: 10px; border-radius: 3px; background: #5B6270"></span>Fixed Line</span>
+            </div>
+          </section>
+        </div>
+
+        <section aria-label="ตาราง pivot" style="background: #FFFFFF; border: 1px solid #E3E6EB; border-radius: 14px; overflow: hidden">
+          <div style="padding: 12px 16px; border-bottom: 1px solid #E3E6EB; font-size: 13px; color: #5B6270">คลิกตัวเลขเพื่อดูทิกเก็ตในช่องนั้น</div>
+          <div style="overflow-x: auto">
+            <table style="border-collapse: separate; border-spacing: 0; width: 100%; min-width: 640px">
+              <thead>
+                <tr>
+                  <th scope="col" class="pth" style="text-align: left">เซอร์วิส › หัวข้อหลัก</th>
+                  <th scope="col" class="pth">ส.ค. 69</th>
+                  <th scope="col" class="pth">ก.ย. 69</th>
+                  <th scope="col" class="pth">ต.ค. 69</th>
+                  <th scope="col" class="pth">รวม</th>
+                  <th scope="col" class="pth">เทียบเดือนก่อน</th>
+                </tr>
+              </thead>
+              <tbody>
+                <sc-for list="{{ prow }}" as="r" hint-placeholder-count="12">
+                  <sc-if value="{{ r.group }}" hint-placeholder-val="{{ false }}">
+                    <tr>
+                      <th scope="row" style="text-align: left; padding: 9px 12px; background: #F7F8FA; border-bottom: 1px solid #E3E6EB; font-size: 13px">
+                        <span style="display: inline-flex; align-items: center; gap: 8px"><span class="{{ r.sw }}"></span>{{ r.name }}</span>
+                      </th>
+                      <sc-for list="{{ r.vals }}" as="v" hint-placeholder-count="4">
+                        <td style="text-align: right; padding: 9px 14px; background: #F7F8FA; border-bottom: 1px solid #E3E6EB; font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums">{{ v }}</td>
+                      </sc-for>
+                      <td style="text-align: right; padding: 9px 14px; background: #F7F8FA; border-bottom: 1px solid #E3E6EB; font-size: 13px; font-weight: 600">
+                        <sc-if value="{{ r.up }}" hint-placeholder-val="{{ true }}"><span style="color: #9B4508">▲ {{ r.delta }}</span></sc-if>
+                        <sc-if value="{{ r.down }}" hint-placeholder-val="{{ false }}"><span style="color: #12663C">▼ {{ r.delta }}</span></sc-if>
+                      </td>
+                    </tr>
+                  </sc-if>
+                  <sc-if value="{{ r.item }}" hint-placeholder-val="{{ true }}">
+                    <tr>
+                      <th scope="row" style="text-align: left; padding: 6px 12px 6px 30px; border-bottom: 1px solid #EEF0F3; font-size: 13px; font-weight: 500; color: #3B414C">{{ r.name }}</th>
+                      <sc-for list="{{ r.cells }}" as="c" hint-placeholder-count="3">
+                        <td class="ptd"><button type="button" class="{{ c.cls }}" aria-label="{{ c.label }}" onClick="{{ c.click }}">{{ c.text }}</button></td>
+                      </sc-for>
+                      <td style="text-align: right; padding: 6px 14px; border-bottom: 1px solid #EEF0F3; font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums">{{ r.total }}</td>
+                      <td style="text-align: right; padding: 6px 14px; border-bottom: 1px solid #EEF0F3; font-size: 13px; font-weight: 600">
+                        <sc-if value="{{ r.up }}" hint-placeholder-val="{{ true }}"><span style="color: #9B4508">▲ {{ r.delta }}</span></sc-if>
+                        <sc-if value="{{ r.down }}" hint-placeholder-val="{{ false }}"><span style="color: #12663C">▼ {{ r.delta }}</span></sc-if>
+                      </td>
+                    </tr>
+                  </sc-if>
+                </sc-for>
+                <tr>
+                  <th scope="row" style="text-align: left; padding: 10px 12px; font-size: 13px; font-weight: 700">รวมทั้งหมด</th>
+                  <sc-for list="{{ grand }}" as="g" hint-placeholder-count="4">
+                    <td style="text-align: right; padding: 10px 14px; font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums">{{ g }}</td>
+                  </sc-for>
+                  <td style="text-align: right; padding: 10px 14px; font-size: 13px; font-weight: 700; color: #9B4508">▲ {{ grandDelta }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </main>
+
+      <sc-if value="{{ open }}" hint-placeholder-val="{{ true }}">
+        <aside aria-label="รายละเอียดทิกเก็ต" style="flex: 1 1 380px; max-width: 100%; align-self: stretch; background: #FFFFFF; border-left: 1px solid #E3E6EB; display: flex; flex-direction: column; min-height: 600px">
+
+          <sc-if value="{{ isList }}" hint-placeholder-val="{{ true }}">
+            <div style="padding: 16px; border-bottom: 1px solid #E3E6EB; display: flex; align-items: flex-start; gap: 8px">
+              <div style="flex: 1; display: flex; flex-direction: column; gap: 2px">
+                <span style="font-size: 12px; color: #5B6270">{{ cellMonth }}</span>
+                <h2 style="margin: 0; font-size: 16px; font-weight: 700">{{ cellTitle }}</h2>
+                <span style="font-size: 13px; color: #5B6270">{{ cellCount }} ทิกเก็ต · แสดง 5 รายการแรก</span>
+              </div>
+              <button type="button" class="icon-btn" aria-label="ปิดแผง" onClick="{{ close }}" style="border: 0">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+              </button>
+            </div>
+            <div style="display: flex; flex-direction: column">
+              <sc-for list="{{ tickets }}" as="t" hint-placeholder-count="5">
+                <button type="button" class="tk" onClick="{{ t.open }}">
+                  <span style="display: flex; align-items: center; gap: 8px; width: 100%">
+                    <span style="font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 12.5px; font-weight: 500">{{ t.id }}</span>
+                    <span style="font-size: 12px; color: #5B6270">{{ t.date }}</span>
+                    <sc-if value="{{ t.human }}" hint-placeholder-val="{{ false }}">
+                      <span style="margin-left: auto; font-size: 11px; font-weight: 600; padding: 1px 7px; border-radius: 999px; background: #EAEEF6; color: #2F3B52">แก้โดยคน</span>
+                    </sc-if>
+                  </span>
+                  <span style="font-size: 13px; color: #3B414C">{{ t.text }}</span>
+                  <span style="font-size: 12px; color: #17532F; font-weight: 600">{{ t.sub }}</span>
+                </button>
+              </sc-for>
+            </div>
+            <div style="padding: 12px 16px"><button type="button" class="btn" style="width: 100%">ดูทั้งหมดในหน้าผลลัพธ์</button></div>
+          </sc-if>
+
+          <sc-if value="{{ isDetail }}" hint-placeholder-val="{{ false }}">
+            <div style="padding: 12px 16px; border-bottom: 1px solid #E3E6EB; display: flex; align-items: center; gap: 8px">
+              <button type="button" class="btn" onClick="{{ back }}" style="border: 0; padding: 0 8px">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>
+                กลับไปรายการ
+              </button>
+              <button type="button" class="icon-btn" aria-label="ปิดแผง" onClick="{{ close }}" style="border: 0; margin-left: auto">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+              </button>
+            </div>
+            <div style="padding: 16px; display: flex; flex-direction: column; gap: 16px">
+              <div style="display: flex; flex-direction: column; gap: 4px">
+                <h2 style="margin: 0; font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 17px; font-weight: 500">{{ d.id }}</h2>
+                <p style="margin: 0; font-size: 14px; color: #16181D; background: #F0F2F5; border-radius: 10px; padding: 10px 12px">{{ d.text }}</p>
+              </div>
+              <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 14px; font-size: 13px">
+                <div class="fld"><span>วันที่แจ้ง</span><span>{{ d.date }}</span></div>
+                <div class="fld"><span>เซอร์วิส</span><span>{{ d.svc }}</span></div>
+                <div class="fld"><span>ชื่อลูกค้า</span><span>{{ d.cust }}</span></div>
+                <div class="fld"><span>ช่องทาง</span><span>{{ d.channel }}</span></div>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 6px; padding: 12px; border: 1px solid #E3E6EB; border-radius: 12px">
+                <span style="font-size: 12px; font-weight: 600; color: #5B6270">AI จัดหมวดเป็น · ความมั่นใจ {{ d.conf }}</span>
+                <span style="font-size: 14px; font-weight: 600">{{ d.aiCat }}</span>
+                <span style="font-size: 12.5px; color: #3B414C">เหตุผล: {{ d.reason }}</span>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 10px">
+                <label style="display: flex; flex-direction: column; gap: 4px; font-size: 13px; font-weight: 600">หัวข้อหลัก
+                  <select class="sel" style="min-height: 40px" value="{{ d.main }}" onChange="{{ onMain }}">
+                    <sc-for list="{{ mainOpts }}" as="o" hint-placeholder-count="3"><option value="{{ o }}">{{ o }}</option></sc-for>
+                  </select>
+                </label>
+                <label style="display: flex; flex-direction: column; gap: 4px; font-size: 13px; font-weight: 600">หัวข้อย่อย
+                  <select class="sel" style="min-height: 40px" value="{{ d.sub }}" onChange="{{ onSub }}">
+                    <sc-for list="{{ subOpts }}" as="o" hint-placeholder-count="3"><option value="{{ o }}">{{ o }}</option></sc-for>
+                  </select>
+                </label>
+              </div>
+              <sc-if value="{{ d.human }}" hint-placeholder-val="{{ false }}">
+                <div style="display: flex; align-items: flex-start; gap: 8px; font-size: 12.5px; color: #2F3B52; background: #EAEEF6; border-radius: 10px; padding: 10px 12px">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="margin-top: 2px"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg>
+                  <span>แก้โดยคน · เดิม AI จัดเป็น {{ d.aiCat }} · pivot อัปเดตแล้ว</span>
+                </div>
+              </sc-if>
+              <div style="display: flex; gap: 8px; justify-content: flex-end">
+                <button type="button" class="btn" onClick="{{ back }}">ยกเลิก</button>
+                <button type="button" class="btn btn-primary" onClick="{{ save }}">บันทึก</button>
+              </div>
+            </div>
+          </sc-if>
+        </aside>
+      </sc-if>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":1240}}'>
+var MONTHS = ['ส.ค. 2569', 'ก.ย. 2569', 'ต.ค. 2569'];
+var MM = ['08', '09', '10'];
+var SVCS = [
+  { name: 'Internet', color: '#2F6FB0', cats: [['การเชื่อมต่อ', [148, 163, 201]], ['ความเร็ว', [97, 102, 96]], ['บริการติดตั้ง', [41, 38, 45]]] },
+  { name: 'IPTV', color: '#7B4FB0', cats: [['คุณภาพภาพ', [66, 71, 58]], ['แอปพลิเคชัน', [29, 35, 52]]] },
+  { name: 'Mobile', color: '#C2631A', cats: [['บิลและค่าบริการ', [88, 79, 84]], ['สัญญาณ', [54, 61, 73]]] },
+  { name: 'Fixed Line', color: '#5B6270', cats: [['สายโทรศัพท์', [23, 19, 17]]] }
+];
+var SUBS = {
+  'การเชื่อมต่อ': ['เน็ตหลุดเป็นช่วง', 'ไม่มีอินเทอร์เน็ต', 'สัญญาณไฟเบอร์ขาด'],
+  'ความเร็ว': ['ความเร็วต่ำกว่าแพ็กเกจ', 'Wi-Fi ช้า', 'เล่นเกมแล้วแลค'],
+  'บริการติดตั้ง': ['ย้ายจุดติดตั้ง', 'นัดช่างไม่ได้', 'ติดตั้งใหม่ล่าช้า'],
+  'คุณภาพภาพ': ['ภาพกระตุก/ค้าง', 'ไม่มีสัญญาณภาพ', 'เสียงไม่ตรงภาพ'],
+  'แอปพลิเคชัน': ['เข้าสู่ระบบไม่ได้', 'แอปค้าง', 'หาช่องไม่เจอ'],
+  'บิลและค่าบริการ': ['บริการเสริมไม่ได้สมัคร', 'ยอดบิลผิด', 'ชำระแล้วยังโดนระงับ'],
+  'สัญญาณ': ['สัญญาณอ่อนในอาคาร', 'ใช้อินเทอร์เน็ตมือถือไม่ได้', 'โทรแล้วสายหลุด'],
+  'สายโทรศัพท์': ['ไม่มีสัญญาณ', 'เสียงรบกวน', 'โทรออกต่างประเทศไม่ได้']
+};
+var TEXTS = {
+  'การเชื่อมต่อ': ['เน็ตหลุดทุกคืนช่วงสองทุ่ม รีสตาร์ทแล้วไม่หาย', 'ไฟ LOS กะพริบแดง ใช้เน็ตไม่ได้เลย', 'เน็ตหลุดบ่อยตอนฝนตก', 'เช้านี้ใช้เน็ตไม่ได้ทั้งบ้าน', 'ประชุมออนไลน์แล้วหลุดทุกสิบนาที'],
+  'default': ['ลูกค้าแจ้งปัญหาการใช้งาน', 'ขอให้ตรวจสอบบริการ', 'ใช้งานไม่ได้ตั้งแต่เมื่อวาน', 'มีปัญหาซ้ำจากครั้งก่อน', 'ขอเจ้าหน้าที่ติดต่อกลับ']
+};
+var CUST = ['คุณสมชาย ก.', 'คุณวิภา ส.', 'คุณอนันต์ ป.', 'คุณนภา ร.', 'คุณธนา จ.'];
+var CH = ['โทร', 'แชต', 'อีเมล', 'โทร', 'แชต'];
+var CONF = ['94%', '88%', '91%', '62%', '85%'];
+
+function fmt(n) { return n.toLocaleString('en-US'); }
+function heatCls(v) { return v >= 150 ? 'h4' : v >= 100 ? 'h3' : v >= 70 ? 'h2' : v >= 40 ? 'h1' : 'h0'; }
+function delta(a, b) { var p = Math.round((b - a) / a * 100); return { up: p > 0, down: p <= 0, text: Math.abs(p) + '%' }; }
+
+class Component extends DCLogic {
+  renderVals() {
+    var self = this;
+    var st = this.state || {};
+    var cell = st.cell === undefined ? { s: 0, c: 0, m: 2 } : st.cell;
+    var heat = st.heat !== false;
+    var saved = st.saved || {};
+    var prow = [];
+    var grandArr = [0, 0, 0];
+    SVCS.forEach(function (svc, si) {
+      var tot = [0, 0, 0];
+      svc.cats.forEach(function (c) { c[1].forEach(function (v, m) { tot[m] += v; grandArr[m] += v; }); });
+      var gd = delta(tot[1], tot[2]);
+      prow.push({ group: true, item: false, name: svc.name, sw: 'sw sw' + si, vals: tot.map(fmt).concat([fmt(tot[0] + tot[1] + tot[2])]), up: gd.up, down: gd.down, delta: gd.text });
+      svc.cats.forEach(function (c, ci) {
+        var d = delta(c[1][1], c[1][2]);
+        prow.push({
+          group: false, item: true, name: c[0],
+          total: fmt(c[1][0] + c[1][1] + c[1][2]), up: d.up, down: d.down, delta: d.text,
+          cells: c[1].map(function (v, m) {
+            var sel = cell && cell.s === si && cell.c === ci && cell.m === m;
+            return {
+              text: fmt(v),
+              cls: 'pvbtn ' + (heat ? heatCls(v) : 'h0') + (sel ? ' pvsel' : ''),
+              label: svc.name + ' ' + c[0] + ' ' + MONTHS[m] + ' ' + v + ' ทิกเก็ต',
+              click: function () { self.setState({ cell: { s: si, c: ci, m: m }, view: 'list', draftMain: null, draftSub: null }); }
+            };
+          })
+        });
+      });
+    });
+    var gD = delta(grandArr[1], grandArr[2]);
+    var out = {
+      prow: prow,
+      grand: grandArr.map(fmt).concat([fmt(grandArr[0] + grandArr[1] + grandArr[2])]),
+      grandDelta: gD.text,
+      heat: heat,
+      toggleHeat: function () { self.setState({ heat: !heat }); },
+      open: !!cell,
+      close: function () { self.setState({ cell: null }); }
+    };
+    if (!cell) { out.isList = false; out.isDetail = false; return out; }
+
+    var svc = SVCS[cell.s], cat = svc.cats[cell.c];
+    var texts = TEXTS[cat[0]] || TEXTS['default'];
+    var subs = SUBS[cat[0]];
+    var tickets = [0, 1, 2, 3, 4].map(function (i) {
+      var id = 'INC01' + MM[cell.m] + (4100 + cell.s * 300 + cell.c * 40 + i * 7);
+      var cur = saved[id];
+      return {
+        id: id, date: (i * 5 + 2 < 10 ? '0' : '') + (i * 5 + 2) + '/' + MM[cell.m] + '/2569',
+        text: texts[i % texts.length], aiSub: subs[i % subs.length],
+        sub: cur ? cur.main + ' › ' + cur.sub : subs[i % subs.length], human: !!cur,
+        cust: CUST[i], channel: CH[i], conf: CONF[i],
+        open: function () { self.setState({ view: 'detail', t: i, draftMain: null, draftSub: null }); }
+      };
+    });
+    var view = st.view || 'list';
+    out.isList = view === 'list';
+    out.isDetail = view === 'detail';
+    out.cellTitle = svc.name + ' › ' + cat[0];
+    out.cellMonth = MONTHS[cell.m];
+    out.cellCount = fmt(cat[1][cell.m]);
+    out.tickets = tickets;
+    out.back = function () { self.setState({ view: 'list', draftMain: null, draftSub: null }); };
+
+    var t = tickets[st.t || 0];
+    var cur = saved[t.id] || { main: cat[0], sub: t.aiSub };
+    var dMain = st.draftMain || cur.main;
+    var dSub = st.draftSub || (dMain === cur.main ? cur.sub : SUBS[dMain][0]);
+    out.mainOpts = svc.cats.map(function (c) { return c[0]; });
+    out.subOpts = SUBS[dMain];
+    out.onMain = function (e) { self.setState({ draftMain: e.target.value, draftSub: SUBS[e.target.value][0] }); };
+    out.onSub = function (e) { self.setState({ draftSub: e.target.value, draftMain: dMain }); };
+    out.save = function () {
+      var next = Object.assign({}, saved);
+      next[t.id] = { main: dMain, sub: dSub };
+      self.setState({ saved: next, draftMain: null, draftSub: null });
+    };
+    out.d = {
+      id: t.id, text: t.text, date: t.date, svc: svc.name, cust: t.cust, channel: t.channel, conf: t.conf,
+      aiCat: cat[0] + ' › ' + t.aiSub,
+      reason: 'ข้อความ "' + t.text + '" ตรงกับคำอธิบายของหมวด ' + t.aiSub,
+      main: dMain, sub: dSub, human: !!saved[t.id]
+    };
+    return out;
+  }
+}
+</script>
+</body>
+</html>

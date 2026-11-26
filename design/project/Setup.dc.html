@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>IncAsk · ตั้งค่าครั้งแรก</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai+Looped:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F5F6F8}
+a{color:#217346}a:hover{color:#17532F}
+.btn{min-height:44px;padding:0 20px;border-radius:12px;border:1px solid #E3E6EB;background:#FFFFFF;color:#16181D;font:inherit;font-size:14px;font-weight:600;display:inline-flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;text-decoration:none}
+.btn:hover{background:#EDEFF3;color:#16181D}
+.btn-primary{background:#217346;border-color:#217346;color:#FFFFFF}
+.btn-primary:hover{background:#1B5E3A;border-color:#1B5E3A;color:#FFFFFF}
+.btn:disabled{background:#E3E6EB;border-color:#E3E6EB;color:#5B6270;cursor:not-allowed}
+.input{width:100%;min-height:44px;padding:9px 12px;border-radius:10px;border:1px solid #E3E6EB;background:#FFFFFF;color:#16181D;font:inherit;font-size:14px;box-sizing:border-box}
+.input:focus{outline:3px solid #CDE6D6;border-color:#217346}
+</style>
+</helmet>
+<div style="min-height: 100vh; display: flex; justify-content: center; align-items: flex-start; padding: 56px 16px; box-sizing: border-box; font-family: 'IBM Plex Sans Thai Looped', 'IBM Plex Sans Thai', system-ui, sans-serif; font-size: 14px; line-height: 1.5; color: #16181D; background: #F5F6F8">
+  <div style="width: 100%; max-width: 600px; display: flex; flex-direction: column; gap: 24px">
+
+    <div style="display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center">
+      <div style="width: 48px; height: 48px; border-radius: 12px; background: #217346; color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 22px" aria-hidden="true">I</div>
+      <h1 style="margin: 0; font-size: 26px; font-weight: 700">ยินดีต้อนรับสู่ IncAsk</h1>
+      <p style="margin: 0; color: #5B6270">ตั้งค่าสั้นๆ ก่อนเริ่มจัดหมวดอินซิเดนต์ด้วย AI</p>
+    </div>
+
+    <ol aria-label="ขั้นตอน" style="list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px">
+      <li style="display: flex; flex-direction: column; gap: 6px">
+        <span style="height: 4px; border-radius: 2px; background: #217346"></span>
+        <span style="font-size: 13px; font-weight: 600; color: #17532F">1 · เชื่อมต่อ Gateway</span>
+      </li>
+      <li style="display: flex; flex-direction: column; gap: 6px">
+        <span style="height: 4px; border-radius: 2px; background: #E3E6EB"></span>
+        <span style="font-size: 13px; color: #5B6270">2 · นำเข้าหมวดหมู่</span>
+      </li>
+      <li style="display: flex; flex-direction: column; gap: 6px">
+        <span style="height: 4px; border-radius: 2px; background: #E3E6EB"></span>
+        <span style="font-size: 13px; color: #5B6270">3 · พร้อมใช้งาน</span>
+      </li>
+    </ol>
+
+    <section aria-label="เชื่อมต่อ Gateway" style="background: #FFFFFF; border: 1px solid #E3E6EB; border-radius: 14px; padding: 24px; display: flex; flex-direction: column; gap: 18px">
+      <div style="display: flex; flex-direction: column; gap: 4px">
+        <h2 style="margin: 0; font-size: 18px; font-weight: 700">เชื่อมต่อ LiteLLM Gateway</h2>
+        <p style="margin: 0; font-size: 13px; color: #5B6270">ใช้ Gateway ของบริษัท API key จะถูกเก็บใน keyring ของเครื่อง ไม่บันทึกเป็นไฟล์</p>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 6px">
+        <label for="name" style="font-weight: 600; font-size: 13px">ชื่อของคุณ</label>
+        <input id="name" class="input" type="text" defaultValue="Navarit">
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 6px">
+        <label for="url" style="font-weight: 600; font-size: 13px">Gateway URL</label>
+        <input id="url" class="input" type="url" placeholder="https://llm-gateway.example.co.th" defaultValue="https://[gateway-ของบริษัท]" style="font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 13px">
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 6px">
+        <label for="key" style="font-weight: 600; font-size: 13px">API Key</label>
+        <input id="key" class="input" type="password" defaultValue="sk-xxxxxxxxxxxxxxxx" style="font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 13px">
+      </div>
+
+      <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px">
+        <button type="button" class="btn" onClick="{{ test }}">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5a9 9 0 0 1 14 0M8.5 16a4.5 4.5 0 0 1 7 0"/><circle cx="12" cy="19.5" r="1"/></svg>
+          ทดสอบการเชื่อมต่อ
+        </button>
+        <sc-if value="{{ untested }}" hint-placeholder-val="{{ true }}">
+          <span style="font-size: 13px; color: #5B6270">ต้องทดสอบผ่านก่อนจึงไปขั้นต่อไปได้</span>
+        </sc-if>
+        <sc-if value="{{ tested }}" hint-placeholder-val="{{ false }}">
+          <span style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; background: #E7F5EE; color: #12663C; font-size: 13px; font-weight: 600">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg>
+            เชื่อมต่อสำเร็จ · พบ [จำนวน] โมเดล
+          </span>
+        </sc-if>
+      </div>
+
+      <sc-if value="{{ tested }}" hint-placeholder-val="{{ false }}">
+        <div style="display: flex; flex-direction: column; gap: 6px">
+          <label for="model" style="font-weight: 600; font-size: 13px">โมเดลที่ใช้จัดหมวด</label>
+          <select id="model" class="input" defaultValue="m1">
+            <option value="m1">[โมเดลที่ 1 จาก Gateway]</option>
+            <option value="m2">[โมเดลที่ 2 จาก Gateway]</option>
+          </select>
+          <span style="font-size: 12px; color: #5B6270">รายชื่อดึงมาจาก Gateway เปลี่ยนทีหลังได้ในตั้งค่าโปรแกรม</span>
+        </div>
+      </sc-if>
+    </section>
+
+    <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px">
+      <span style="font-size: 13px; color: #5B6270">กลับมาแก้ได้ทุกเมื่อจากเมนูชื่อของคุณ</span>
+      <button type="button" class="btn btn-primary" disabled="{{ untested }}">
+        ถัดไป
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </button>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var self = this;
+    var tested = !!(this.state && this.state.tested);
+    return {
+      tested: tested,
+      untested: !tested,
+      test: function () { self.setState({ tested: true }); }
+    };
+  }
+}
+</script>
+</body>
+</html>

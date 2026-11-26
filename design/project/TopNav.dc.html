@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>แท็บด้านบน</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai+Looped:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<nav aria-label="หน้าในโปรเจกต์" style="width: 100%; box-sizing: border-box; background: #FFFFFF; border-bottom: 1px solid #E3E6EB; padding: 0 20px; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 16px; font-family: 'IBM Plex Sans Thai Looped', 'IBM Plex Sans Thai', system-ui, sans-serif; font-size: 14px; line-height: 1.5; color: #16181D">
+  <div style="display: flex; align-items: center; gap: 8px; padding: 10px 12px 10px 0; margin-right: 8px; border-right: 1px solid #E3E6EB">
+    <span style="width: 10px; height: 10px; border-radius: 3px; background: #217346" aria-hidden="true"></span>
+    <span style="font-weight: 700; font-size: 15px">Call Center A</span>
+  </div>
+  <div style="display: flex; flex-wrap: wrap; align-items: center; flex: 1">
+    <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="5">
+      <sc-if value="{{ t.on }}" hint-placeholder-val="{{ false }}">
+        <a href="{{ t.href }}" aria-current="page" style="display: inline-flex; align-items: center; min-height: 44px; padding: 0 14px; border-bottom: 2px solid #217346; color: #17532F; font-size: 14px; font-weight: 600; text-decoration: none; white-space: nowrap">{{ t.label }}</a>
+      </sc-if>
+      <sc-if value="{{ t.off }}" hint-placeholder-val="{{ true }}">
+        <a href="{{ t.href }}" style="display: inline-flex; align-items: center; min-height: 44px; padding: 0 14px; border-bottom: 2px solid transparent; color: #5B6270; font-size: 14px; font-weight: 600; text-decoration: none; white-space: nowrap">{{ t.label }}</a>
+      </sc-if>
+    </sc-for>
+  </div>
+</nav>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"active":{"editor":"enum","options":["import","classify","results","summary","settings"],"default":"import"},"$preview":{"width":1028,"height":56}}'>
+var TABS = [
+  { id: 'import', label: 'นำเข้าไฟล์', href: 'Main.dc.html' },
+  { id: 'classify', label: 'จัดหมวด', href: 'Classify.dc.html' },
+  { id: 'results', label: 'ผลลัพธ์', href: 'Results.dc.html' },
+  { id: 'summary', label: 'สรุปผล', href: 'Summary.dc.html' },
+  { id: 'settings', label: 'ตั้งค่าโปรเจกต์', href: 'ProjectSettings.dc.html' }
+];
+class Component extends DCLogic {
+  renderVals() {
+    var active = this.props.active ?? 'import';
+    return {
+      tabs: TABS.map(function (t) { return { label: t.label, href: t.href, on: t.id === active, off: t.id !== active }; })
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,358 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>IncAsk · นำเข้าไฟล์</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai+Looped:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F5F6F8}
+a{color:#217346}a:hover{color:#17532F}
+.nav-item{min-height:36px;padding:0 10px;border-radius:10px;border:0;background:transparent;color:#3B414C;display:flex;align-items:center;gap:10px;font:inherit;font-size:13px;text-align:left;width:100%;cursor:pointer;text-decoration:none;box-sizing:border-box}
+.nav-item:hover{background:#E9ECF2;color:#16181D}
+.nav-sel{background:#E6F2EB;color:#17532F;font-weight:600}
+.nav-sel:hover{background:#DCEEE3;color:#17532F}
+.tab{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 14px;border-bottom:2px solid transparent;color:#5B6270;font-size:14px;font-weight:600;text-decoration:none;white-space:nowrap}
+.tab:hover{color:#16181D}
+.tab-on{color:#17532F;border-bottom-color:#217346}
+.tab-on:hover{color:#17532F}
+.icon-btn{width:36px;height:36px;border-radius:10px;border:0;background:transparent;display:inline-flex;align-items:center;justify-content:center;color:#5B6270;cursor:pointer}
+.icon-btn:hover{background:#E9ECF2;color:#16181D}
+.colhead{padding:10px 12px;text-align:left;vertical-align:top;border-bottom:1px solid #E3E6EB;font-weight:600;font-size:13px;color:#16181D}
+.colhead-problem{background:#E6F2EB;border-top:3px solid #217346}
+.colhead-service{background:#FFF3E0;border-top:3px solid #B4530A}
+.colhead-ticket{background:#EAEEF6;border-top:3px solid #4A5A7A}
+.colhead-date{background:#EAEEF6;border-top:3px solid #4A5A7A}
+.colhead-none{background:#F0F2F5;border-top:3px solid #F0F2F5;color:#5B6270}
+.cell{padding:10px 12px;border-bottom:1px solid #EEF0F3;font-size:13px;white-space:nowrap;vertical-align:top;line-height:1.55}
+.cell-problem{background:#F5FAF7;color:#16181D}
+.cell-service{background:#FFFAF2;color:#16181D;font-weight:600}
+.cell-ticket{background:#F7F8FB;color:#16181D;font-family:'IBM Plex Mono',ui-monospace,Consolas,monospace;font-size:12.5px}
+.cell-date{background:#F7F8FB;color:#16181D}
+.cell-none{background:#FFFFFF;color:#5B6270}
+.wide{white-space:normal;min-width:300px}
+.rolesel{margin-top:8px;width:100%;min-width:118px;height:32px;border:1px solid #D5D9E0;border-radius:8px;background:#FFFFFF;font:inherit;font-size:12.5px;color:#16181D;padding:0 8px}
+.btn{min-height:36px;padding:0 14px;border-radius:10px;border:1px solid #E3E6EB;background:#FFFFFF;color:#16181D;font:inherit;font-size:13px;font-weight:600;display:inline-flex;align-items:center;justify-content:center;gap:6px;cursor:pointer}
+.btn:hover{background:#EDEFF3}
+.btn-lg{min-height:44px;padding:0 20px;border-radius:12px;font-size:14px}
+.btn-primary{background:#217346;border-color:#217346;color:#FFFFFF}
+.btn-primary:hover{background:#1B5E3A;border-color:#1B5E3A}
+.btn:disabled{background:#E3E6EB;border-color:#E3E6EB;color:#5B6270;cursor:not-allowed}
+.usage-chip{display:flex;flex-direction:column;gap:5px;padding:8px 10px;border:1px solid #E3E6EB;border-radius:10px;background:#FFFFFF;cursor:pointer;text-align:left;font:inherit;width:100%;box-sizing:border-box}
+.usage-chip:hover{border-color:#217346}
+</style>
+</helmet>
+<div style="min-height: 100vh; display: flex; flex-wrap: wrap; font-family: 'IBM Plex Sans Thai Looped', 'IBM Plex Sans Thai', system-ui, sans-serif; font-size: 14px; line-height: 1.5; color: #16181D; background: #F5F6F8">
+
+  <aside aria-label="โปรเจกต์" style="flex: 1 1 252px; max-width: 100%; background: #EDEFF3; border-right: 1px solid #E3E6EB; padding: 14px 10px; box-sizing: border-box; display: flex; flex-direction: column; gap: 4px">
+    <div style="display: flex; align-items: center; gap: 10px; padding: 4px 8px 12px; font-size: 17px; font-weight: 700">
+      <div style="width: 28px; height: 28px; border-radius: 7px; background: #217346; color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px" aria-hidden="true">I</div>
+      <span>IncAsk</span>
+    </div>
+
+    <button type="button" class="nav-item" style="min-height: 40px; font-size: 14px; font-weight: 600; color: #16181D">
+      <span style="width: 24px; height: 24px; border-radius: 12px; background: #217346; color: #FFFFFF; display: flex; align-items: center; justify-content: center" aria-hidden="true">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+      </span>
+      โปรเจกต์ใหม่
+    </button>
+
+    <div style="display: flex; align-items: center; justify-content: space-between; padding: 14px 10px 4px; font-size: 12px; font-weight: 600; color: #5B6270">
+      <span>โปรเจกต์</span>
+      <a href="#" style="font-size: 12px; font-weight: 500; color: #217346; text-decoration: none">จัดการ</a>
+    </div>
+    <a href="#" class="nav-item nav-sel" aria-current="true">
+      <span style="width: 10px; height: 10px; border-radius: 3px; background: #217346" aria-hidden="true"></span>
+      <span style="flex: 1">Call Center A</span>
+    </a>
+    <a href="#" class="nav-item">
+      <span style="width: 10px; height: 10px; border-radius: 3px; background: #B4530A" aria-hidden="true"></span>
+      <span style="flex: 1">Call Center B</span>
+    </a>
+    <a href="#" class="nav-item">
+      <span style="width: 10px; height: 10px; border-radius: 3px; background: #4A5A7A" aria-hidden="true"></span>
+      <span style="flex: 1">NOC Incident</span>
+    </a>
+
+    <div style="margin-top: auto; padding: 0 8px 6px">
+      <button type="button" class="usage-chip" aria-label="การใช้งานของ Key">
+        <span style="display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 12px; color: #5B6270; width: 100%">
+          <span>การใช้งาน Key</span>
+          <span style="font-weight: 600; color: #16181D">[ยอดใช้] / [งบ]</span>
+        </span>
+        <span style="display: block; height: 5px; border-radius: 3px; background: #E3E6EB; overflow: hidden; width: 100%">
+          <span style="display: block; height: 100%; width: 38%; background: #217346; border-radius: 3px"></span>
+        </span>
+      </button>
+    </div>
+    <div style="display: flex; align-items: center; gap: 10px; padding: 10px; border-top: 1px solid #E3E6EB">
+      <span style="width: 32px; height: 32px; border-radius: 16px; background: #D7DCE5; color: #3B414C; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 12px" aria-hidden="true">N</span>
+      <span style="flex: 1; font-size: 13px; font-weight: 600">Navarit</span>
+      <button type="button" class="icon-btn" aria-label="ตั้งค่าโปรแกรม">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+      </button>
+    </div>
+  </aside>
+
+  <div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+
+    <nav aria-label="หน้าในโปรเจกต์" style="background: #FFFFFF; border-bottom: 1px solid #E3E6EB; padding: 0 20px; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 16px">
+      <div style="display: flex; align-items: center; gap: 8px; padding: 10px 12px 10px 0; margin-right: 8px; border-right: 1px solid #E3E6EB">
+        <span style="width: 10px; height: 10px; border-radius: 3px; background: #217346" aria-hidden="true"></span>
+        <span style="font-weight: 700; font-size: 15px">Call Center A</span>
+      </div>
+      <div style="display: flex; flex-wrap: wrap; align-items: center; flex: 1">
+        <a href="#" class="tab tab-on" aria-current="page">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V4M7 9l5-5 5 5M4 20h16"/></svg>
+          นำเข้าไฟล์
+        </a>
+        <a href="#" class="tab">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h11M3 12h7M3 18h11M15 15l2.5 2.5L22 13"/></svg>
+          จัดหมวด
+        </a>
+        <a href="#" class="tab">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M9 10v10"/></svg>
+          ผลลัพธ์
+        </a>
+        <a href="#" class="tab">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 20V11M11 20V5M17 20v-6M3 20h18"/></svg>
+          สรุปผล
+        </a>
+        <a href="#" class="tab">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg>
+          ตั้งค่าโปรเจกต์
+        </a>
+      </div>
+    </nav>
+
+    <main style="padding: 28px 28px 32px; box-sizing: border-box; display: flex; flex-direction: column; gap: 20px; min-width: 0">
+
+      <header style="display: flex; flex-direction: column; gap: 6px">
+        <h1 style="margin: 0; font-size: 26px; font-weight: 700">นำเข้าไฟล์</h1>
+        <p style="margin: 0; font-size: 14px; color: #5B6270">อัปโหลดไฟล์ทิกเก็ต แล้วบอกระบบว่าคอลัมน์ไหนคือเลขทิกเก็ต วันที่ ปัญหา และเซอร์วิส</p>
+      </header>
+
+      <section aria-label="ไฟล์ที่เลือก" style="background: #FFFFFF; border: 1px solid #E3E6EB; border-radius: 14px; padding: 14px 18px; display: flex; flex-wrap: wrap; align-items: center; gap: 14px">
+        <div style="width: 42px; height: 42px; border-radius: 10px; background: #E6F2EB; display: flex; align-items: center; justify-content: center">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#217346" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M9 13l4 4M13 13l-4 4"/></svg>
+        </div>
+        <div style="flex: 1 1 240px; display: flex; flex-direction: column; gap: 1px">
+          <span style="font-weight: 600; font-size: 15px">incident_report_oct2026.xlsx</span>
+          <span style="font-size: 13px; color: #5B6270">ชีต Sheet1 · 8 คอลัมน์ · [จำนวนแถว] แถว</span>
+        </div>
+        <span style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; background: #FFF7E8; color: #7A4A00; border: 1px solid #F2D49B; font-size: 12px; font-weight: 600">รูปแบบใหม่ · ยังไม่เคยตั้งค่า</span>
+        <button type="button" class="btn">เปลี่ยนไฟล์</button>
+      </section>
+
+      <section aria-label="เลือกคอลัมน์" style="background: #FFFFFF; border: 1px solid #E3E6EB; border-radius: 14px; display: flex; flex-direction: column; min-width: 0; overflow: hidden">
+        <div style="padding: 14px 18px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; border-bottom: 1px solid #E3E6EB">
+          <div style="display: flex; flex-direction: column; gap: 2px">
+            <h2 style="margin: 0; font-size: 16px; font-weight: 600">เลือกบทบาทของแต่ละคอลัมน์</h2>
+            <span style="font-size: 13px; color: #5B6270">ตัวอย่าง 8 แถวแรก · "ปัญหา" เลือกได้หลายคอลัมน์ ที่เหลือเลือกได้อย่างละหนึ่ง</span>
+          </div>
+          <div style="display: flex; flex-wrap: wrap; gap: 6px; font-size: 12px">
+            <span style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; background: #E6F2EB; color: #17532F; font-weight: 600"><span style="width: 8px; height: 8px; border-radius: 2px; background: #217346"></span>ปัญหา · ส่งให้ AI</span>
+            <span style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; background: #FFF3E0; color: #7A4A00; font-weight: 600"><span style="width: 8px; height: 8px; border-radius: 2px; background: #B4530A"></span>เซอร์วิส · เลือกชุดหมวด</span>
+            <span style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; background: #EAEEF6; color: #2F3B52; font-weight: 600"><span style="width: 8px; height: 8px; border-radius: 2px; background: #4A5A7A"></span>เลขทิกเก็ต / วันที่</span>
+          </div>
+        </div>
+        <div style="overflow-x: auto">
+          <table style="border-collapse: separate; border-spacing: 0; width: 100%; min-width: 1120px">
+            <thead>
+              <tr>
+                <sc-for list="{{ cols }}" as="col" hint-placeholder-count="8">
+                  <th scope="col" class="{{ col.headCls }}">
+                    <div>{{ col.name }}</div>
+                    <select class="rolesel" aria-label="{{ col.label }}" value="{{ col.role }}" onChange="{{ col.change }}">
+                      <option value="ticket">เลขทิกเก็ต</option>
+                      <option value="date">วันที่</option>
+                      <option value="problem">ปัญหา</option>
+                      <option value="service">เซอร์วิส</option>
+                      <option value="none">ไม่ใช้</option>
+                    </select>
+                  </th>
+                </sc-for>
+              </tr>
+            </thead>
+            <tbody>
+              <sc-for list="{{ rows }}" as="row" hint-placeholder-count="8">
+                <tr>
+                  <sc-for list="{{ row.cells }}" as="cell" hint-placeholder-count="8">
+                    <td class="{{ cell.cls }}">{{ cell.text }}</td>
+                  </sc-for>
+                </tr>
+              </sc-for>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: stretch">
+
+        <section aria-label="สรุปก่อนเริ่ม" style="flex: 2 1 440px; min-width: 0; background: #FFFFFF; border: 1px solid #E3E6EB; border-radius: 14px; padding: 16px 18px; display: flex; flex-direction: column; gap: 14px">
+          <h2 style="margin: 0; font-size: 16px; font-weight: 600">สรุปก่อนเริ่ม</h2>
+
+          <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px">
+            <div style="display: flex; flex-direction: column; gap: 4px; padding: 10px 12px; border: 1px solid #EEF0F3; border-radius: 10px">
+              <span style="font-size: 12px; color: #5B6270">ช่วงข้อมูล (จากคอลัมน์วันที่)</span>
+              <sc-if value="{{ hasDate }}" hint-placeholder-val="{{ true }}">
+                <span style="font-size: 14px; font-weight: 600">1 – 3 ต.ค. 2569 · เดือน ต.ค. 2569</span>
+              </sc-if>
+              <sc-if value="{{ noDate }}" hint-placeholder-val="{{ false }}">
+                <span style="font-size: 13px; color: #9B1C12">ยังไม่ได้เลือกคอลัมน์วันที่</span>
+              </sc-if>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 4px; padding: 10px 12px; border: 1px solid #EEF0F3; border-radius: 10px">
+              <span style="font-size: 12px; color: #5B6270">ทิกเก็ตซ้ำกับที่มีในโปรเจกต์</span>
+              <sc-if value="{{ hasTicket }}" hint-placeholder-val="{{ true }}">
+                <span style="font-size: 14px; font-weight: 600">[จำนวน] รายการ · จะข้าม ไม่นับซ้ำ</span>
+              </sc-if>
+              <sc-if value="{{ noTicket }}" hint-placeholder-val="{{ false }}">
+                <span style="font-size: 13px; color: #9B1C12">ยังไม่ได้เลือกคอลัมน์เลขทิกเก็ต</span>
+              </sc-if>
+            </div>
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 6px">
+            <span style="font-size: 13px; font-weight: 600; color: #3B414C">ข้อความที่ AI จะได้รับ (แถวแรก)</span>
+            <sc-if value="{{ hasProblem }}" hint-placeholder-val="{{ true }}">
+              <div style="font-size: 13px; color: #3B414C; background: #F0F2F5; border-radius: 10px; padding: 10px 12px; line-height: 1.6">{{ sample }}</div>
+            </sc-if>
+            <sc-if value="{{ noProblem }}" hint-placeholder-val="{{ false }}">
+              <span style="font-size: 13px; color: #9B1C12">ยังไม่ได้เลือกคอลัมน์ปัญหา</span>
+            </sc-if>
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 6px">
+            <span style="font-size: 13px; font-weight: 600; color: #3B414C">เซอร์วิสที่พบ</span>
+            <sc-if value="{{ hasService }}" hint-placeholder-val="{{ true }}">
+              <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 12px">
+                <sc-for list="{{ services }}" as="s" hint-placeholder-count="4">
+                  <sc-if value="{{ s.known }}" hint-placeholder-val="{{ true }}">
+                    <span style="display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; border-radius: 999px; background: #E7F5EE; color: #12663C; font-weight: 600">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg>{{ s.name }}</span>
+                  </sc-if>
+                  <sc-if value="{{ s.unknown }}" hint-placeholder-val="{{ false }}">
+                    <span style="padding: 3px 9px; border-radius: 999px; background: #FDECEA; border: 1px solid #F1C4BF; color: #9B1C12; font-weight: 600">{{ s.name }} · ไม่มีหมวดหมู่</span>
+                  </sc-if>
+                </sc-for>
+              </div>
+            </sc-if>
+            <sc-if value="{{ noService }}" hint-placeholder-val="{{ false }}">
+              <span style="font-size: 13px; color: #9B1C12">ยังไม่ได้เลือกคอลัมน์เซอร์วิส</span>
+            </sc-if>
+          </div>
+        </section>
+
+        <section aria-label="จำรูปแบบรีพอร์ต" style="flex: 1 1 300px; min-width: 0; background: #FFFFFF; border: 1px solid #E3E6EB; border-radius: 14px; padding: 16px 18px; display: flex; flex-direction: column; gap: 10px">
+          <h2 style="margin: 0; font-size: 16px; font-weight: 600">จำรูปแบบรีพอร์ตนี้</h2>
+          <label for="pattern" style="font-size: 13px; font-weight: 600">ชื่อรูปแบบ</label>
+          <input id="pattern" type="text" defaultValue="รีพอร์ตอินซิเดนต์รายเดือน" style="min-height: 40px; border: 1px solid #E3E6EB; border-radius: 10px; font: inherit; font-size: 14px; padding: 9px 12px; color: #16181D; box-sizing: border-box; width: 100%">
+          <label style="display: flex; align-items: flex-start; gap: 10px; font-size: 13px; color: #3B414C; line-height: 1.55; cursor: pointer">
+            <input type="checkbox" defaultChecked="{{ true }}" style="width: 18px; height: 18px; margin: 1px 0 0; accent-color: #217346">
+            ครั้งหน้าเจอไฟล์ที่หัวคอลัมน์ตรงกัน ให้เลือกคอลัมน์ให้อัตโนมัติ
+          </label>
+        </section>
+      </div>
+
+      <footer style="display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 10px">
+        <sc-if value="{{ notReady }}" hint-placeholder-val="{{ false }}">
+          <span style="font-size: 13px; color: #5B6270; margin-right: auto">เลือกคอลัมน์ให้ครบทั้งสี่บทบาทก่อน จึงจะเริ่มได้</span>
+        </sc-if>
+        <button type="button" class="btn btn-lg" disabled="{{ notReady }}">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3h6M10 3v6L5 18a2 2 0 0 0 1.8 3h10.4a2 2 0 0 0 1.8-3L14 9V3"/></svg>
+          ลองจัด 20 แถว
+        </button>
+        <button type="button" class="btn btn-lg btn-primary" disabled="{{ notReady }}">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 5l12 7-12 7z"/></svg>
+          เริ่มจัดหมวด
+        </button>
+      </footer>
+
+    </main>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":1180}}'>
+var COLS = ['เลขอินซิเดนต์', 'วันที่แจ้ง', 'ชื่อลูกค้า', 'เซอร์วิส', 'หัวข้อ', 'รายละเอียดปัญหา', 'ช่องทาง', 'สถานะ'];
+var ROWS = [
+  ['INC0102341', '01/10/2569', 'คุณสมชาย ก.', 'Internet', 'เน็ตหลุด', 'อินเทอร์เน็ตหลุดทุกคืนช่วงสองทุ่ม รีสตาร์ทเราเตอร์แล้วไม่หาย', 'โทร', 'ปิดแล้ว'],
+  ['INC0102342', '01/10/2569', 'คุณวิภา ส.', 'IPTV', 'ภาพกระตุก', 'ดูช่องกีฬาแล้วภาพค้างเป็นช่วงๆ เสียงมาก่อนภาพ', 'แชต', 'รอดำเนินการ'],
+  ['INC0102343', '01/10/2569', 'คุณอนันต์ ป.', 'Mobile', 'บิลผิด', 'ค่าบริการเดือนนี้สูงกว่าปกติ มีแพ็กเกจเสริมที่ไม่ได้สมัคร', 'โทร', 'ปิดแล้ว'],
+  ['INC0102344', '02/10/2569', 'คุณนภา ร.', 'Internet', 'ความเร็วต่ำ', 'สมัครแพ็กเกจ 1 Gbps แต่วัดผ่าน Wi-Fi ได้ไม่ถึงครึ่ง', 'อีเมล', 'กำลังตรวจสอบ'],
+  ['INC0102345', '02/10/2569', 'คุณธนา จ.', 'Fixed Line', 'โทรออกไม่ได้', 'โทรศัพท์บ้านไม่มีสัญญาณ ยกหูแล้วเงียบ', 'โทร', 'ส่งช่าง'],
+  ['INC0102346', '02/10/2569', 'คุณปิยะ ม.', 'Mobile', 'สัญญาณอ่อน', 'ในตึกที่ทำงานสัญญาณ 4G ขึ้นแค่ขีดเดียว', 'แชต', 'รอดำเนินการ'],
+  ['INC0102347', '03/10/2569', 'คุณกมล ท.', 'IPTV', 'เข้าแอปไม่ได้', 'ล็อกอินแอปดูทีวีแล้วขึ้นข้อความผิดพลาด', 'โทร', 'ปิดแล้ว'],
+  ['INC0102348', '03/10/2569', 'คุณศิริ บ.', 'Internet', 'ย้ายที่ติดตั้ง', 'ต้องการย้ายจุดติดตั้งไปบ้านใหม่ปลายเดือน', 'โทร', 'รอนัดหมาย']
+];
+var DEFAULT_ROLES = ['ticket', 'date', 'none', 'service', 'problem', 'problem', 'none', 'none'];
+var SINGLE = { ticket: true, date: true, service: true };
+var KNOWN_SERVICES = ['Internet', 'IPTV', 'Mobile', 'Fixed Line'];
+
+class Component extends DCLogic {
+  renderVals() {
+    var self = this;
+    var roles = (this.state && this.state.roles) || DEFAULT_ROLES;
+    var setRole = function (i, v) {
+      var next = roles.map(function (r, j) {
+        if (j === i) return v;
+        if (SINGLE[v] && r === v) return 'none';
+        return r;
+      });
+      self.setState({ roles: next });
+    };
+    var cols = COLS.map(function (name, i) {
+      return {
+        name: name,
+        role: roles[i],
+        label: 'บทบาทของคอลัมน์ ' + name,
+        headCls: 'colhead colhead-' + roles[i],
+        change: function (e) { setRole(i, e.target.value); }
+      };
+    });
+    var rows = ROWS.map(function (r) {
+      return {
+        cells: r.map(function (t, i) {
+          return { text: t, cls: 'cell cell-' + roles[i] + (i === 5 ? ' wide' : '') };
+        })
+      };
+    });
+    var hasProblem = roles.indexOf('problem') >= 0;
+    var svcIdx = roles.indexOf('service');
+    var hasService = svcIdx >= 0;
+    var hasTicket = roles.indexOf('ticket') >= 0;
+    var hasDate = roles.indexOf('date') >= 0;
+    var sample = COLS.map(function (n, i) { return roles[i] === 'problem' ? n + ': ' + ROWS[0][i] : null; })
+      .filter(function (x) { return x; }).join(', ');
+    var services = [];
+    if (hasService) {
+      var seen = {};
+      ROWS.forEach(function (r) {
+        var s = r[svcIdx];
+        if (!seen[s]) {
+          seen[s] = true;
+          var known = KNOWN_SERVICES.indexOf(s) >= 0;
+          services.push({ name: s, known: known, unknown: !known });
+        }
+      });
+    }
+    return {
+      cols: cols,
+      rows: rows,
+      sample: sample,
+      services: services,
+      hasProblem: hasProblem, noProblem: !hasProblem,
+      hasService: hasService, noService: !hasService,
+      hasTicket: hasTicket, noTicket: !hasTicket,
+      hasDate: hasDate, noDate: !hasDate,
+      notReady: !(hasProblem && hasService && hasTicket && hasDate)
+    };
+  }
+}
+</script>
+</body>
+</html>

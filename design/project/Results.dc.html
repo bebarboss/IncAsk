@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>IncAsk · ผลลัพธ์</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai+Looped:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F5F6F8}
+a{color:#217346}a:hover{color:#17532F}
+.btn{min-height:40px;padding:0 14px;border-radius:10px;border:1px solid #E3E6EB;background:#FFFFFF;color:#16181D;font:inherit;font-size:13px;font-weight:600;display:inline-flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;text-decoration:none}
+.btn:hover{background:#EDEFF3;color:#16181D}
+.btn-primary{background:#217346;border-color:#217346;color:#FFFFFF}
+.btn-primary:hover{background:#1B5E3A;border-color:#1B5E3A;color:#FFFFFF}
+.sel{min-height:40px;border:1px solid #E3E6EB;border-radius:10px;background:#FFFFFF;font:inherit;font-size:13px;color:#16181D;padding:0 10px}
+.th{padding:10px 12px;text-align:left;font-size:12px;font-weight:600;color:#3B414C;background:#F0F2F5;border-bottom:1px solid #E3E6EB;white-space:nowrap}
+.td{padding:10px 12px;border-bottom:1px solid #EEF0F3;font-size:13px;vertical-align:top;background:#FFFFFF}
+.row-low .td{background:#FFF9EC}
+.pin{position:sticky;left:0;z-index:1;border-right:1px solid #E3E6EB}
+.catbtn{display:inline-flex;align-items:center;gap:6px;min-height:32px;padding:0 10px;border:1px solid #E3E6EB;border-radius:8px;background:#FFFFFF;font:inherit;font-size:13px;color:#16181D;cursor:pointer;white-space:nowrap}
+.catbtn:hover{border-color:#217346}
+</style>
+</helmet>
+<div style="min-height: 100vh; display: flex; flex-wrap: wrap; font-family: 'IBM Plex Sans Thai Looped', 'IBM Plex Sans Thai', system-ui, sans-serif; font-size: 14px; line-height: 1.5; color: #16181D; background: #F5F6F8">
+  <div style="flex: 1 1 252px; max-width: 100%; display: flex; flex-direction: column">
+    <dc-import name="Sidebar" hint-size="252px,900px"></dc-import>
+  </div>
+  <div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+    <dc-import name="TopNav" active="results" hint-size="100%,56px"></dc-import>
+
+    <main style="padding: 28px 28px 32px; display: flex; flex-direction: column; gap: 16px; min-width: 0">
+      <header style="display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px">
+        <div style="display: flex; flex-direction: column; gap: 6px">
+          <h1 style="margin: 0; font-size: 26px; font-weight: 700">ผลลัพธ์</h1>
+          <p style="margin: 0; color: #5B6270">ต.ค. 2569 · 4,812 ทิกเก็ต · 97 รายการที่ AI ไม่มั่นใจ</p>
+        </div>
+        <a href="Export.dc.html" class="btn btn-primary">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M4 20h16"/></svg>
+          ส่งออก
+        </a>
+      </header>
+
+      <div role="toolbar" aria-label="ตัวกรองตาราง" style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px">
+        <label style="position: relative; flex: 1 1 240px; max-width: 360px">
+          <span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">ค้นหา</span>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#5B6270" stroke-width="2" stroke-linecap="round" aria-hidden="true" style="position: absolute; left: 11px; top: 13px"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+          <input type="search" placeholder="ค้นหาเลขทิกเก็ตหรือข้อความ" style="width: 100%; min-height: 40px; box-sizing: border-box; border: 1px solid #E3E6EB; border-radius: 10px; padding: 0 12px 0 32px; font: inherit; font-size: 13px">
+        </label>
+        <select class="sel" aria-label="เซอร์วิส"><option>ทุกเซอร์วิส</option><option>Internet</option><option>IPTV</option><option>Mobile</option><option>Fixed Line</option></select>
+        <select class="sel" aria-label="หัวข้อหลัก"><option>ทุกหัวข้อหลัก</option></select>
+        <button type="button" class="btn" aria-pressed="true" style="background: #FFF7E8; border-color: #F2D49B; color: #7A4A00">
+          <span style="width: 8px; height: 8px; border-radius: 4px; background: #B4530A" aria-hidden="true"></span>
+          เฉพาะที่ไม่มั่นใจ
+        </button>
+        <div style="margin-left: auto; display: flex; gap: 8px">
+          <button type="button" class="btn" aria-label="ความหนาแน่นของแถว">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
+            แบบแน่น
+          </button>
+          <button type="button" class="btn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16M15 4v16"/></svg>
+            คอลัมน์
+          </button>
+        </div>
+      </div>
+
+      <section aria-label="ตารางผลลัพธ์" style="background: #FFFFFF; border: 1px solid #E3E6EB; border-radius: 14px; overflow: hidden">
+        <div style="overflow-x: auto">
+          <table style="border-collapse: separate; border-spacing: 0; width: 100%; min-width: 1180px">
+            <thead>
+              <tr>
+                <th scope="col" class="th pin">เลขอินซิเดนต์</th>
+                <th scope="col" class="th">วันที่</th>
+                <th scope="col" class="th">เซอร์วิส</th>
+                <th scope="col" class="th">ข้อความปัญหา</th>
+                <th scope="col" class="th">หัวข้อหลัก</th>
+                <th scope="col" class="th">หัวข้อย่อย</th>
+                <th scope="col" class="th">ความมั่นใจ</th>
+                <th scope="col" class="th">ที่มา</th>
+              </tr>
+            </thead>
+            <tbody>
+              <sc-for list="{{ rows }}" as="r" hint-placeholder-count="10">
+                <tr class="{{ r.cls }}">
+                  <td class="td pin" style="font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 12.5px">{{ r.id }}</td>
+                  <td class="td" style="white-space: nowrap; color: #3B414C">{{ r.date }}</td>
+                  <td class="td" style="white-space: nowrap; font-weight: 600">{{ r.svc }}</td>
+                  <td class="td" style="min-width: 300px; color: #3B414C">{{ r.text }}</td>
+                  <td class="td"><button type="button" class="catbtn">{{ r.main }}<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#5B6270" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button></td>
+                  <td class="td"><button type="button" class="catbtn">{{ r.sub }}<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#5B6270" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button></td>
+                  <td class="td" style="white-space: nowrap">
+                    <sc-if value="{{ r.low }}" hint-placeholder-val="{{ false }}">
+                      <span style="font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 999px; background: #FFF7E8; border: 1px solid #F2D49B; color: #7A4A00">ต่ำ · {{ r.conf }}</span>
+                    </sc-if>
+                    <sc-if value="{{ r.high }}" hint-placeholder-val="{{ true }}">
+                      <span style="font-size: 12px; color: #3B414C">{{ r.conf }}</span>
+                    </sc-if>
+                  </td>
+                  <td class="td" style="white-space: nowrap">
+                    <sc-if value="{{ r.human }}" hint-placeholder-val="{{ false }}">
+                      <span style="font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 999px; background: #EAEEF6; color: #2F3B52">แก้โดยคน</span>
+                    </sc-if>
+                    <sc-if value="{{ r.ai }}" hint-placeholder-val="{{ true }}">
+                      <span style="font-size: 12px; color: #5B6270">AI</span>
+                    </sc-if>
+                  </td>
+                </tr>
+              </sc-for>
+            </tbody>
+          </table>
+        </div>
+        <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; padding: 12px 18px; font-size: 13px; color: #5B6270">
+          <span>แสดง 1–10 จาก 4,812</span>
+          <div style="display: flex; gap: 6px">
+            <button type="button" class="btn" aria-label="หน้าก่อน">‹</button>
+            <button type="button" class="btn" aria-label="หน้าถัดไป">›</button>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":1060}}'>
+var ROWS = [
+  ['INC0102341', '01/10/2569', 'Internet', 'อินเทอร์เน็ตหลุดทุกคืนช่วงสองทุ่ม รีสตาร์ทเราเตอร์แล้วไม่หาย', 'การเชื่อมต่อ', 'เน็ตหลุดเป็นช่วง', 0.94, 0],
+  ['INC0102342', '01/10/2569', 'IPTV', 'ดูช่องกีฬาแล้วภาพค้างเป็นช่วงๆ เสียงมาก่อนภาพ', 'คุณภาพภาพ', 'ภาพกระตุก/ค้าง', 0.91, 0],
+  ['INC0102343', '01/10/2569', 'Mobile', 'ค่าบริการเดือนนี้สูงกว่าปกติ มีแพ็กเกจเสริมที่ไม่ได้สมัคร', 'บิลและค่าบริการ', 'บริการเสริมไม่ได้สมัคร', 0.88, 0],
+  ['INC0102344', '02/10/2569', 'Internet', 'สมัครแพ็กเกจ 1 Gbps แต่วัดผ่าน Wi-Fi ได้ไม่ถึงครึ่ง', 'ความเร็ว', 'ความเร็วต่ำกว่าแพ็กเกจ', 0.9, 0],
+  ['INC0102345', '02/10/2569', 'Fixed Line', 'โทรศัพท์บ้านไม่มีสัญญาณ ยกหูแล้วเงียบ', 'สายโทรศัพท์', 'ไม่มีสัญญาณ', 0.95, 0],
+  ['INC0102346', '02/10/2569', 'Mobile', 'ในตึกที่ทำงานสัญญาณ 4G ขึ้นแค่ขีดเดียว', 'สัญญาณ', 'สัญญาณอ่อนในอาคาร', 0.86, 0],
+  ['INC0102347', '03/10/2569', 'IPTV', 'ล็อกอินแอปดูทีวีแล้วขึ้นข้อความผิดพลาด', 'แอปพลิเคชัน', 'เข้าสู่ระบบไม่ได้', 0.58, 0],
+  ['INC0102348', '03/10/2569', 'Internet', 'ต้องการย้ายจุดติดตั้งไปบ้านใหม่ปลายเดือน', 'บริการติดตั้ง', 'ย้ายจุดติดตั้ง', 0.93, 1],
+  ['INC0102349', '03/10/2569', 'Internet', 'ช่างนัดแล้วไม่มา เน็ตก็ยังใช้ไม่ได้', 'การเชื่อมต่อ', 'ไม่มีอินเทอร์เน็ต', 0.52, 0],
+  ['INC0102350', '04/10/2569', 'Mobile', 'ซิมใหม่โทรออกได้แต่ใช้เน็ตไม่ได้', 'สัญญาณ', 'ใช้อินเทอร์เน็ตมือถือไม่ได้', 0.81, 0]
+];
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      rows: ROWS.map(function (r) {
+        var low = r[6] < 0.7;
+        return {
+          id: r[0], date: r[1], svc: r[2], text: r[3], main: r[4], sub: r[5],
+          conf: Math.round(r[6] * 100) + '%', low: low, high: !low,
+          human: !!r[7], ai: !r[7], cls: low ? 'row-low' : ''
+        };
+      })
+    };
+  }
+}
+</script>
+</body>
+</html>
