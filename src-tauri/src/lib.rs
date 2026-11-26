@@ -6,6 +6,7 @@ pub mod config;
 pub mod db;
 pub mod errors;
 pub mod gateway_test;
+pub mod ingest;
 pub mod llm;
 pub mod redact;
 pub mod secrets;
@@ -46,6 +47,17 @@ pub fn run() {
             commands::delete_project,
             commands::list_services,
             commands::project_months,
+            commands::list_taxonomy,
+            commands::create_service,
+            commands::update_service,
+            commands::delete_service,
+            commands::set_service_columns,
+            commands::save_taxonomy_row,
+            commands::taxonomy_row_usage,
+            commands::delete_taxonomy_row,
+            commands::preview_taxonomy_import,
+            commands::apply_taxonomy_import,
+            commands::save_taxonomy_template,
             updater::check_update,
             updater::install_update,
         ])

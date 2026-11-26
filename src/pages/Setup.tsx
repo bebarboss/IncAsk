@@ -5,6 +5,8 @@ import { ArrowRight, Check, Upload, Wifi } from "lucide-react";
 import { api, errMsg } from "../lib/api";
 import type { GatewayInfo, Service } from "../lib/types";
 import { useApp } from "../state";
+import { TaxonomyImportDialog, downloadTemplate } from "../components/TaxonomyImportDialog";
+import { useFileDrop } from "../components/useFileDrop";
 
 const STEPS = ["เชื่อมต่อ Gateway", "นำเข้าหมวดหมู่", "พร้อมใช้งาน"];
 
@@ -143,37 +145,47 @@ function GatewayStep({ onNext }: { onNext: () => void }) {
 
 function CategoriesStep({ onBack, onNext }: { onBack: () => void; onNext: () => void }) {
   const app = useApp();
-  const [name, setName] = useState(app.projects[0]?.name ?? "");
+  const [name, setName] = useState(app.activeProject?.name ?? app.projects[0]?.name ?? "");
+  const [projectId, setProjectId] = useState<string | null>(app.activeProject?.id ?? app.projects[0]?.id ?? null);
   const [services, setServices] = useState<Service[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  useEffect(() => {
-    if (app.projects[0]) api.listServices(app.projects[0].id).then(setServices).catch(() => setServices([]));
-  }, [app.projects]);
+  const [importPath, setImportPath] = useState<string | null>(null);
+  const refresh = (id: string | null) => {
+    if (id) api.listServices(id).then(setServices).catch(() => setServices([]));
+    else setServices([]);
+  };
+  useEffect(() => { refresh(projectId); }, [projectId]);
 
-  /** Create the first project from the typed name unless one with that name exists.
-   *  "ข้ามไปก่อน" with an empty name moves on without creating anything. */
-  const proceed = async (required: boolean) => {
+  /** The project named in the box: an existing one of that name, else a new one. */
+  const ensureProject = async (): Promise<string | null> => {
     const n = name.trim();
-    if (!n && !required) return onNext();
+    if (!n) { setError("ใส่ชื่อโปรเจกต์ก่อน"); return null; }
+    const existing = app.projects.find((p) => p.name.toLowerCase() === n.toLowerCase());
+    if (existing) { app.setActiveProject(existing.id); setProjectId(existing.id); return existing.id; }
+    const p = await api.createProject(n);
+    await app.refreshProjects();
+    app.setActiveProject(p.id);
+    setProjectId(p.id);
+    return p.id;
+  };
+  const run = async (fn: () => Promise<void>) => {
     setBusy(true);
     setError(null);
-    try {
-      const existing = app.projects.find((p) => p.name.toLowerCase() === n.toLowerCase());
-      if (!existing) {
-        const p = await api.createProject(n);
-        await app.refreshProjects();
-        app.setActiveProject(p.id);
-      } else {
-        app.setActiveProject(existing.id);
-      }
-      onNext();
-    } catch (e) {
-      setError(errMsg(e));
-    } finally {
-      setBusy(false);
-    }
+    try { await fn(); } catch (e) { setError(errMsg(e)); } finally { setBusy(false); }
   };
+  const openFile = (path: string) => run(async () => { if (await ensureProject()) setImportPath(path); });
+  const choose = async () => {
+    const p = await api.pickFile([{ name: "ตารางหมวดหมู่", extensions: ["xlsx", "xls", "csv"] }]);
+    if (p) openFile(p);
+  };
+  const hover = useFileDrop(openFile, ["xlsx", "xls", "csv"]);
+  /** "ข้ามไปก่อน" with an empty name moves on without creating anything. */
+  const proceed = (required: boolean) => {
+    if (!name.trim() && !required) return onNext();
+    run(async () => { if (await ensureProject()) onNext(); });
+  };
+
   return (
     <>
       <section className="card card-pad" aria-labelledby="cat-h" style={{ padding: 24, gap: 18 }}>
@@ -185,19 +197,19 @@ function CategoriesStep({ onBack, onNext }: { onBack: () => void; onNext: () => 
           <label htmlFor="su-pname">ชื่อโปรเจกต์</label>
           <input id="su-pname" className="input lg" value={name} placeholder="เช่น Call Center A" onChange={(e) => setName(e.target.value)} />
         </div>
-        <div className="dropzone">
+        <div className="dropzone" style={hover ? { borderColor: "var(--accent)" } : undefined}>
           <Upload size={30} strokeWidth={1.8} color="var(--accent)" aria-hidden="true" />
           <span style={{ fontWeight: 600 }}>ลากไฟล์ Excel หมวดหมู่มาวางที่นี่</span>
           <span className="muted" style={{ fontSize: 13 }}>
-            หรือ <button className="link-btn" style={{ fontSize: 13, fontWeight: 600 }} onClick={() => app.toast("นำเข้าหมวดหมู่ — ทำในขั้นที่ 4")}>เลือกไฟล์</button>
+            หรือ <button className="link-btn" style={{ fontSize: 13, fontWeight: 600 }} disabled={busy} onClick={choose}>เลือกไฟล์</button>
             {" · "}
-            <button className="link-btn" style={{ fontSize: 13, fontWeight: 600 }} onClick={() => app.toast("เทมเพลต — ทำในขั้นที่ 4")}>ดาวน์โหลดเทมเพลต</button>
+            <button className="link-btn" style={{ fontSize: 13, fontWeight: 600 }} onClick={() => downloadTemplate(app.toast)}>ดาวน์โหลดเทมเพลต</button>
           </span>
         </div>
-        {services.length > 0 && (
+        {services.length > 0 && projectId && (
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             <span style={{ fontSize: 13, fontWeight: 600 }}>นำเข้าแล้ว</span>
-            {services.map((s) => <ServiceSummaryRow key={s.id} projectId={app.projects[0].id} service={s} />)}
+            {services.map((s) => <ServiceSummaryRow key={s.id + s.taxonomyVersion} projectId={projectId} service={s} />)}
           </div>
         )}
         {error && <div className="err-box" role="alert">{error}</div>}
@@ -209,6 +221,9 @@ function CategoriesStep({ onBack, onNext }: { onBack: () => void; onNext: () => 
           <button className="btn btn-lg btn-primary" disabled={busy || !name.trim()} onClick={() => proceed(true)}>ถัดไป ›</button>
         </div>
       </div>
+      {importPath && projectId && (
+        <TaxonomyImportDialog projectId={projectId} service={null} initialPath={importPath} onClose={() => setImportPath(null)} onDone={() => refresh(projectId)} />
+      )}
     </>
   );
 }

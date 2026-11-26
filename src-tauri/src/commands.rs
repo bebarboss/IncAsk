@@ -273,14 +273,73 @@ fn open_project(state: &AppState, id: &str) -> AppResult<rusqlite::Connection> {
     crate::db::open(&path)
 }
 
+// ------------------------------------------------------------------ services + categories (SPEC §7)
+
+use crate::taxonomy::{self, ColumnSpec, ImportPreview, RowInput, Service, TaxonomyRow};
+
 #[tauri::command]
-pub fn list_services(state: S<'_>, project_id: String) -> AppResult<Vec<crate::taxonomy::Service>> {
-    crate::taxonomy::list_services(&open_project(&state, &project_id)?)
+pub fn list_services(state: S<'_>, project_id: String) -> AppResult<Vec<Service>> {
+    taxonomy::list_services(&open_project(&state, &project_id)?)
 }
 
 #[tauri::command]
 pub fn project_months(state: S<'_>, project_id: String) -> AppResult<Vec<String>> {
-    crate::taxonomy::project_months(&open_project(&state, &project_id)?)
+    taxonomy::project_months(&open_project(&state, &project_id)?)
+}
+
+#[tauri::command]
+pub fn list_taxonomy(state: S<'_>, project_id: String, service_id: String) -> AppResult<Vec<TaxonomyRow>> {
+    taxonomy::list_taxonomy(&open_project(&state, &project_id)?, &service_id)
+}
+
+#[tauri::command]
+pub fn create_service(state: S<'_>, project_id: String, name: String, color: Option<String>, columns: Vec<String>) -> AppResult<Service> {
+    taxonomy::create_service(&open_project(&state, &project_id)?, &name, color.as_deref(), &columns)
+}
+
+#[tauri::command]
+pub fn update_service(state: S<'_>, project_id: String, id: String, name: Option<String>, color: Option<String>) -> AppResult<Service> {
+    taxonomy::update_service(&mut open_project(&state, &project_id)?, &id, name.as_deref(), color.as_deref())
+}
+
+#[tauri::command]
+pub fn delete_service(state: S<'_>, project_id: String, id: String) -> AppResult<()> {
+    taxonomy::delete_service(&open_project(&state, &project_id)?, &id)
+}
+
+#[tauri::command]
+pub fn set_service_columns(state: S<'_>, project_id: String, id: String, columns: Vec<ColumnSpec>) -> AppResult<Service> {
+    taxonomy::set_columns(&mut open_project(&state, &project_id)?, &id, &columns)
+}
+
+#[tauri::command]
+pub fn save_taxonomy_row(state: S<'_>, project_id: String, service_id: String, row: RowInput) -> AppResult<TaxonomyRow> {
+    taxonomy::save_row(&mut open_project(&state, &project_id)?, &service_id, &row)
+}
+
+#[tauri::command]
+pub fn taxonomy_row_usage(state: S<'_>, project_id: String, row_id: String) -> AppResult<usize> {
+    Ok(taxonomy::row_usage(&open_project(&state, &project_id)?, &row_id)?.len())
+}
+
+#[tauri::command]
+pub fn delete_taxonomy_row(state: S<'_>, project_id: String, row_id: String, move_to: Option<String>) -> AppResult<usize> {
+    taxonomy::delete_row(&mut open_project(&state, &project_id)?, &row_id, move_to.as_deref())
+}
+
+#[tauri::command]
+pub fn preview_taxonomy_import(state: S<'_>, project_id: String, path: String, service: Option<String>) -> AppResult<ImportPreview> {
+    taxonomy::preview_import(&open_project(&state, &project_id)?, std::path::Path::new(&path), service.as_deref())
+}
+
+#[tauri::command]
+pub fn apply_taxonomy_import(state: S<'_>, project_id: String, path: String, service: Option<String>) -> AppResult<Vec<Service>> {
+    taxonomy::apply_import(&mut open_project(&state, &project_id)?, std::path::Path::new(&path), service.as_deref())
+}
+
+#[tauri::command]
+pub fn save_taxonomy_template(path: String) -> AppResult<()> {
+    taxonomy::write_template(std::path::Path::new(&path))
 }
 
 #[cfg(test)]

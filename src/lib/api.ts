@@ -15,6 +15,9 @@ import type {
   Project,
   ResultsPage,
   ResultsQuery,
+  RowInput,
+  ColumnSpec,
+  TaxonomyImportPreview,
   Role,
   SavedView,
   Service,
@@ -72,6 +75,18 @@ export interface Backend {
   deleteProject(id: string): Promise<void>;
   listServices(projectId: string): Promise<Service[]>;
   listTaxonomy(projectId: string, serviceId: string): Promise<TaxonomyRow[]>;
+  createService(projectId: string, name: string, columns: string[], color?: string): Promise<Service>;
+  updateService(projectId: string, id: string, patch: { name?: string; color?: string }): Promise<Service>;
+  deleteService(projectId: string, id: string): Promise<void>;
+  setServiceColumns(projectId: string, id: string, columns: ColumnSpec[]): Promise<Service>;
+  saveTaxonomyRow(projectId: string, serviceId: string, row: RowInput): Promise<TaxonomyRow>;
+  /** tickets currently classified into this category */
+  taxonomyRowUsage(projectId: string, rowId: string): Promise<number>;
+  /** moveTo = another category of the same service; null = classify those tickets again */
+  deleteTaxonomyRow(projectId: string, rowId: string, moveTo: string | null): Promise<number>;
+  previewTaxonomyImport(projectId: string, path: string, service: string | null): Promise<TaxonomyImportPreview>;
+  applyTaxonomyImport(projectId: string, path: string, service: string | null): Promise<Service[]>;
+  saveTaxonomyTemplate(path: string): Promise<void>;
   // import (step 5)
   previewImport(projectId: string, path: string | null): Promise<ImportPreview>;
   importSummary(projectId: string, roles: Role[]): Promise<ImportSummary>;
@@ -89,6 +104,7 @@ export interface Backend {
   // usage (step 10)
   usageSummary(): Promise<UsageSummary>;
   pickFile(filters: { name: string; extensions: string[] }[]): Promise<string | null>;
+  pickSavePath(defaultName: string, filters: { name: string; extensions: string[] }[]): Promise<string | null>;
   on<E extends EventName>(event: E, cb: (payload: EventMap[E]) => void): Promise<Unlisten>;
 }
 
@@ -147,7 +163,17 @@ function createTauriBackend(): Backend {
     updateProject: (id, patch) => call("update_project", { id, name: patch.name ?? null, color: patch.color ?? null }),
     deleteProject: (id) => call("delete_project", { id }),
     listServices: (projectId) => call("list_services", { projectId }),
-    listTaxonomy: notYet,
+    listTaxonomy: (projectId, serviceId) => call("list_taxonomy", { projectId, serviceId }),
+    createService: (projectId, name, columns, color) => call("create_service", { projectId, name, columns, color: color ?? null }),
+    updateService: (projectId, id, patch) => call("update_service", { projectId, id, name: patch.name ?? null, color: patch.color ?? null }),
+    deleteService: (projectId, id) => call("delete_service", { projectId, id }),
+    setServiceColumns: (projectId, id, columns) => call("set_service_columns", { projectId, id, columns }),
+    saveTaxonomyRow: (projectId, serviceId, row) => call("save_taxonomy_row", { projectId, serviceId, row }),
+    taxonomyRowUsage: (projectId, rowId) => call("taxonomy_row_usage", { projectId, rowId }),
+    deleteTaxonomyRow: (projectId, rowId, moveTo) => call("delete_taxonomy_row", { projectId, rowId, moveTo }),
+    previewTaxonomyImport: (projectId, path, service) => call("preview_taxonomy_import", { projectId, path, service }),
+    applyTaxonomyImport: (projectId, path, service) => call("apply_taxonomy_import", { projectId, path, service }),
+    saveTaxonomyTemplate: (path) => call("save_taxonomy_template", { path }),
     previewImport: notYet,
     importSummary: notYet,
     classifyStatus: async () => null,
@@ -164,6 +190,10 @@ function createTauriBackend(): Backend {
       const { open } = await dialog;
       const r = await open({ multiple: false, directory: false, filters });
       return typeof r === "string" ? r : null;
+    },
+    pickSavePath: async (defaultName, filters) => {
+      const { save } = await dialog;
+      return (await save({ defaultPath: defaultName, filters })) ?? null;
     },
     on: async (event, cb) => {
       const { listen } = await ev;

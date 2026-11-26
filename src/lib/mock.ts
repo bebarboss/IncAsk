@@ -19,9 +19,21 @@ import type {
   TicketRow,
   UsageSummary,
 } from "./types";
-import { DEFAULT_GATEWAY_URL, MODEL_IDS, PROJECT_COLORS } from "./gateway";
+import { DEFAULT_GATEWAY_URL, MODEL_IDS, PROJECT_COLORS, SERVICE_COLORS } from "./gateway";
 
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+/** C01, C02 … in table order, like taxonomy.rs */
+function recode(rows: TaxonomyRow[]): TaxonomyRow[] {
+  return rows.map((r, i) => ({ ...r, code: `C${String(i + 1).padStart(2, "0")}` }));
+}
+const RESERVED = ["เซอร์วิส", "service", "คำอธิบาย", "description", "ตัวอย่าง", "example", "examples"];
+function checkColumns(cols: string[]) {
+  const c = cols.map((x) => x.trim());
+  if (!c.length || c.some((x) => !x)) throw { code: "invalid_columns", message: "ต้องมีคอลัมน์หมวดหมู่อย่างน้อย 1 คอลัมน์ และห้ามเว้นชื่อว่าง" };
+  const r = c.find((x) => RESERVED.includes(x.toLowerCase()));
+  if (r) throw { code: "invalid_columns", message: `"${r}" เป็นชื่อคอลัมน์พิเศษ ใช้เป็นคอลัมน์หมวดหมู่ไม่ได้` };
+  if (new Set(c.map((x) => x.toLowerCase())).size !== c.length) throw { code: "invalid_columns", message: "ชื่อคอลัมน์ซ้ำกัน" };
+}
 function cleanName(name: string): string {
   const n = name.split(/\s+/).filter(Boolean).join(" ");
   if (!n) throw { code: "invalid_name", message: "ใส่ชื่อโปรเจกต์ก่อน" };
@@ -338,7 +350,7 @@ export function createMockBackend(): Backend {
     budgetResetAt: "2026-12-01T00:00:00Z", expires: null, tpmLimit: 200_000, rpmLimit: 60, models: [...MODEL_IDS],
   };
 
-  return {
+  const backend: Backend = {
     mock: true,
     appInfo: async () => ({ version: __APP_VERSION__, dataDir: "%APPDATA%\\IncAsk (mock)", mock: true }),
     getSettings: async () => clone(settings),
@@ -435,7 +447,128 @@ export function createMockBackend(): Backend {
       if (settings.lastProjectId === id) settings.lastProjectId = null;
     },
     listServices: async (projectId) => { await wait(80); return clone(lazy(projectId).services); },
-    listTaxonomy: async (projectId, serviceId) => clone(lazy(projectId).taxonomy.filter((t) => t.serviceId === serviceId)),
+    listTaxonomy: async (projectId, serviceId) => clone(recode(lazy(projectId).taxonomy.filter((t) => t.serviceId === serviceId))),
+    // same rules as taxonomy.rs (unique names, non-empty columns/cells, codes by order, version bump)
+    createService: async (projectId, name, columns, color) => {
+      const d = lazy(projectId);
+      const n = name.split(/\s+/).filter(Boolean).join(" ");
+      if (!n) throw { code: "invalid_name", message: "ชื่อเซอร์วิสต้องยาว 1–60 ตัวอักษร" };
+      if (d.services.some((s) => s.name.toLowerCase() === n.toLowerCase())) throw { code: "duplicate_name", message: `มีเซอร์วิสชื่อ "${n}" อยู่แล้ว` };
+      checkColumns(columns);
+      const used = d.services.map((s) => s.color);
+      const s: Service = { id: `s-${Math.random().toString(16).slice(2, 14)}`, name: n, color: color ?? SERVICE_COLORS.find((c) => !used.includes(c)) ?? SERVICE_COLORS[0], columns: columns.map((c) => c.trim()), taxonomyVersion: 1, sort: d.services.length };
+      d.services.push(s);
+      return clone(s);
+    },
+    updateService: async (projectId, id, patch) => {
+      const d = lazy(projectId);
+      const s = d.services.find((x) => x.id === id);
+      if (!s) throw { code: "not_found", message: "ไม่พบเซอร์วิส" };
+      if (patch.name != null) {
+        const n = patch.name.split(/\s+/).filter(Boolean).join(" ");
+        if (!n) throw { code: "invalid_name", message: "ชื่อเซอร์วิสต้องยาว 1–60 ตัวอักษร" };
+        if (d.services.some((x) => x.id !== id && x.name.toLowerCase() === n.toLowerCase())) throw { code: "duplicate_name", message: `มีเซอร์วิสชื่อ "${n}" อยู่แล้ว` };
+        d.tickets.forEach((t) => { if (t.service === s.name) t.service = n; });
+        s.name = n;
+      }
+      if (patch.color != null) s.color = patch.color;
+      return clone(s);
+    },
+    deleteService: async (projectId, id) => {
+      const d = lazy(projectId);
+      d.services = d.services.filter((s) => s.id !== id);
+      d.taxonomy = d.taxonomy.filter((t) => t.serviceId !== id);
+    },
+    setServiceColumns: async (projectId, id, specs) => {
+      const d = lazy(projectId);
+      const s = d.services.find((x) => x.id === id);
+      if (!s) throw { code: "not_found", message: "ไม่พบเซอร์วิส" };
+      const names = specs.map((c) => c.name.trim());
+      checkColumns(names);
+      const remap = (v: Record<string, string>) => Object.fromEntries(specs.map((c, i) => [names[i], c.from ? v[c.from] ?? "" : ""]));
+      d.taxonomy.filter((t) => t.serviceId === id).forEach((t) => { t.values = remap(t.values); });
+      d.tickets.filter((t) => t.service === s.name).forEach((t) => { t.fields = remap(t.fields); if (t.aiFields) t.aiFields = remap(t.aiFields); });
+      s.columns = names;
+      s.taxonomyVersion++;
+      return clone(s);
+    },
+    saveTaxonomyRow: async (projectId, serviceId, row) => {
+      const d = lazy(projectId);
+      const s = d.services.find((x) => x.id === serviceId);
+      if (!s) throw { code: "not_found", message: "ไม่พบเซอร์วิส" };
+      const values: Record<string, string> = {};
+      for (const c of s.columns) {
+        const v = (row.values[c] ?? "").trim();
+        if (!v) throw { code: "invalid_row", message: `ช่อง "${c}" ว่าง` };
+        values[c] = v;
+      }
+      const same = (a: Record<string, string>) => s.columns.every((c) => (a[c] ?? "") === values[c]);
+      const rows = d.taxonomy.filter((t) => t.serviceId === serviceId);
+      if (rows.some((t) => t.id !== row.id && same(t.values))) throw { code: "duplicate_row", message: "มีหมวดนี้อยู่แล้ว" };
+      let t = row.id ? d.taxonomy.find((x) => x.id === row.id) : undefined;
+      if (t) {
+        const old = t.values;
+        d.tickets.filter((x) => x.service === s.name && s.columns.every((c) => x.fields[c] === old[c])).forEach((x) => { x.fields = { ...values }; });
+        Object.assign(t, { values, description: row.description.trim(), examples: row.examples.trim() });
+      } else {
+        t = { id: `t-${Math.random().toString(16).slice(2, 14)}`, serviceId, code: "", values, description: row.description.trim(), examples: row.examples.trim() };
+        d.taxonomy.push(t);
+      }
+      s.taxonomyVersion++;
+      return clone(recode(d.taxonomy.filter((x) => x.serviceId === serviceId)).find((x) => x.id === t!.id)!);
+    },
+    taxonomyRowUsage: async (projectId, rowId) => {
+      const d = lazy(projectId);
+      const t = d.taxonomy.find((x) => x.id === rowId);
+      const s = d.services.find((x) => x.id === t?.serviceId);
+      if (!t || !s) return 0;
+      return d.tickets.filter((x) => x.service === s.name && s.columns.every((c) => x.fields[c] === t.values[c])).length;
+    },
+    deleteTaxonomyRow: async (projectId, rowId, moveTo) => {
+      const d = lazy(projectId);
+      const t = d.taxonomy.find((x) => x.id === rowId);
+      const s = d.services.find((x) => x.id === t?.serviceId);
+      if (!t || !s) throw { code: "not_found", message: "ไม่พบหมวดนี้" };
+      const target = moveTo ? d.taxonomy.find((x) => x.id === moveTo) : null;
+      const hit = d.tickets.filter((x) => x.service === s.name && s.columns.every((c) => x.fields[c] === t.values[c]));
+      hit.forEach((x) => {
+        if (target) { x.fields = { ...target.values }; x.source = "human"; } else { x.fields = {}; x.source = "error"; x.confidence = null; }
+      });
+      d.taxonomy = d.taxonomy.filter((x) => x.id !== rowId);
+      s.taxonomyVersion++;
+      return hit.length;
+    },
+    previewTaxonomyImport: async (projectId, path) => {
+      await wait(300);
+      const d = lazy(projectId);
+      const fileName = path.split(/[\\/]/).pop() ?? path;
+      const mk = (name: string, rows: [string, string, string][]) => ({
+        name, exists: d.services.some((s) => s.name === name), existingRows: d.taxonomy.filter((t) => d.services.find((s) => s.name === name)?.id === t.serviceId).length,
+        columns: [...COLS], rows: rows.map(([a, b, desc]) => ({ id: null, values: { [COLS[0]]: a, [COLS[1]]: b }, description: desc, examples: "" })), errors: [] as { row: number; message: string }[], warnings: [] as { row: number; message: string }[],
+      });
+      const smart = mk("Smart Home", [["อุปกรณ์", "กล้องออฟไลน์", "กล้องวงจรปิดขึ้นออฟไลน์"], ["อุปกรณ์", "เซ็นเซอร์ไม่ทำงาน", ""], ["แอปพลิเคชัน", "แจ้งเตือนไม่เด้ง", "ไม่ได้รับการแจ้งเตือนในแอป"]]);
+      smart.warnings.push({ row: 4, message: "อุปกรณ์ › เซ็นเซอร์ไม่ทำงาน ไม่มีคำอธิบาย · AI อาจจัดได้แม่นน้อยลง" });
+      smart.errors.push({ row: 6, message: "ช่อง \"หัวข้อย่อย\" ว่าง — ไม่นำเข้าแถวนี้" });
+      const mobile = mk("Mobile", TAXONOMY.Mobile.map(([a, b, c]) => [a, b, c] as [string, string, string]));
+      return { fileName, services: [mobile, smart] };
+    },
+    applyTaxonomyImport: async (projectId, path, service) => {
+      const prev = await backend.previewTaxonomyImport(projectId, path, service);
+      const d = lazy(projectId);
+      const out: Service[] = [];
+      for (const sp of prev.services) {
+        let s = d.services.find((x) => x.name === sp.name);
+        if (!s) s = await backend.createService(projectId, sp.name, sp.columns);
+        const svc = d.services.find((x) => x.id === s!.id)!;
+        d.taxonomy = d.taxonomy.filter((t) => t.serviceId !== svc.id);
+        sp.rows.forEach((r, i) => d.taxonomy.push({ id: `t-${svc.id}-${i}-${Date.now()}`, serviceId: svc.id, code: "", values: r.values, description: r.description, examples: r.examples }));
+        svc.columns = [...sp.columns];
+        svc.taxonomyVersion++;
+        out.push(clone(svc));
+      }
+      return out;
+    },
+    saveTaxonomyTemplate: async () => { await wait(200); },
 
     previewImport: async (projectId): Promise<ImportPreview> => {
       lazy(projectId);
@@ -512,6 +645,7 @@ export function createMockBackend(): Backend {
     ],
     usageSummary: async () => { await wait(150); return clone(usage); },
     pickFile: async () => "C:\\Users\\me\\Downloads\\incident_report_oct2026.xlsx",
+    pickSavePath: async (name) => `C:\\Users\\me\\Downloads\\${name}`,
     on: async (event, cb) => {
       const set = listeners.get(event) ?? new Set();
       set.add(cb as Listener);
@@ -519,4 +653,5 @@ export function createMockBackend(): Backend {
       return () => set.delete(cb as Listener);
     },
   };
+  return backend;
 }

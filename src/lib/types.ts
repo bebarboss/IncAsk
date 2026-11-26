@@ -261,3 +261,38 @@ export interface UsageSummary {
   byProject: { name: string; color: string; cost: number }[];
   history: RunRow[];
 }
+
+// ------------------------------------------------------------------ taxonomy editing (step 4)
+
+export interface RowInput {
+  id: string | null;
+  values: Record<string, string>;
+  description: string;
+  examples: string;
+}
+
+export interface ColumnSpec {
+  /** current name, or null for a new column */
+  from: string | null;
+  name: string;
+}
+
+export interface ImportIssue {
+  row: number;
+  message: string;
+}
+
+export interface ServiceImportPreview {
+  name: string;
+  exists: boolean;
+  existingRows: number;
+  columns: string[];
+  rows: RowInput[];
+  errors: ImportIssue[];
+  warnings: ImportIssue[];
+}
+
+export interface TaxonomyImportPreview {
+  fileName: string;
+  services: ServiceImportPreview[];
+}
