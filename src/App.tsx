@@ -3,6 +3,7 @@ import { FolderPlus, X } from "lucide-react";
 import type { UpdateInfo } from "./lib/types";
 import { UpdateDialog } from "./components/UpdateDialog";
 import { ProjectFormDialog } from "./components/ProjectDialogs";
+import { IncaskDialog } from "./components/IncaskDialog";
 import { api } from "./lib/api";
 import { th } from "./i18n/th";
 import { useApp } from "./state";
@@ -99,6 +100,7 @@ export default function App() {
         {page.name === "app" && <div className="scroll"><AppSettingsPage section={page.section} /></div>}
       </main>
       <ExportDialog />
+      {app.incaskPath && <IncaskDialog path={app.incaskPath} onClose={() => app.setIncaskPath(null)} />}
       {creating && <ProjectFormDialog onClose={() => setCreating(false)} />}
       {badge}
     </div>

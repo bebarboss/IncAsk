@@ -160,6 +160,30 @@ impl Registry {
         Ok(p)
     }
 
+    /// Take an existing project database (an opened `.incask`) as a new project. A name already in
+    /// use gets " (นำเข้า)", " (นำเข้า 2)" … appended.
+    pub fn adopt(&mut self, src: &Path, name: &str, color: &str) -> AppResult<Project> {
+        let base = clean_name(name).unwrap_or_else(|_| "โปรเจกต์ที่นำเข้า".into());
+        let mut name = base.clone();
+        let mut n = 1;
+        while self.check_unique(&name, None).is_err() {
+            name = if n == 1 { format!("{base} (นำเข้า)") } else { format!("{base} (นำเข้า {n})") };
+            n += 1;
+        }
+        let color = if valid_color(color) { color.to_uppercase() } else { PROJECT_COLORS[self.items.len() % PROJECT_COLORS.len()].into() };
+        let id = format!("p-{}", &uuid::Uuid::new_v4().simple().to_string()[..12]);
+        let dest = self.db_path(&id)?;
+        std::fs::copy(src, &dest)?;
+        let conn = super::open(&dest)?;
+        super::set_meta(&conn, "project_name", &name)?;
+        super::set_meta(&conn, "project_color", &color)?;
+        drop(conn);
+        let p = Project { id, name, color, sort: self.items.iter().map(|p| p.sort + 1).max().unwrap_or(0) };
+        self.items.push(p.clone());
+        self.save()?;
+        Ok(p)
+    }
+
     /// Removes the project and its database (plus WAL/SHM side files). Cannot be undone.
     pub fn delete(&mut self, id: &str) -> AppResult<()> {
         self.get(id)?;

@@ -374,3 +374,40 @@ export interface TaxonomyImportPreview {
   fileName: string;
   services: ServiceImportPreview[];
 }
+
+// ------------------------------------------------------------------ export (step 9)
+
+export interface ExportScope {
+  from: string;
+  to: string;
+  service: string | null;
+}
+
+export interface IncaskManifest {
+  format: string;
+  version: number;
+  exportedAt: string;
+  appVersion: string;
+  from: string;
+  to: string;
+  service: string | null;
+  projectName: string;
+  projectColor: string;
+  schemaVersion: number;
+  tickets: number;
+}
+
+export interface IncaskInspect {
+  manifest: IncaskManifest;
+  tickets: number;
+  months: string[];
+  services: string[];
+  conflicts: number;
+}
+
+export interface MergeResult {
+  added: number;
+  replaced: number;
+  kept: number;
+  servicesAdded: number;
+}

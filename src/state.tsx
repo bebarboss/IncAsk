@@ -31,6 +31,9 @@ interface Ctx {
   /** summary page fullscreen (SPEC §9): hides sidebar + tabs, OS fullscreen in Tauri */
   fullscreen: boolean;
   setFullscreen: (v: boolean) => void;
+  /** a .incask waiting to be opened (picked, double-clicked, or handed over by a second launch) */
+  incaskPath: string | null;
+  setIncaskPath: (p: string | null) => void;
   exportOpen: boolean;
   setExportOpen: (v: boolean) => void;
   toast: (msg: string) => void;
@@ -69,6 +72,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [page, setPage] = useState<Page>({ name: "project", tab: "import" });
   const [exportOpen, setExportOpen] = useState(false);
   const [fullscreen, setFs] = useState(false);
+  const [incaskPath, setIncaskPath] = useState<string | null>(null);
   const setFullscreen = useCallback((v: boolean) => {
     setFs(v);
     if (!api.mock) import("@tauri-apps/api/window").then(({ getCurrentWindow }) => getCurrentWindow().setFullscreen(v)).catch(() => {});
@@ -103,6 +107,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setPage(s.setupDone ? initialPage() : { name: "setup" });
       setReady(true);
       if (s.setupDone) recheckGateway();
+      api.pendingOpenFile().then((p) => p && setIncaskPath(p)).catch(() => {});
     } catch (e) {
       setLoadError(errMsg(e));
     }
@@ -123,6 +128,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const offs = [
       api.on("gateway-status", (s) => setGateway(s)),
       api.on("classify://progress", (p) => setJobs((j) => ({ ...j, [p.projectId]: p }))),
+      api.on("open-incask", (p) => setIncaskPath(p)),
     ];
     const t = window.setInterval(() => {
       if (settingsRef.current.setupDone) api.gatewayStatus().then(setGateway).catch(() => {});
@@ -165,9 +171,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const value = useMemo<Ctx>(
     () => ({
       ready, loadError, info, settings, updateSettings, refreshSettings, gateway, recheckGateway, projects, refreshProjects,
-      activeProject, setActiveProject, jobs, page, go: setPage, fullscreen, setFullscreen, exportOpen, setExportOpen, toast, reload,
+      activeProject, setActiveProject, jobs, page, go: setPage, fullscreen, setFullscreen, incaskPath, setIncaskPath, exportOpen, setExportOpen, toast, reload,
     }),
-    [ready, loadError, info, settings, updateSettings, refreshSettings, gateway, recheckGateway, projects, refreshProjects, activeProject, setActiveProject, jobs, page, fullscreen, setFullscreen, exportOpen, toast, reload],
+    [ready, loadError, info, settings, updateSettings, refreshSettings, gateway, recheckGateway, projects, refreshProjects, activeProject, setActiveProject, jobs, page, fullscreen, setFullscreen, incaskPath, exportOpen, toast, reload],
   );
 
   return (

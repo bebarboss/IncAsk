@@ -6,11 +6,13 @@
   "scripts": {
     "dev": "vite",
     "dev:mock": "cross-env INCASK_MOCK=1 vite",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && vite build && vite build -c vite.report.config.ts",
     "preview": "vite preview",
     "typecheck": "tsc -b --noEmit",
     "tauri": "tauri",
-    "tauri:mock": "tauri dev --config src-tauri/tauri.mock.conf.json"
+    "tauri:mock": "tauri dev --config src-tauri/tauri.mock.conf.json",
+    "build:report": "vite build -c vite.report.config.ts",
+    "preview:report": "vite -c vite.report.config.ts --port 5181"
   },
   "dependencies": {
     "@fontsource/ibm-plex-mono": "^5.1.0",
@@ -32,6 +34,7 @@
     "@vitejs/plugin-react": "^4.3.3",
     "cross-env": "^7.0.3",
     "typescript": "~5.6.3",
-    "vite": "^5.4.11"
+    "vite": "^5.4.11",
+    "vite-plugin-singlefile": "^2.3.4"
   }
 }

@@ -21,12 +21,7 @@ export function useTaxonomy(projectId: string) {
   return data;
 }
 
-/** "A › B" in the service's column order (stored fields are a sorted map) */
-export function categoryLabel(columns: string[] | undefined, fields: Record<string, string> | null | undefined): string {
-  if (!fields) return "";
-  const cols = columns ?? Object.keys(fields);
-  return cols.map((c) => fields[c]).filter(Boolean).join(" › ");
-}
+export { categoryLabel } from "../lib/format";
 
 export function CategoryPicker({ projectId, service, columns, rows, current, count, onClose, onSaved }: {
   projectId: string;

@@ -71,3 +71,10 @@ export function fmtDuration(sec: number): string {
   if (m < 60) return `${m} นาที`;
   return `${Math.floor(m / 60)} ชม. ${m % 60} นาที`;
 }
+
+/** "A › B" in the service's column order (stored fields are a sorted map) */
+export function categoryLabel(columns: string[] | undefined, fields: Record<string, string> | null | undefined): string {
+  if (!fields) return "";
+  const cols = columns ?? Object.keys(fields);
+  return cols.map((c) => fields[c]).filter(Boolean).join(" › ");
+}

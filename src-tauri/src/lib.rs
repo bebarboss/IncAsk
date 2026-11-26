@@ -6,6 +6,7 @@ pub mod commands;
 pub mod config;
 pub mod db;
 pub mod errors;
+pub mod export;
 pub mod gateway_test;
 pub mod ingest;
 pub mod llm;
@@ -22,7 +23,18 @@ use tauri::Manager;
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        // a second launch (double-clicking a .incask while IncAsk is open) hands its file to this one
+        .plugin(tauri_plugin_single_instance::init(|app, args, _cwd| {
+            if let Some(w) = app.get_webview_window("main") {
+                let _ = w.unminimize();
+                let _ = w.set_focus();
+            }
+            if let Some(p) = commands::incask_arg(args) {
+                let _ = tauri::Emitter::emit(app, "open-incask", p);
+            }
+        }))
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_notification::init())
         .setup(|app| {
@@ -86,6 +98,15 @@ pub fn run() {
             commands::list_views,
             commands::save_view,
             commands::delete_view,
+            commands::export_default_name,
+            commands::export_csv,
+            commands::export_incask,
+            commands::export_html,
+            commands::reveal_file,
+            commands::inspect_incask,
+            commands::import_incask,
+            commands::merge_incask,
+            commands::pending_open_file,
             updater::check_update,
             updater::install_update,
         ])

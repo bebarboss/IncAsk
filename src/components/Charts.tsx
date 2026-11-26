@@ -22,18 +22,18 @@ export function TopBars({ charts }: { charts: Charts }) {
 }
 
 export function TrendChart({ charts }: { charts: Charts }) {
-  const W = 420, H = 170, P = 30;
+  const W = 420, H = 170, P = 30, L = 52;
   const max = Math.max(1, ...charts.trend.flatMap((s) => s.values));
   const n = charts.months.length;
-  const x = (i: number) => (n <= 1 ? W / 2 : P + (i * (W - 2 * P)) / (n - 1));
+  const x = (i: number) => (n <= 1 ? W / 2 : L + (i * (W - L - P)) / (n - 1));
   const y = (v: number) => H - P - (v / max) * (H - 2 * P);
   const step = Math.max(1, Math.ceil(n / 6));
   return (
     <section className="card card-pad" aria-labelledby="trend-h">
       <h2 id="trend-h">แนวโน้มรายเดือนตามเซอร์วิส</h2>
       <svg viewBox={`0 0 ${W} ${H}`} width="100%" role="img" aria-label={`จำนวนทิกเก็ตรายเดือน: ${charts.trend.map((s) => `${s.name} ${s.values.map(fmtInt).join(", ")}`).join(" · ")}`}>
-        <line x1={P} x2={W - P} y1={H - P} y2={H - P} stroke="var(--border)" />
-        <text x={P - 6} y={y(max) + 4} textAnchor="end" fontSize="11" fill="var(--muted)">{fmtInt(max)}</text>
+        <line x1={L} x2={W - P} y1={H - P} y2={H - P} stroke="var(--border)" />
+        <text x={L - 8} y={y(max) + 4} textAnchor="end" fontSize="11" fill="var(--muted)">{fmtInt(max)}</text>
         {charts.months.map((m, i) => (i % step === 0 || i === n - 1) && (
           <text key={m} x={x(i)} y={H - 9} textAnchor="middle" fontSize="12" fill="var(--muted)">{thMonth(m, true)}</text>
         ))}

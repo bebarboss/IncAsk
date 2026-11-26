@@ -740,6 +740,33 @@ export function createMockBackend(): Backend {
     },
     deleteView: async (projectId, id) => { views[projectId] = (views[projectId] ?? []).filter((v) => v.id !== id); },
     usageSummary: async () => { await wait(150); return clone(usage); },
+    exportDefaultName: async (projectId, scope, ext) => `${projects.find((p) => p.id === projectId)?.name ?? "project"}_${scope.from}_${scope.to}.${ext}`,
+    exportCsv: async (projectId, scope) => { await wait(400); return lazy(projectId).tickets.filter((t) => t.month >= scope.from && t.month <= scope.to && (!scope.service || t.service === scope.service)).length; },
+    exportIncask: async (projectId, scope) => {
+      await wait(600);
+      const p = projects.find((x) => x.id === projectId)!;
+      const n = lazy(projectId).tickets.filter((t) => t.month >= scope.from && t.month <= scope.to && (!scope.service || t.service === scope.service)).length;
+      return { format: "incask", version: 1, exportedAt: new Date().toISOString(), appVersion: __APP_VERSION__, from: scope.from, to: scope.to, service: scope.service, projectName: p.name, projectColor: p.color, schemaVersion: 1, tickets: n };
+    },
+    exportHtml: async () => { await wait(700); return 512_000; },
+    revealFile: async () => {},
+    inspectIncask: async (_path, projectId) => {
+      await wait(300);
+      const manifest = { format: "incask", version: 1, exportedAt: "2026-11-20T09:00:00Z", appVersion: "0.1.0", from: "2026-08", to: "2026-10", service: null, projectName: "Call Center A", projectColor: "#217346", schemaVersion: 1, tickets: 1740 };
+      return { manifest, tickets: 1740, months: ["2026-08", "2026-09", "2026-10"], services: ["Internet", "IPTV", "Mobile", "Fixed Line"], conflicts: projectId === "cc-a" ? 1740 : projectId ? 0 : 0 };
+    },
+    importIncask: async (_path, name) => {
+      await wait(400);
+      let n = (name ?? "Call Center A").trim();
+      const base = n;
+      for (let i = 1; projects.some((p) => p.name.toLowerCase() === n.toLowerCase()); i++) n = i === 1 ? `${base} (นำเข้า)` : `${base} (นำเข้า ${i})`;
+      const p: Project = { id: `p-${Math.random().toString(16).slice(2, 14)}`, name: n, color: "#217346", sort: projects.length };
+      projects.push(p);
+      PROJECT_DEFS[p.id] = { scale: 1, seed: 17, services: ["Internet", "IPTV", "Mobile", "Fixed Line"] };
+      return clone(p);
+    },
+    mergeIncask: async (projectId, _path, takeTheirs) => { await wait(500); const c = projectId === "cc-a" ? 1740 : 0; return { added: 1740 - c, replaced: takeTheirs ? c : 0, kept: takeTheirs ? 0 : c, servicesAdded: 0 }; },
+    pendingOpenFile: async () => null,
     pickFile: async () => "C:\\Users\\me\\Downloads\\incident_report_oct2026.xlsx",
     pickSavePath: async (name) => `C:\\Users\\me\\Downloads\\${name}`,
     on: async (event, cb) => {

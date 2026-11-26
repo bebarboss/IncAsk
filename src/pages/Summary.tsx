@@ -1,21 +1,22 @@
 // สรุปผล / Pivot (SPEC §9, canvas 4 + 4.1): month range, saved views, drag-and-drop pivot fields,
 // pivot + heatmap + charts, drill-down with editing (pivot and charts refresh in place), fullscreen.
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Download, Maximize2, Minimize2, Plus, Trash2, X } from "lucide-react";
+import { Download, Maximize2, Minimize2, Plus, Trash2 } from "lucide-react";
 import { api, errMsg } from "../lib/api";
 import type { Charts as ChartData, PivotConfig, PivotResult, Project, SavedView, TicketRow, ViewConfig } from "../lib/types";
 import { fmtInt, thMonth } from "../lib/format";
 import { th } from "../i18n/th";
 import { useApp } from "../state";
-import { ErrorState, Modal, SkeletonList, usePopover } from "../components/ui";
+import { ErrorState, Modal, SkeletonList } from "../components/ui";
 import { NoData } from "../components/NoData";
-import { Delta, PivotTable, fieldLabel, valueLabel, type CellRef } from "../components/PivotTable";
+import { Delta, PivotTable, type CellRef } from "../components/PivotTable";
 import { TopBars, TrendChart } from "../components/Charts";
 import { TicketPanel } from "../components/TicketPanel";
+import { normalizeView } from "../lib/pivotjs";
+import { PivotConfigBar, placeField, type Zone } from "../components/PivotConfigBar";
 import { categoryLabel, useTaxonomy } from "../components/CategoryPicker";
 
 const DEFAULT_VIEW: ViewConfig = { rows: ["service"], col: "month", value: "count", filters: [], heat: true };
-type Zone = "rows" | "col" | "filters";
 
 export default function SummaryPage({ project }: { project: Project }) {
   const app = useApp();
@@ -45,7 +46,7 @@ export default function SummaryPage({ project }: { project: Project }) {
     api.sourceColumns(project.id).then(setSrcCols).catch(() => {});
     api.savedViews(project.id).then((v) => {
       setViews(v);
-      if (v[0]) { setActiveView(v[0].id); setView(v[0].config); }
+      if (v[0]) { setActiveView(v[0].id); setView(normalizeView(v[0].config, DEFAULT_VIEW)); }
       else setView({ ...DEFAULT_VIEW, rows: catCols.length ? ["service", `cat:${catCols[0]}`] : ["service"] });
     }).catch(() => setView(DEFAULT_VIEW));
   }, [project.id]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -90,16 +91,8 @@ export default function SummaryPage({ project }: { project: Project }) {
   useEffect(() => () => app.setFullscreen(false), []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const setV = (patch: Partial<ViewConfig>) => { setView((v) => ({ ...(v ?? DEFAULT_VIEW), ...patch })); setCell(null); };
-  const applyView = (v: SavedView) => { setActiveView(v.id); setView(v.config); setCell(null); };
-  const place = (field: string, zone: Zone) => {
-    if (!view) return;
-    const rows = view.rows.filter((f) => f !== field);
-    const col = view.col === field ? "" : view.col;
-    const filters = view.filters.filter((f) => f.field !== field);
-    if (zone === "rows") setV({ rows: [...rows, field].slice(-3), col, filters });
-    if (zone === "col") setV({ rows: rows.length ? rows : view.rows, col: field, filters });
-    if (zone === "filters") setV({ filters: [...filters, { field, values: [] }] });
-  };
+  const applyView = (v: SavedView) => { setActiveView(v.id); setView(normalizeView(v.config, DEFAULT_VIEW)); setCell(null); };
+  const place = (field: string, zone: Zone) => { if (view) setV(placeField(view, field, zone)); };
 
   const save = async (ticket: TicketRow, f: Record<string, string>) => {
     await api.setCategory(project.id, [ticket.id], f);
@@ -205,7 +198,7 @@ export default function SummaryPage({ project }: { project: Project }) {
           <button className="btn" onClick={() => setSaving(true)}><Plus size={15} strokeWidth={2} aria-hidden="true" />บันทึกมุมมอง</button>
         </div>
 
-        <PivotConfigBar projectId={project.id} view={view} fields={fields} from={from} to={to} onPlace={place} onChange={setV} />
+        <PivotConfigBar view={view} fields={fields} loadValues={(f) => api.pivotValues(project.id, f, from, to)} onPlace={place} onChange={setV} />
         {body}
       </div>
       {cell && <TicketPanel cell={cell} data={drill} taxonomy={tax} onClose={() => setCell(null)} onSave={save}
@@ -217,109 +210,6 @@ export default function SummaryPage({ project }: { project: Project }) {
           setActiveView(v.id);
           app.toast(`✓ บันทึกมุมมอง ${v.name}`);
         }} />
-      )}
-    </div>
-  );
-}
-
-/** Field chips: drag into แถว / คอลัมน์ / ตัวกรอง, or click a chip for the same choices (keyboard). */
-function PivotConfigBar({ projectId, view, fields, from, to, onPlace, onChange }: {
-  projectId: string; view: ViewConfig; fields: string[]; from: string; to: string;
-  onPlace: (field: string, zone: Zone) => void; onChange: (p: Partial<ViewConfig>) => void;
-}) {
-  const used = new Set([...view.rows, view.col, ...view.filters.map((f) => f.field)]);
-  const drop = (zone: Zone) => ({
-    onDragOver: (e: React.DragEvent) => e.preventDefault(),
-    onDrop: (e: React.DragEvent) => { const f = e.dataTransfer.getData("text/field"); if (f) onPlace(f, zone); },
-  });
-  const chip = (f: string, onRemove: () => void) => (
-    <span key={f} className="chip" draggable onDragStart={(e) => e.dataTransfer.setData("text/field", f)}>
-      {fieldLabel(f)}
-      <button className="attach-x" aria-label={`เอา ${fieldLabel(f)} ออก`} onClick={onRemove}><X size={12} strokeWidth={2.4} /></button>
-    </span>
-  );
-  return (
-    <section className="card" aria-label="ตั้งค่า pivot" style={{ padding: "12px 16px", display: "flex", flexDirection: "column", gap: 10 }}>
-      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "10px 22px" }}>
-        <div className="pv-zone" {...drop("rows")}>
-          <span className="muted" style={{ fontSize: 12, fontWeight: 600 }}>แถว</span>
-          {view.rows.map((f) => chip(f, () => view.rows.length > 1 && onChange({ rows: view.rows.filter((x) => x !== f) })))}
-          {view.rows.length < 3 && <span className="chip dashed">+ ลากมาวาง</span>}
-        </div>
-        <div className="pv-zone" {...drop("col")}>
-          <span className="muted" style={{ fontSize: 12, fontWeight: 600 }}>คอลัมน์</span>
-          {view.col ? chip(view.col, () => onChange({ col: "" })) : <span className="chip dashed">+ ลากมาวาง</span>}
-        </div>
-        <div className="pv-zone">
-          <span className="muted" style={{ fontSize: 12, fontWeight: 600 }}>ค่า</span>
-          <div className="seg-tabs sm" role="radiogroup" aria-label="ค่า">
-            <button role="radio" aria-checked={view.value === "count"} onClick={() => onChange({ value: "count" })}>จำนวนทิกเก็ต</button>
-            <button role="radio" aria-checked={view.value === "share"} onClick={() => onChange({ value: "share" })}>ส่วนแบ่ง %</button>
-          </div>
-        </div>
-        <div className="pv-zone" {...drop("filters")}>
-          <span className="muted" style={{ fontSize: 12, fontWeight: 600 }}>ตัวกรอง</span>
-          {view.filters.map((f, i) => (
-            <FilterChip key={f.field} projectId={projectId} field={f.field} values={f.values} from={from} to={to}
-              onChange={(values) => onChange({ filters: view.filters.map((x, j) => (j === i ? { ...x, values } : x)) })}
-              onRemove={() => onChange({ filters: view.filters.filter((_, j) => j !== i) })} />
-          ))}
-          <span className="chip dashed">+ ลากมาวาง</span>
-        </div>
-        <label className="check" style={{ marginLeft: "auto" }}>
-          <input type="checkbox" checked={view.heat} onChange={(e) => onChange({ heat: e.target.checked })} />Heatmap
-        </label>
-      </div>
-      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6, paddingTop: 8, borderTop: "1px solid var(--border-soft)" }}>
-        <span className="muted" style={{ fontSize: 12 }}>ฟิลด์ (ลากไปวาง หรือคลิก):</span>
-        {fields.filter((f) => !used.has(f)).map((f) => <FieldChip key={f} field={f} onPlace={onPlace} canRow={view.rows.length < 3} />)}
-      </div>
-    </section>
-  );
-}
-
-function FieldChip({ field, onPlace, canRow }: { field: string; onPlace: (f: string, z: Zone) => void; canRow: boolean }) {
-  const pop = usePopover();
-  return (
-    <div ref={pop.ref} style={{ position: "relative" }}>
-      <button className="chip dashed" draggable onDragStart={(e) => e.dataTransfer.setData("text/field", field)} aria-haspopup="menu" aria-expanded={pop.open} onClick={() => pop.setOpen(!pop.open)}>
-        {field.startsWith("src:") ? `${fieldLabel(field)} · ต้นทาง` : fieldLabel(field)}
-      </button>
-      {pop.open && (
-        <div className="popover" role="menu" style={{ left: 0, top: 30, minWidth: 160 }}>
-          <button role="menuitem" className="menu-item" disabled={!canRow} onClick={() => { pop.setOpen(false); onPlace(field, "rows"); }}>ใส่ในแถว</button>
-          <button role="menuitem" className="menu-item" onClick={() => { pop.setOpen(false); onPlace(field, "col"); }}>ใส่ในคอลัมน์</button>
-          <button role="menuitem" className="menu-item" onClick={() => { pop.setOpen(false); onPlace(field, "filters"); }}>ใช้เป็นตัวกรอง</button>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function FilterChip({ projectId, field, values, from, to, onChange, onRemove }: {
-  projectId: string; field: string; values: string[]; from: string; to: string; onChange: (v: string[]) => void; onRemove: () => void;
-}) {
-  const pop = usePopover();
-  const [all, setAll] = useState<string[] | null>(null);
-  useEffect(() => { if (pop.open && !all) api.pivotValues(projectId, field, from, to).then(setAll).catch(() => setAll([])); }, [pop.open, all, projectId, field, from, to]);
-  return (
-    <div ref={pop.ref} style={{ position: "relative" }}>
-      <span className="chip">
-        <button className="link-btn" style={{ color: "inherit", fontWeight: 600, fontSize: 12 }} aria-haspopup="dialog" aria-expanded={pop.open} onClick={() => pop.setOpen(!pop.open)}>
-          {fieldLabel(field)}: {values.length ? (values.length === 1 ? valueLabel(field, values[0], true) : `${values.length} ค่า`) : "ทั้งหมด"}
-        </button>
-        <button className="attach-x" aria-label={`เอาตัวกรอง ${fieldLabel(field)} ออก`} onClick={onRemove}><X size={12} strokeWidth={2.4} /></button>
-      </span>
-      {pop.open && (
-        <div className="popover" role="dialog" aria-label={`กรอง ${fieldLabel(field)}`} style={{ left: 0, top: 32, width: 260, maxHeight: 320, overflowY: "auto" }}>
-          {!all ? <SkeletonList rows={3} h={24} /> : all.map((v) => (
-            <label key={v} className="check" style={{ padding: "4px 8px", display: "flex" }}>
-              <input type="checkbox" checked={values.includes(v)} onChange={(e) => onChange(e.target.checked ? [...values, v] : values.filter((x) => x !== v))} />
-              {valueLabel(field, v)}
-            </label>
-          ))}
-          {values.length > 0 && <><div className="menu-sep" /><button className="menu-item" onClick={() => onChange([])}>ล้างตัวกรอง</button></>}
-        </div>
       )}
     </div>
   );

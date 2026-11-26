@@ -4,9 +4,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, X } from "lucide-react";
 import type { Service, TaxonomyRow, TicketRow } from "../lib/types";
-import { fmtInt, thDate } from "../lib/format";
+import { categoryLabel, fmtInt, thDate } from "../lib/format";
 import { th } from "../i18n/th";
-import { categoryLabel } from "./CategoryPicker";
 import type { CellRef } from "./PivotTable";
 
 export function TicketPanel({ cell, data, taxonomy, onClose, onSave, onSeeAll, emptyText }: {

@@ -14,6 +14,10 @@ import type {
   DateOrder,
   ReportPattern,
   TrialResult,
+  ExportScope,
+  IncaskInspect,
+  IncaskManifest,
+  MergeResult,
   KeyUsage,
   PivotResult,
   PivotConfig,
@@ -43,6 +47,8 @@ export interface EventMap {
   "gateway-status": GatewayStatus;
   "update-progress": UpdateProgress;
   "classify://progress": ClassifyProgress;
+  /** a .incask double-clicked while IncAsk was already open */
+  "open-incask": string;
 }
 
 export type EventName = keyof EventMap;
@@ -126,6 +132,18 @@ export interface Backend {
   savedViews(projectId: string): Promise<SavedView[]>;
   saveView(projectId: string, id: string | null, name: string, config: ViewConfig): Promise<SavedView>;
   deleteView(projectId: string, id: string): Promise<void>;
+  // export (step 9)
+  exportDefaultName(projectId: string, scope: ExportScope, ext: string): Promise<string>;
+  exportCsv(projectId: string, scope: ExportScope, path: string): Promise<number>;
+  exportIncask(projectId: string, scope: ExportScope, path: string): Promise<IncaskManifest>;
+  /** returns the file size in bytes */
+  exportHtml(projectId: string, scope: ExportScope, path: string): Promise<number>;
+  revealFile(path: string): Promise<void>;
+  inspectIncask(path: string, projectId: string | null): Promise<IncaskInspect>;
+  importIncask(path: string, name: string | null): Promise<Project>;
+  mergeIncask(projectId: string, path: string, takeTheirs: boolean): Promise<MergeResult>;
+  /** a .incask the app was started with (double-click), once */
+  pendingOpenFile(): Promise<string | null>;
   // usage (step 10)
   usageSummary(): Promise<UsageSummary>;
   pickFile(filters: { name: string; extensions: string[] }[]): Promise<string | null>;
@@ -226,6 +244,15 @@ function createTauriBackend(): Backend {
     saveView: (projectId, id, name, config) => call("save_view", { projectId, id, name, config }),
     deleteView: (projectId, id) => call("delete_view", { projectId, id }),
     usageSummary: notYet,
+    exportDefaultName: (projectId, scope, ext) => call("export_default_name", { projectId, scope, ext }),
+    exportCsv: (projectId, scope, path) => call("export_csv", { projectId, scope, path }),
+    exportIncask: (projectId, scope, path) => call("export_incask", { projectId, scope, path }),
+    exportHtml: (projectId, scope, path) => call("export_html", { projectId, scope, path }),
+    revealFile: (path) => call("reveal_file", { path }),
+    inspectIncask: (path, projectId) => call("inspect_incask", { path, projectId }),
+    importIncask: (path, name) => call("import_incask", { path, name }),
+    mergeIncask: (projectId, path, takeTheirs) => call("merge_incask", { projectId, path, takeTheirs }),
+    pendingOpenFile: () => call("pending_open_file"),
     pickFile: async (filters) => {
       const { open } = await dialog;
       const r = await open({ multiple: false, directory: false, filters });

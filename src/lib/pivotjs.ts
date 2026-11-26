@@ -21,7 +21,7 @@ export function fieldValue(t: PivotTicket, field: string): string {
 
 export function matches(t: PivotTicket, cfg: Pick<PivotConfig, "from" | "to" | "filters">): boolean {
   if (t.month < cfg.from || t.month > cfg.to) return false;
-  return cfg.filters.every((f) => !f.values.length || f.values.includes(fieldValue(t, f.field)));
+  return (cfg.filters ?? []).every((f) => !f.values.length || f.values.includes(fieldValue(t, f.field)));
 }
 
 export function pivotJs(tickets: PivotTicket[], cfg: PivotConfig): PivotResult {
@@ -80,4 +80,16 @@ export function chartsJs(tickets: PivotTicket[], cfg: Pick<PivotConfig, "from" |
 
 export function fieldValuesJs(tickets: PivotTicket[], field: string, from: string, to: string): string[] {
   return [...new Set(tickets.filter((t) => t.month >= from && t.month <= to).map((t) => fieldValue(t, field)))].sort();
+}
+
+/** a saved view with every setting present (views may come from older files) */
+export function normalizeView(v: Partial<import("./types").ViewConfig> | null | undefined, fallback: import("./types").ViewConfig): import("./types").ViewConfig {
+  const rows = Array.isArray(v?.rows) && v!.rows.length ? v!.rows.slice(0, 3) : fallback.rows;
+  return {
+    rows,
+    col: typeof v?.col === "string" ? v.col : fallback.col,
+    value: v?.value === "share" ? "share" : "count",
+    filters: Array.isArray(v?.filters) ? v!.filters.filter((f) => f && typeof f.field === "string").map((f) => ({ field: f.field, values: Array.isArray(f.values) ? f.values : [] })) : [],
+    heat: typeof v?.heat === "boolean" ? v.heat : fallback.heat,
+  };
 }

@@ -8,6 +8,7 @@ import { PROJECT_COLORS, PROJECT_COLOR_NAMES } from "../lib/gateway";
 import { th } from "../i18n/th";
 import { useApp } from "../state";
 import { Modal } from "./ui";
+import { pickIncask } from "./IncaskDialog";
 
 export function ColorPicker({ value, onChange, label }: { value: string; onChange: (c: string) => void; label: string }) {
   return (
@@ -70,6 +71,12 @@ export function ProjectFormDialog({ project, onClose }: { project?: Project; onC
           <ColorPicker value={color} onChange={setColor} label="สีประจำโปรเจกต์" />
         </div>
         {error && <div className="err-box" role="alert">{error}</div>}
+        {!project && (
+          <span className="muted" style={{ fontSize: 13 }}>
+            มีไฟล์โปรเจกต์จากเพื่อน?{" "}
+            <button type="button" className="link-btn" style={{ fontSize: 13, fontWeight: 600 }} onClick={async () => { const f = await pickIncask(); if (f) { app.setIncaskPath(f); onClose(); } }}>นำเข้าไฟล์ .incask…</button>
+          </span>
+        )}
         <div className="modal-actions">
           <button type="button" className="btn btn-lg" onClick={onClose}>{th.cancel}</button>
           <button type="submit" className="btn btn-lg btn-primary" disabled={busy || !name.trim()}>{project ? th.save : "สร้างโปรเจกต์"}</button>

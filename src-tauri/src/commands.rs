@@ -23,6 +23,8 @@ pub struct AppState {
     pub settings: Mutex<Settings>,
     /// classification jobs of this session, by project id
     pub jobs: Mutex<std::collections::HashMap<String, std::sync::Arc<crate::classify::Shared>>>,
+    /// a .incask passed on the command line at start (double-click)
+    pub pending_open: Mutex<Option<String>>,
     pub projects: Mutex<Registry>,
     pub status: Mutex<GatewayStatus>,
 }
@@ -34,6 +36,7 @@ impl AppState {
         Ok(Self {
             settings: Mutex::new(Settings::load()),
             jobs: Mutex::new(std::collections::HashMap::new()),
+            pending_open: Mutex::new(incask_arg(std::env::args())),
             projects: Mutex::new(Registry::load(&config::projects_dir())?),
             status: Mutex::new(GatewayStatus { state: "unknown".into(), message: None, checked_at: 0 }),
         })
@@ -672,6 +675,104 @@ pub fn save_view(state: S<'_>, project_id: String, id: Option<String>, name: Str
 #[tauri::command]
 pub fn delete_view(state: S<'_>, project_id: String, id: String) -> AppResult<()> {
     pivot::delete_view(&open_project(&state, &project_id)?, &id)
+}
+
+// ------------------------------------------------------------------ export / .incask (SPEC §10)
+
+use crate::export::{self, incask, Scope};
+
+fn project_meta(state: &AppState, project_id: &str) -> AppResult<(String, String)> {
+    let p = state.projects.lock().get(project_id)?;
+    Ok((p.name, p.color))
+}
+
+#[tauri::command]
+pub fn export_default_name(state: S<'_>, project_id: String, scope: Scope, ext: String) -> AppResult<String> {
+    let (name, _) = project_meta(&state, &project_id)?;
+    Ok(export::default_file_name(&name, &scope, &ext))
+}
+
+#[tauri::command]
+pub fn export_csv(state: S<'_>, project_id: String, scope: Scope, path: String) -> AppResult<usize> {
+    let conn = open_project(&state, &project_id)?;
+    // the source-file columns the user added to the results table
+    let src_cols: Vec<String> = crate::db::get_pref(&conn, "results_columns")?
+        .and_then(|v| serde_json::from_str::<serde_json::Value>(&v).ok())
+        .and_then(|v| v.get("srcCols").cloned())
+        .and_then(|v| serde_json::from_value(v).ok())
+        .unwrap_or_default();
+    export::csv_export::export(&conn, &scope, &src_cols, std::path::Path::new(&path))
+}
+
+#[tauri::command]
+pub fn export_incask(app: AppHandle, project_id: String, scope: Scope, path: String) -> AppResult<incask::Manifest> {
+    let state = app.state::<AppState>();
+    let (name, color) = project_meta(&state, &project_id)?;
+    let conn = open_project(&state, &project_id)?;
+    incask::export(&conn, &scope, &name, &color, &app.package_info().version.to_string(), std::path::Path::new(&path))
+}
+
+/// The report page built from `report/` (bundled resource; `src-tauri/resources` when running from source).
+fn report_template(app: &AppHandle) -> AppResult<String> {
+    let mut candidates = vec![];
+    if let Ok(r) = app.path().resource_dir() {
+        candidates.push(r.join("resources").join("report.html"));
+        candidates.push(r.join("report.html"));
+    }
+    candidates.push(std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("resources").join("report.html"));
+    for c in candidates {
+        if let Ok(t) = std::fs::read_to_string(&c) {
+            if t.contains("id=\"incask-data\"") {
+                return Ok(t);
+            }
+        }
+    }
+    Err(AppError::new("report", "ไม่พบแม่แบบรายงาน HTML — รัน npm run build:report แล้วลองใหม่"))
+}
+
+#[tauri::command]
+pub fn export_html(app: AppHandle, project_id: String, scope: Scope, path: String) -> AppResult<usize> {
+    let state = app.state::<AppState>();
+    let (name, color) = project_meta(&state, &project_id)?;
+    let conn = open_project(&state, &project_id)?;
+    export::html::export(&conn, &scope, (&name, &color), &report_template(&app)?, std::path::Path::new(&path))
+}
+
+/// Show an exported file in Explorer.
+#[tauri::command]
+pub fn reveal_file(app: AppHandle, path: String) -> AppResult<()> {
+    use tauri_plugin_opener::OpenerExt;
+    app.opener().reveal_item_in_dir(&path).map_err(|e| AppError::new("open", format!("เปิดโฟลเดอร์ไม่ได้: {e}")))
+}
+
+#[tauri::command]
+pub fn inspect_incask(state: S<'_>, path: String, project_id: Option<String>) -> AppResult<incask::Inspect> {
+    let target = match project_id {
+        Some(id) => Some(open_project(&state, &id)?),
+        None => None,
+    };
+    incask::inspect(std::path::Path::new(&path), target.as_ref())
+}
+
+#[tauri::command]
+pub fn import_incask(state: S<'_>, path: String, name: Option<String>) -> AppResult<Project> {
+    incask::import_new(&mut state.projects.lock(), std::path::Path::new(&path), name.as_deref())
+}
+
+#[tauri::command]
+pub fn merge_incask(state: S<'_>, project_id: String, path: String, take_theirs: bool) -> AppResult<incask::MergeResult> {
+    incask::merge(&mut open_project(&state, &project_id)?, std::path::Path::new(&path), take_theirs)
+}
+
+/// A `.incask` the app was started with (double-click in Explorer), handed over once.
+#[tauri::command]
+pub fn pending_open_file(state: S<'_>) -> Option<String> {
+    state.pending_open.lock().take()
+}
+
+/// The first `.incask` path among command-line arguments.
+pub fn incask_arg<I: IntoIterator<Item = String>>(args: I) -> Option<String> {
+    args.into_iter().skip(1).find(|a| a.to_lowercase().ends_with(".incask"))
 }
 
 #[cfg(test)]

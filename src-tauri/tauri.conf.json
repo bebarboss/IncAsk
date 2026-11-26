@@ -4,7 +4,7 @@
   "version": "../package.json",
   "identifier": "th.co.gosoft.incask",
   "build": {
-    "beforeDevCommand": "npm run dev",
+    "beforeDevCommand": "npm run build:report && npm run dev",
     "devUrl": "http://localhost:5173",
     "beforeBuildCommand": "npm run build",
     "frontendDist": "../dist"
@@ -28,7 +28,10 @@
   },
   "bundle": {
     "active": true,
-    "targets": ["msi", "nsis"],
+    "targets": [
+      "msi",
+      "nsis"
+    ],
     "publisher": "Gosoft (Thailand)",
     "category": "Productivity",
     "shortDescription": "จัดหมวดหมู่อินซิเดนต์ด้วย AI",
@@ -43,22 +46,37 @@
       "certificateThumbprint": null,
       "digestAlgorithm": "sha256",
       "timestampUrl": "",
-      "webviewInstallMode": { "type": "downloadBootstrapper", "silent": true },
+      "webviewInstallMode": {
+        "type": "downloadBootstrapper",
+        "silent": true
+      },
       "allowDowngrades": false,
-      "wix": { "language": ["en-US"] },
+      "wix": {
+        "language": [
+          "en-US"
+        ]
+      },
       "nsis": {
         "installMode": "currentUser",
-        "languages": ["Thai", "English"],
+        "languages": [
+          "Thai",
+          "English"
+        ],
         "displayLanguageSelector": false
       }
     },
-    "createUpdaterArtifacts": false
+    "createUpdaterArtifacts": false,
+    "resources": {
+      "resources/report.html": "resources/report.html"
+    }
   },
   "plugins": {
     "updater": {
       "pubkey": "",
       "endpoints": [],
-      "windows": { "installMode": "passive" }
+      "windows": {
+        "installMode": "passive"
+      }
     }
   }
 }
