@@ -257,27 +257,29 @@ export function createMockBackend(): Backend {
 
   // ---------------------------------------------------------------- simulated classification job
   const jobs: Record<string, ClassifyProgress> = {};
-  const startJob = (projectId: string) => {
-    const total = 4812;
-    const done = 2984;
+  // the demo project starts mid-run; a commit from the import page starts a fresh run
+  const startJob = (projectId: string, fileName = "incident_report_oct2026.xlsx", patternName: string | null = "รีพอร์ตอินซิเดนต์รายเดือน", fresh = false) => {
     jobs[projectId] = {
-      runId: `run-${projectId}`,
+      runId: `run-${projectId}-${Date.now()}`,
       projectId,
-      fileName: "incident_report_oct2026.xlsx",
-      patternName: "รีพอร์ตอินซิเดนต์รายเดือน",
+      fileName,
+      patternName,
       status: "running",
-      total,
-      done,
-      ai: 2516,
-      cached: 368,
-      low: 97,
-      error: 3,
+      total: 4773,
+      done: fresh ? 0 : 2984,
+      ai: fresh ? 0 : 2516,
+      cached: fresh ? 0 : 368,
+      low: fresh ? 0 : 97,
+      error: fresh ? 0 : 3,
       etaSec: 360,
       concurrency: settings.concurrency,
       recent: [],
     };
   };
   startJob("cc-a");
+  let patterns: (import("./types").ReportPattern & { projectId: string })[] = [
+    { projectId: "cc-b", id: "rp-1", name: "รีพอร์ตอินซิเดนต์รายเดือน", headers: [...PREVIEW_HEADERS], roles: { ticket: "เลขอินซิเดนต์", date: "วันที่แจ้ง", service: "เซอร์วิส", problem: ["หัวข้อ", "รายละเอียดปัญหา"] }, dateFormat: "dmy" },
+  ];
   const recentFrom = (projectId: string, n: number): RecentItem[] => {
     const t = lazy(projectId).tickets;
     const out: RecentItem[] = [];
@@ -570,28 +572,57 @@ export function createMockBackend(): Backend {
     },
     saveTaxonomyTemplate: async () => { await wait(200); },
 
-    previewImport: async (projectId): Promise<ImportPreview> => {
+    previewImport: async (projectId, path, sheet): Promise<ImportPreview> => {
       lazy(projectId);
       await wait(250);
+      const pattern = patterns.find((p) => p.projectId === projectId);
       return {
-        fileName: "incident_report_oct2026.xlsx", sheet: "Sheet1", sheets: ["Sheet1"], headers: [...PREVIEW_HEADERS],
-        rows: clone(PREVIEW_ROWS), rowCount: 4812, pattern: projectId === "cc-a" ? null : { id: "p1", name: "รีพอร์ตอินซิเดนต์รายเดือน" },
-        roles: [...PREVIEW_ROLES],
+        fileName: path.split(/[\\/]/).pop() ?? path, sheet: sheet ?? "ต.ค.", sheets: ["ต.ค.", "สรุป"], headers: [...PREVIEW_HEADERS],
+        rows: clone(PREVIEW_ROWS), rowCount: 4812, pattern: pattern ? { id: pattern.id, name: pattern.name } : null,
+        roles: [...PREVIEW_ROLES], dateOrder: pattern ? "dmy" : null,
       };
     },
-    importSummary: async (projectId, roles) => {
+    importAnalyze: async (projectId, _path, _sheet, roles, dateOrder) => {
+      await wait(120);
+      const need = ["ticket", "date", "service"].every((r) => roles.filter((x) => x === r).length === 1) && roles.includes("problem");
+      if (!need) throw { code: "invalid_roles", message: "เลือกคอลัมน์ให้ครบทั้งสี่บทบาทก่อน (เลขทิกเก็ต วันที่ เซอร์วิส อย่างละ 1 และปัญหาอย่างน้อย 1)" };
       const known = new Set(lazy(projectId).services.map((s) => s.name));
       const svcIdx = roles.indexOf("service");
       const counts: Record<string, number> = {};
-      if (svcIdx >= 0) PREVIEW_ROWS.forEach((r) => { counts[r[svcIdx]] = (counts[r[svcIdx]] ?? 0) + 1; });
-      const services = Object.entries(counts).map(([name, n]) => ({ name, known: known.has(name), count: Math.round((n / PREVIEW_ROWS.length) * 4800) }));
-      if (svcIdx >= 0) services.push({ name: "Smart Home", known: false, count: 12 });
-      const hasDate = roles.includes("date");
+      PREVIEW_ROWS.forEach((r) => { counts[r[svcIdx]] = (counts[r[svcIdx]] ?? 0) + 1; });
+      const services = Object.entries(counts).map(([name, n]) => ({ name, known: known.has(name), count: Math.round((n / PREVIEW_ROWS.length) * 4760) }));
+      services.push({ name: "Smart Home", known: false, count: 12 });
+      const sample = PREVIEW_HEADERS.map((h, i) => (roles[i] === "problem" ? `${h}: ${PREVIEW_ROWS[0][i]}` : null)).filter(Boolean).join(", ");
       return {
-        dateFrom: hasDate ? "2026-10-01" : null, dateTo: hasDate ? "2026-10-31" : null, months: hasDate ? ["2026-10"] : [],
-        duplicates: roles.includes("ticket") ? 37 : 0, invalid: 2, services,
+        dateFrom: "2026-10-01", dateTo: "2026-10-31", months: ["2026-10"], duplicates: 37, invalid: 2,
+        invalidRows: [{ row: 214, message: "ไม่มีเลขทิกเก็ต" }, { row: 3881, message: "อ่านวันที่ไม่ได้: ไม่ระบุ" }],
+        services, sample, dateOrder: dateOrder ?? "dmy", dateAmbiguous: false, newRows: 4773,
       };
     },
+    importCommit: async (projectId, path, _sheet, roles, _order, _replace, patternName) => {
+      await wait(500);
+      if (patternName) {
+        const ex = patterns.find((p) => p.projectId === projectId);
+        const roleMap = { ticket: PREVIEW_HEADERS[roles.indexOf("ticket")] ?? null, date: PREVIEW_HEADERS[roles.indexOf("date")] ?? null, service: PREVIEW_HEADERS[roles.indexOf("service")] ?? null, problem: PREVIEW_HEADERS.filter((_, i) => roles[i] === "problem") };
+        if (ex) Object.assign(ex, { name: patternName, roles: roleMap });
+        else patterns.push({ projectId, id: `rp-${patterns.length + 1}`, name: patternName, headers: [...PREVIEW_HEADERS], roles: roleMap, dateFormat: "dmy" });
+      }
+      startJob(projectId, path.split(/[\\/]/).pop() ?? path, patternName, true);
+      return { importId: "im-mock", rowsTotal: 4812, rowsNew: 4773, rowsDuplicate: 37, rowsInvalid: 2, unknownService: 12 };
+    },
+    listPatterns: async (projectId) => clone(patterns.filter((p) => p.projectId === projectId).map(({ projectId: _p, ...rest }) => rest)),
+    updatePattern: async (_projectId, id, patch) => {
+      const p = patterns.find((x) => x.id === id);
+      if (!p) throw { code: "not_found", message: "ไม่พบรูปแบบรีพอร์ต" };
+      if (patch.name) p.name = patch.name.trim();
+      if (patch.roles) {
+        const r = patch.roles;
+        p.roles = { ticket: p.headers[r.indexOf("ticket")] ?? null, date: p.headers[r.indexOf("date")] ?? null, service: p.headers[r.indexOf("service")] ?? null, problem: p.headers.filter((_, i) => r[i] === "problem") };
+      }
+      const { projectId: _p, ...rest } = p;
+      return clone(rest);
+    },
+    deletePattern: async (_projectId, id) => { patterns = patterns.filter((p) => p.id !== id); },
 
     classifyStatus: async (projectId) => (jobs[projectId] ? clone(jobs[projectId]) : null),
     pauseClassify: async (runId) => { const j = Object.values(jobs).find((x) => x.runId === runId); if (j) { j.status = "paused"; emit("classify://progress", clone(j)); } },

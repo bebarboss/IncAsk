@@ -58,6 +58,12 @@ pub fn run() {
             commands::preview_taxonomy_import,
             commands::apply_taxonomy_import,
             commands::save_taxonomy_template,
+            commands::import_preview,
+            commands::import_analyze,
+            commands::import_commit,
+            commands::list_patterns,
+            commands::update_pattern,
+            commands::delete_pattern,
             updater::check_update,
             updater::install_update,
         ])

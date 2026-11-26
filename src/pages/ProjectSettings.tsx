@@ -6,6 +6,7 @@ import { useApp } from "../state";
 import { EmptyState } from "../components/ui";
 import { ColorPicker, DeleteProjectDialog } from "../components/ProjectDialogs";
 import { TaxonomyEditor } from "../components/TaxonomyEditor";
+import { PatternsEditor } from "../components/PatternsEditor";
 
 type Section = "taxonomy" | "patterns" | "columns" | "display" | "share";
 const SECTIONS: [Section, string][] = [
@@ -30,7 +31,8 @@ export default function ProjectSettingsPage({ project }: { project: Project }) {
         <div className="settings-main">
           {section === "taxonomy" && <TaxonomyEditor project={project} />}
           {section === "share" && <ProjectIdentity project={project} />}
-          {section !== "taxonomy" && section !== "share" && (
+          {section === "patterns" && <PatternsEditor project={project} />}
+          {(section === "columns" || section === "display") && (
             <div className="card"><EmptyState title={SECTIONS.find(([id]) => id === section)![1]} body="ส่วนนี้จะทำในขั้นถัดไปตาม SPEC ข้อ 17" /></div>
           )}
         </div>

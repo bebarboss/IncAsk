@@ -122,17 +122,21 @@ export interface TaxonomyRow {
 
 export type Role = "ticket" | "date" | "problem" | "service" | "none";
 
+export type DateOrder = "dmy" | "mdy";
+
 export interface ImportPreview {
   fileName: string;
   sheet: string;
   sheets: string[];
   headers: string[];
-  /** first 8–10 rows, as text */
+  /** first 10 rows, as text */
   rows: string[][];
   rowCount: number;
   /** matched report pattern (by header signature), or null = new pattern */
   pattern: { id: string; name: string } | null;
   roles: Role[];
+  /** from the matched pattern */
+  dateOrder: DateOrder | null;
 }
 
 export interface ImportSummary {
@@ -142,7 +146,30 @@ export interface ImportSummary {
   months: string[];
   duplicates: number;
   invalid: number;
+  invalidRows: { row: number; message: string }[];
   services: { name: string; known: boolean; count: number }[];
+  sample: string;
+  dateOrder: DateOrder;
+  /** every date fits both orders — ask the user */
+  dateAmbiguous: boolean;
+  newRows: number;
+}
+
+export interface ImportResult {
+  importId: string;
+  rowsTotal: number;
+  rowsNew: number;
+  rowsDuplicate: number;
+  rowsInvalid: number;
+  unknownService: number;
+}
+
+export interface ReportPattern {
+  id: string;
+  name: string;
+  headers: string[];
+  roles: { ticket: string | null; date: string | null; service: string | null; problem: string[] };
+  dateFormat: string | null;
 }
 
 // ------------------------------------------------------------------ classify

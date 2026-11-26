@@ -10,6 +10,9 @@ import type {
   GatewayStatus,
   ImportPreview,
   ImportSummary,
+  ImportResult,
+  DateOrder,
+  ReportPattern,
   KeyUsage,
   PivotResult,
   Project,
@@ -88,8 +91,12 @@ export interface Backend {
   applyTaxonomyImport(projectId: string, path: string, service: string | null): Promise<Service[]>;
   saveTaxonomyTemplate(path: string): Promise<void>;
   // import (step 5)
-  previewImport(projectId: string, path: string | null): Promise<ImportPreview>;
-  importSummary(projectId: string, roles: Role[]): Promise<ImportSummary>;
+  previewImport(projectId: string, path: string, sheet: string | null): Promise<ImportPreview>;
+  importAnalyze(projectId: string, path: string, sheet: string | null, roles: Role[], dateOrder: DateOrder | null): Promise<ImportSummary>;
+  importCommit(projectId: string, path: string, sheet: string | null, roles: Role[], dateOrder: DateOrder | null, replace: boolean, patternName: string | null): Promise<ImportResult>;
+  listPatterns(projectId: string): Promise<ReportPattern[]>;
+  updatePattern(projectId: string, id: string, patch: { name?: string; roles?: Role[] }): Promise<ReportPattern>;
+  deletePattern(projectId: string, id: string): Promise<void>;
   // classify (step 6)
   classifyStatus(projectId: string): Promise<ClassifyProgress | null>;
   pauseClassify(runId: string): Promise<void>;
@@ -174,8 +181,12 @@ function createTauriBackend(): Backend {
     previewTaxonomyImport: (projectId, path, service) => call("preview_taxonomy_import", { projectId, path, service }),
     applyTaxonomyImport: (projectId, path, service) => call("apply_taxonomy_import", { projectId, path, service }),
     saveTaxonomyTemplate: (path) => call("save_taxonomy_template", { path }),
-    previewImport: notYet,
-    importSummary: notYet,
+    previewImport: (projectId, path, sheet) => call("import_preview", { projectId, path, sheet }),
+    importAnalyze: (projectId, path, sheet, roles, dateOrder) => call("import_analyze", { projectId, path, sheet, roles, dateOrder }),
+    importCommit: (projectId, path, sheet, roles, dateOrder, replace, patternName) => call("import_commit", { projectId, path, sheet, roles, dateOrder, replace, patternName }),
+    listPatterns: (projectId) => call("list_patterns", { projectId }),
+    updatePattern: (projectId, id, patch) => call("update_pattern", { projectId, id, name: patch.name ?? null, roles: patch.roles ?? null }),
+    deletePattern: (projectId, id) => call("delete_pattern", { projectId, id }),
     classifyStatus: async () => null,
     pauseClassify: notYet,
     resumeClassify: notYet,

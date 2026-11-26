@@ -342,6 +342,58 @@ pub fn save_taxonomy_template(path: String) -> AppResult<()> {
     taxonomy::write_template(std::path::Path::new(&path))
 }
 
+// ------------------------------------------------------------------ ticket import (SPEC §5)
+
+use crate::ingest::{self, dates::DateOrder, patterns::{self, Pattern, Role, RoleMap}};
+
+#[tauri::command]
+pub fn import_preview(state: S<'_>, project_id: String, path: String, sheet: Option<String>) -> AppResult<ingest::Preview> {
+    ingest::preview(&open_project(&state, &project_id)?, std::path::Path::new(&path), sheet.as_deref())
+}
+
+#[tauri::command]
+pub fn import_analyze(state: S<'_>, project_id: String, path: String, sheet: Option<String>, roles: Vec<Role>, date_order: Option<DateOrder>) -> AppResult<ingest::Summary> {
+    let conn = open_project(&state, &project_id)?;
+    let p = ingest::load(std::path::Path::new(&path), sheet.as_deref())?;
+    ingest::analyze(&conn, &p, &roles, date_order)
+}
+
+#[allow(clippy::too_many_arguments)]
+#[tauri::command]
+pub fn import_commit(
+    state: S<'_>,
+    project_id: String,
+    path: String,
+    sheet: Option<String>,
+    roles: Vec<Role>,
+    date_order: Option<DateOrder>,
+    replace: bool,
+    pattern_name: Option<String>,
+) -> AppResult<ingest::ImportResult> {
+    let mut conn = open_project(&state, &project_id)?;
+    let p = ingest::load(std::path::Path::new(&path), sheet.as_deref())?;
+    let opts = ingest::CommitOptions { roles: &roles, date_order, replace, pattern_name: pattern_name.as_deref().filter(|n| !n.trim().is_empty()) };
+    ingest::commit(&mut conn, &p, &opts)
+}
+
+#[tauri::command]
+pub fn list_patterns(state: S<'_>, project_id: String) -> AppResult<Vec<Pattern>> {
+    patterns::list(&open_project(&state, &project_id)?)
+}
+
+#[tauri::command]
+pub fn update_pattern(state: S<'_>, project_id: String, id: String, name: Option<String>, roles: Option<Vec<Role>>) -> AppResult<Pattern> {
+    let conn = open_project(&state, &project_id)?;
+    let p = patterns::get(&conn, &id)?;
+    let map = roles.map(|r| RoleMap::from_roles(&p.headers, &r));
+    patterns::update(&conn, &id, name.as_deref(), map.as_ref())
+}
+
+#[tauri::command]
+pub fn delete_pattern(state: S<'_>, project_id: String, id: String) -> AppResult<()> {
+    patterns::delete(&open_project(&state, &project_id)?, &id)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
