@@ -3,13 +3,13 @@
 import { useEffect, useState } from "react";
 import { Check } from "lucide-react";
 import { api, errMsg } from "../lib/api";
-import type { GatewayInfo, UpdateInfo } from "../lib/types";
+import type { ConfigProjectDiff, GatewayInfo, UpdateInfo } from "../lib/types";
 import { th } from "../i18n/th";
 import { useApp, type AppSection } from "../state";
 import { StatusPill } from "../components/StatusPill";
 import { UpdateDialog } from "../components/UpdateDialog";
-import { ConfirmDialog } from "../components/ui";
-import { thDateTime } from "../lib/format";
+import { ConfirmDialog, Modal } from "../components/ui";
+import { fmtInt, thDateTime } from "../lib/format";
 import UsagePage from "./Usage";
 
 const SECTIONS: [AppSection, string][] = [
@@ -200,15 +200,89 @@ function ThemeSection() {
 
 function BackupSection() {
   const app = useApp();
+  const [scope, setScope] = useState<"current" | "all">(app.activeProject ? "current" : "all");
+  const [busy, setBusy] = useState(false);
+  const [review, setReview] = useState<{ path: string; diff: ConfigProjectDiff[] } | null>(null);
+  const exportIt = async () => {
+    setBusy(true);
+    try {
+      const name = scope === "current" && app.activeProject ? `incask-config_${app.activeProject.name}.json` : "incask-config.json";
+      const path = await api.pickSavePath(name, [{ name: "คอนฟิก IncAsk", extensions: ["json"] }]);
+      if (!path) return;
+      const n = await api.exportConfig(scope === "current" && app.activeProject ? [app.activeProject.id] : null, path);
+      app.toast(`✓ ส่งออกคอนฟิก ${n} โปรเจกต์แล้ว`);
+    } catch (e) {
+      app.toast(errMsg(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+  const importIt = async () => {
+    const path = await api.pickFile([{ name: "คอนฟิก IncAsk", extensions: ["json"] }]);
+    if (!path) return;
+    try {
+      setReview({ path, diff: await api.configDiff(path) });
+    } catch (e) {
+      app.toast(errMsg(e));
+    }
+  };
   return (
     <section className="card card-pad" aria-labelledby="bk-h">
       <h2 id="bk-h">สำรองและนำเข้าคอนฟิก</h2>
-      <p className="muted" style={{ fontSize: 13, lineHeight: 1.7 }}>รวมหมวดหมู่ รูปแบบรีพอร์ต และสีของทุกโปรเจกต์ไว้ในไฟล์เดียว ให้เพื่อนในทีมนำเข้าแล้วใช้ชุดเดียวกัน ไม่รวม API key และข้อมูลทิกเก็ต</p>
-      <div style={{ display: "flex", gap: 8 }}>
-        <button className="btn" onClick={() => app.toast("ส่งออกคอนฟิก — ทำในขั้นที่ 10")}>ส่งออกคอนฟิก</button>
-        <button className="btn" onClick={() => app.toast("นำเข้าคอนฟิก — ทำในขั้นที่ 10")}>นำเข้าคอนฟิก</button>
+      <p className="muted" style={{ fontSize: 13, lineHeight: 1.7 }}>รวมเซอร์วิส หมวดหมู่ สี รูปแบบรีพอร์ต และมุมมองที่บันทึกไว้ในไฟล์เดียว ให้เพื่อนในทีมนำเข้าแล้วใช้ชุดเดียวกัน ไม่รวม API key, URL ของ Gateway, ทิกเก็ต และผลจัดหมวด</p>
+      <div role="radiogroup" aria-label="ส่งออกคอนฟิกของ" style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
+        <label className="check"><input type="radio" name="bk" checked={scope === "current"} disabled={!app.activeProject} onChange={() => setScope("current")} />เฉพาะ {app.activeProject?.name ?? "โปรเจกต์ที่เลือก"}</label>
+        <label className="check"><input type="radio" name="bk" checked={scope === "all"} onChange={() => setScope("all")} />ทุกโปรเจกต์ ({app.projects.length})</label>
       </div>
+      <div style={{ display: "flex", gap: 8 }}>
+        <button className="btn" disabled={busy} onClick={exportIt}>ส่งออกคอนฟิก</button>
+        <button className="btn" onClick={importIt}>นำเข้าคอนฟิก…</button>
+      </div>
+      {review && <ConfigImportDialog path={review.path} diff={review.diff} onClose={() => setReview(null)} />}
     </section>
+  );
+}
+
+function ConfigImportDialog({ path, diff, onClose }: { path: string; diff: ConfigProjectDiff[]; onClose: () => void }) {
+  const app = useApp();
+  const [busy, setBusy] = useState(false);
+  const changed = diff.filter((d) => d.newProject || d.servicesAdded + d.servicesChanged + d.categoriesAdded + d.categoriesChanged + d.categoriesRemoved + d.patternsAdded + d.patternsChanged + d.viewsAdded + d.viewsChanged > 0);
+  const affected = diff.reduce((a, d) => a + d.ticketsAffected, 0);
+  const line = (n: number, word: string) => (n ? `${word} ${fmtInt(n)}` : null);
+  const apply = async () => {
+    setBusy(true);
+    try {
+      await api.configApply(path);
+      await app.refreshProjects();
+      app.toast(`✓ นำเข้าคอนฟิกแล้ว · ${changed.length} โปรเจกต์`);
+      onClose();
+    } catch (e) {
+      app.toast(errMsg(e));
+      setBusy(false);
+    }
+  };
+  return (
+    <Modal title="นำเข้าคอนฟิก" subtitle={path.split(/[\\/]/).pop()} onClose={onClose} width={600}>
+      {changed.length === 0 ? <div className="ok-badge" style={{ alignSelf: "flex-start" }}><Check size={14} strokeWidth={3} aria-hidden="true" />ทุกอย่างตรงกับในเครื่องอยู่แล้ว</div> : (
+        <div className="kv">
+          {changed.map((d) => (
+            <div key={d.name} style={{ flexDirection: "column", alignItems: "flex-start", gap: 4 }}>
+              <span style={{ fontWeight: 600 }}>{d.name}{d.newProject ? <span className="chip" style={{ marginLeft: 8 }}>โปรเจกต์ใหม่</span> : null}</span>
+              <span className="muted" style={{ fontSize: 13 }}>
+                {[line(d.servicesAdded, "เพิ่มเซอร์วิส"), line(d.servicesChanged, "แก้เซอร์วิส"), line(d.categoriesAdded, "เพิ่มหมวด"), line(d.categoriesChanged, "แก้หมวด"), line(d.categoriesRemoved, "ลบหมวด"),
+                  line(d.patternsAdded + d.patternsChanged, "รูปแบบรีพอร์ต"), line(d.viewsAdded + d.viewsChanged, "มุมมอง")].filter(Boolean).join(" · ")}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+      {affected > 0 && <div className="warn-box">หมวดที่ถูกลบมีทิกเก็ตใช้อยู่ {fmtInt(affected)} รายการ — ทิกเก็ตเหล่านั้นจะกลับเป็น "รอจัด" และถูกจัดใหม่ในครั้งถัดไป</div>}
+      <span className="field-hint">เซอร์วิส รูปแบบรีพอร์ต และมุมมองที่มีแค่ในเครื่องนี้จะไม่ถูกลบ</span>
+      <div className="modal-actions">
+        <button className="btn btn-lg" onClick={onClose}>{th.cancel}</button>
+        <button className="btn btn-lg btn-primary" disabled={busy || changed.length === 0} onClick={apply}>ยืนยันนำเข้า</button>
+      </div>
+    </Modal>
   );
 }
 

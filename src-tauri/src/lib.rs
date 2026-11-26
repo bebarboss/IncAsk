@@ -4,6 +4,7 @@
 pub mod classify;
 pub mod commands;
 pub mod config;
+pub mod config_backup;
 pub mod db;
 pub mod errors;
 pub mod export;
@@ -107,6 +108,9 @@ pub fn run() {
             commands::import_incask,
             commands::merge_incask,
             commands::pending_open_file,
+            commands::export_config,
+            commands::config_diff,
+            commands::config_apply,
             updater::check_update,
             updater::install_update,
         ])

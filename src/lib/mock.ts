@@ -16,7 +16,6 @@ import type {
   Settings,
   TaxonomyRow,
   TicketRow,
-  UsageSummary,
 } from "./types";
 import { chartsJs, drillJs, fieldValuesJs, pivotJs } from "./pivotjs";
 import type { SavedView } from "./types";
@@ -328,33 +327,8 @@ export function createMockBackend(): Backend {
 
   // ---------------------------------------------------------------- helpers
 
-  const usage: UsageSummary = {
-    monthLabel: "2026-11",
-    spend: 18.4,
-    budget: 50,
-    tokens: 7_900_000,
-    runs: 12,
-    budgetResetAt: "2026-12-01T00:00:00Z",
-    byProject: [
-      { name: "Call Center A", color: "#217346", cost: 11.22 },
-      { name: "Call Center B", color: "#B4530A", cost: 4.97 },
-      { name: "NOC Incident", color: "#4A5A7A", cost: 2.21 },
-    ],
-    history: [
-      ["2026-11-26T14:12", "Call Center A", "incident_report_oct2026.xlsx", 4812, 368, 2_100_000, 4.86],
-      ["2026-11-24T10:40", "Call Center B", "cc_b_oct.csv", 2140, 211, 900_000, 2.07],
-      ["2026-11-20T16:05", "NOC Incident", "noc_oct_2026.xlsx", 960, 42, 400_000, 0.94],
-      ["2026-11-18T09:31", "Call Center A", "ทดลอง 20 แถว", 20, 0, 10_000, 0.02],
-      ["2026-11-12T11:47", "Call Center A", "incident_report_sep2026.xlsx", 4530, 402, 2_000_000, 4.61],
-      ["2026-11-05T15:20", "Call Center B", "cc_b_sep.csv", 2288, 190, 1_000_000, 2.29],
-    ].map(([at, project, fileName, rows, cached, tokens, cost], i) => ({
-      id: `r${i}`, startedAt: new Date(at as string).getTime(), project: project as string, fileName: fileName as string,
-      rows: rows as number, cached: cached as number, tokens: tokens as number, cost: cost as number,
-    })),
-  };
   // ?budget=high (88%) / ?budget=full (97%) preview the orange / red usage bar
   const spendNow = params.get("budget") === "full" ? 48.5 : params.get("budget") === "high" ? 44.2 : 18.4;
-  usage.spend = spendNow;
   const keyUsage: KeyUsage = {
     keyAlias: "incask-cc", spend: spendNow, maxBudget: 50, softBudget: 40, budgetDuration: "30d",
     budgetResetAt: "2026-12-01T00:00:00Z", expires: null, tpmLimit: 200_000, rpmLimit: 60, models: [...MODEL_IDS],
@@ -739,7 +713,16 @@ export function createMockBackend(): Backend {
       return clone(v ?? list[list.length - 1]);
     },
     deleteView: async (projectId, id) => { views[projectId] = (views[projectId] ?? []).filter((v) => v.id !== id); },
-    usageSummary: async () => { await wait(150); return clone(usage); },
+    exportConfig: async (ids) => { await wait(300); return ids ? ids.length : projects.length; },
+    configDiff: async () => {
+      await wait(300);
+      return [
+        { name: "Call Center A", newProject: false, servicesAdded: 1, servicesChanged: 0, categoriesAdded: 4, categoriesChanged: 2, categoriesRemoved: 1, ticketsAffected: 37, patternsAdded: 0, patternsChanged: 1, viewsAdded: 1, viewsChanged: 0 },
+        { name: "NOC Incident", newProject: false, servicesAdded: 0, servicesChanged: 0, categoriesAdded: 0, categoriesChanged: 0, categoriesRemoved: 0, ticketsAffected: 0, patternsAdded: 0, patternsChanged: 0, viewsAdded: 0, viewsChanged: 0 },
+        { name: "Call Center C", newProject: true, servicesAdded: 2, servicesChanged: 0, categoriesAdded: 12, categoriesChanged: 0, categoriesRemoved: 0, ticketsAffected: 0, patternsAdded: 1, patternsChanged: 0, viewsAdded: 2, viewsChanged: 0 },
+      ];
+    },
+    configApply: async (path) => { const d = await backend.configDiff(path); if (!projects.some((p) => p.name === "Call Center C")) await backend.createProject("Call Center C"); return d; },
     exportDefaultName: async (projectId, scope, ext) => `${projects.find((p) => p.id === projectId)?.name ?? "project"}_${scope.from}_${scope.to}.${ext}`,
     exportCsv: async (projectId, scope) => { await wait(400); return lazy(projectId).tickets.filter((t) => t.month >= scope.from && t.month <= scope.to && (!scope.service || t.service === scope.service)).length; },
     exportIncask: async (projectId, scope) => {

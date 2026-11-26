@@ -316,30 +316,6 @@ export interface SavedView {
   config: ViewConfig;
 }
 
-// ------------------------------------------------------------------ usage
-
-export interface RunRow {
-  id: string;
-  startedAt: number;
-  project: string;
-  fileName: string;
-  rows: number;
-  cached: number;
-  tokens: number;
-  cost: number | null;
-}
-
-export interface UsageSummary {
-  monthLabel: string;
-  spend: number | null;
-  budget: number | null;
-  tokens: number;
-  runs: number;
-  budgetResetAt: string | null;
-  byProject: { name: string; color: string; cost: number }[];
-  history: RunRow[];
-}
-
 // ------------------------------------------------------------------ taxonomy editing (step 4)
 
 export interface RowInput {
@@ -410,4 +386,21 @@ export interface MergeResult {
   replaced: number;
   kept: number;
   servicesAdded: number;
+}
+
+// ------------------------------------------------------------------ config backup (step 10)
+
+export interface ConfigProjectDiff {
+  name: string;
+  newProject: boolean;
+  servicesAdded: number;
+  servicesChanged: number;
+  categoriesAdded: number;
+  categoriesChanged: number;
+  categoriesRemoved: number;
+  ticketsAffected: number;
+  patternsAdded: number;
+  patternsChanged: number;
+  viewsAdded: number;
+  viewsChanged: number;
 }

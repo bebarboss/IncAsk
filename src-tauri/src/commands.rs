@@ -775,6 +775,26 @@ pub fn incask_arg<I: IntoIterator<Item = String>>(args: I) -> Option<String> {
     args.into_iter().skip(1).find(|a| a.to_lowercase().ends_with(".incask"))
 }
 
+// ------------------------------------------------------------------ config backup (SPEC §12)
+
+/// `project_ids` = None → every project.
+#[tauri::command]
+pub fn export_config(state: S<'_>, project_ids: Option<Vec<String>>, path: String) -> AppResult<usize> {
+    crate::config_backup::export(&state.projects.lock(), project_ids.as_deref(), std::path::Path::new(&path))
+}
+
+#[tauri::command]
+pub fn config_diff(state: S<'_>, path: String) -> AppResult<Vec<crate::config_backup::ProjectDiff>> {
+    let file = crate::config_backup::read(std::path::Path::new(&path))?;
+    crate::config_backup::diff(&state.projects.lock(), &file)
+}
+
+#[tauri::command]
+pub fn config_apply(state: S<'_>, path: String) -> AppResult<Vec<crate::config_backup::ProjectDiff>> {
+    let file = crate::config_backup::read(std::path::Path::new(&path))?;
+    crate::config_backup::apply(&mut state.projects.lock(), &file)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

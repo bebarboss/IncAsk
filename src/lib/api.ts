@@ -18,6 +18,7 @@ import type {
   IncaskInspect,
   IncaskManifest,
   MergeResult,
+  ConfigProjectDiff,
   KeyUsage,
   PivotResult,
   PivotConfig,
@@ -38,10 +39,8 @@ import type {
   TicketRow,
   UpdateInfo,
   UpdateProgress,
-  UsageSummary,
 } from "./types";
 import { createMockBackend } from "./mock";
-import { th } from "../i18n/th";
 
 export interface EventMap {
   "gateway-status": GatewayStatus;
@@ -144,8 +143,11 @@ export interface Backend {
   mergeIncask(projectId: string, path: string, takeTheirs: boolean): Promise<MergeResult>;
   /** a .incask the app was started with (double-click), once */
   pendingOpenFile(): Promise<string | null>;
-  // usage (step 10)
-  usageSummary(): Promise<UsageSummary>;
+  // config backup (step 10)
+  /** projectIds null = every project */
+  exportConfig(projectIds: string[] | null, path: string): Promise<number>;
+  configDiff(path: string): Promise<ConfigProjectDiff[]>;
+  configApply(path: string): Promise<ConfigProjectDiff[]>;
   pickFile(filters: { name: string; extensions: string[] }[]): Promise<string | null>;
   pickSavePath(defaultName: string, filters: { name: string; extensions: string[] }[]): Promise<string | null>;
   on<E extends EventName>(event: E, cb: (payload: EventMap[E]) => void): Promise<Unlisten>;
@@ -166,9 +168,6 @@ export function toAppError(e: unknown): AppError {
 export function errMsg(e: unknown): string {
   return toAppError(e).message;
 }
-
-/** Commands that later steps add on the Rust side. */
-const notYet = (): Promise<never> => Promise.reject<never>({ code: "not_implemented", message: th.err.notYet });
 
 function createTauriBackend(): Backend {
   const core = import("@tauri-apps/api/core");
@@ -243,7 +242,9 @@ function createTauriBackend(): Backend {
     savedViews: (projectId) => call("list_views", { projectId }),
     saveView: (projectId, id, name, config) => call("save_view", { projectId, id, name, config }),
     deleteView: (projectId, id) => call("delete_view", { projectId, id }),
-    usageSummary: notYet,
+    exportConfig: (projectIds, path) => call("export_config", { projectIds, path }),
+    configDiff: (path) => call("config_diff", { path }),
+    configApply: (path) => call("config_apply", { path }),
     exportDefaultName: (projectId, scope, ext) => call("export_default_name", { projectId, scope, ext }),
     exportCsv: (projectId, scope, path) => call("export_csv", { projectId, scope, path }),
     exportIncask: (projectId, scope, path) => call("export_incask", { projectId, scope, path }),

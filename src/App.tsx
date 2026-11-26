@@ -4,6 +4,7 @@ import type { UpdateInfo } from "./lib/types";
 import { UpdateDialog } from "./components/UpdateDialog";
 import { ProjectFormDialog } from "./components/ProjectDialogs";
 import { IncaskDialog } from "./components/IncaskDialog";
+import { importBus } from "./pages/Import";
 import { api } from "./lib/api";
 import { th } from "./i18n/th";
 import { useApp } from "./state";
@@ -33,6 +34,25 @@ export default function App() {
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready, app.settings.setupDone]);
+
+  // keyboard shortcuts (SPEC §11.3): Ctrl+O import a file, Ctrl+E export. Ctrl+F lives in Results,
+  // F11/Esc in Summary.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!(e.ctrlKey || e.metaKey) || e.altKey || !app.activeProject || app.page.name === "setup") return;
+      const k = e.key.toLowerCase();
+      if (k === "o") {
+        e.preventDefault();
+        app.go({ name: "project", tab: "import" });
+        setTimeout(() => importBus.pick?.(), 60);
+      } else if (k === "e") {
+        e.preventDefault();
+        app.setExportOpen(true);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [app]);
 
   const badge = api.mock && <span className="mock-badge">{th.mock}</span>;
 

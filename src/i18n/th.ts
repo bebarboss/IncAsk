@@ -31,7 +31,7 @@ export const th = {
   },
   menu: {
     gateway: "Gateway และโมเดล",
-    usage: "การใช้งานและประวัติการรัน",
+    usage: "การใช้งาน Key",
     theme: "ธีม",
     backup: "สำรองและนำเข้าคอนฟิก",
     update: "ตรวจหาอัปเดต",
@@ -47,7 +47,6 @@ export const th = {
     e403: "ไม่มีสิทธิ์ใช้โมเดลนี้ ตรวจสิทธิ์ Model/Policy และชนิดของ Key กับ Admin",
     e404: "Gateway URL หรือชื่อโมเดล (Public Model ID) ไม่ถูกต้อง",
     e429: "เกินโควตา RPM, TPM หรือ budget — รอสักครู่หรือติดต่อ Admin",
-    notYet: "ส่วนนี้ยังไม่ได้ทำในเวอร์ชันนี้ (เปิด MOCK MODE เพื่อดูตัวอย่าง)",
   },
   tryAgain: "ลองใหม่",
   back: "ย้อนกลับ",
