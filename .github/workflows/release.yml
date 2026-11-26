@@ -1,0 +1,63 @@
+# Push a tag like v0.2.0 → builds signed MSI + NSIS on Windows and publishes a GitHub Release
+# with latest.json. Installed copies of IncAsk see the update on their next start
+# (or ตั้งค่าโปรแกรม › อัปเดต › ตรวจหาอัปเดต).
+#
+# One-time setup: repo Settings › Secrets and variables › Actions › New repository secret
+#   TAURI_SIGNING_PRIVATE_KEY = contents of %USERPROFILE%\.tauri\incask-updater.key
+# The Gateway API key is never part of a build — every user enters their own in the app.
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: "./src-tauri -> target"
+
+      - name: Check tag matches package.json and Cargo.toml versions
+        shell: pwsh
+        run: |
+          $v = (Get-Content package.json -Raw | ConvertFrom-Json).version
+          if ("v$v" -ne "${{ github.ref_name }}") { throw "tag ${{ github.ref_name }} != package.json version v$v" }
+          $c = (Select-String -Path src-tauri/Cargo.toml -Pattern '^version = "(.+)"' | Select-Object -First 1).Matches[0].Groups[1].Value
+          if ($c -ne $v) { throw "src-tauri/Cargo.toml version $c != package.json version $v" }
+
+      - run: npm ci
+
+      - name: Tests
+        shell: pwsh
+        run: |
+          npm run typecheck
+          cd src-tauri
+          cargo test --locked
+
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ""
+          INCASK_UPDATE_URL: https://github.com/${{ github.repository }}/releases/latest/download/latest.json
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: IncAsk ${{ github.ref_name }}
+          releaseBody: "ติดตั้งครั้งแรก: ดาวน์โหลด IncAsk_*_x64-setup.exe · เครื่องที่ติดตั้งแล้วจะได้รับอัปเดตในแอปอัตโนมัติ"
+          releaseDraft: false
+          prerelease: false
+          includeUpdaterJson: true

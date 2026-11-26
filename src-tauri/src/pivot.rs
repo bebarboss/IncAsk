@@ -1,5 +1,7 @@
 //! Pivot engine (SPEC §9): GROUP BY in SQLite, tree + subtotals assembled here.
-//! Fields: `service`, `month`, `source`, `cat:<category column>`, `src:<source-file column>`.
+//! Fields: `service`, `month`, `week`, `day`, `source`, `cat:<category column>`, `src:<source-file column>`.
+//! `week` = week of the month, Monday first, cut at month edges (`2026-10-W1`) so it nests inside
+//! `month` and holds whole days; `day` = `yyyy-mm-dd`.
 
 use crate::errors::{AppError, AppResult};
 use crate::results::{self, Row};
@@ -59,11 +61,21 @@ fn field_expr(field: &str) -> AppResult<(String, Option<String>)> {
     Ok(match field {
         "service" => ("t.service".into(), None),
         "month" => ("t.month".into(), None),
+        "week" => (WEEK_EXPR.into(), None),
+        "day" => ("substr(t.date, 1, 10)".into(), None),
         "source" => ("COALESCE(c.source,'pending')".into(), None),
         f if f.starts_with("cat:") => ("json_extract(c.fields_json, ?)".into(), Some(json_path(&f[4..]))),
         f if f.starts_with("src:") => ("NULLIF(json_extract(t.source_json, ?), '')".into(), Some(json_path(&f[4..]))),
         _ => return Err(AppError::new("invalid_field", format!("ไม่รู้จักฟิลด์ {field}"))),
     })
+}
+
+/// `yyyy-mm-Wn`: n = (day − 1 + weekday of the 1st, Monday = 0) / 7 + 1
+const WEEK_EXPR: &str = "(t.month || '-W' || ((CAST(substr(t.date, 9, 2) AS INTEGER) - 1 + (CAST(strftime('%w', t.month || '-01') AS INTEGER) + 6) % 7) / 7 + 1))";
+
+/// time fields sort by key, everything else by size
+pub fn is_time(field: &str) -> bool {
+    matches!(field, "month" | "week" | "day")
 }
 
 const FROM: &str = "FROM tickets t LEFT JOIN classifications c ON c.ticket_id = t.id";
@@ -161,11 +173,6 @@ fn grouped(conn: &Connection, from: &str, to: &str, fields: &[String]) -> AppRes
     Ok(out)
 }
 
-fn sort_keys(field: &str, keys: &mut [String]) {
-    if field == "month" {
-        keys.sort();
-    }
-}
 
 pub fn pivot(conn: &Connection, cfg: &Config) -> AppResult<PivotResult> {
     if cfg.rows.is_empty() || cfg.rows.len() > 3 {
@@ -187,7 +194,7 @@ pub fn pivot(conn: &Connection, cfg: &Config) -> AppResult<PivotResult> {
         cells.push((keys, col, n));
     }
     // columns
-    let mut col_keys: Vec<String> = if has_col {
+    let col_keys: Vec<String> = if has_col {
         let mut k: Vec<String> = cells.iter().map(|c| c.1.clone()).collect();
         k.sort();
         k.dedup();
@@ -195,7 +202,6 @@ pub fn pivot(conn: &Connection, cfg: &Config) -> AppResult<PivotResult> {
     } else {
         vec![]
     };
-    sort_keys(&cfg.col, &mut col_keys);
     let width = col_keys.len().max(1);
     let col_idx: HashMap<&str, usize> = col_keys.iter().enumerate().map(|(i, k)| (k.as_str(), i)).collect();
     // tree
@@ -222,7 +228,7 @@ pub fn pivot(conn: &Connection, cfg: &Config) -> AppResult<PivotResult> {
         grand[ci] += n;
     }
     fn order(nodes: &mut [Node], fields: &[String]) {
-        if fields.first().map(|f| f == "month").unwrap_or(false) {
+        if fields.first().map(|f| is_time(f)).unwrap_or(false) {
             nodes.sort_by(|a, b| a.key.cmp(&b.key));
         } else {
             nodes.sort_by(|a, b| b.total.cmp(&a.total).then(a.key.cmp(&b.key)));
@@ -529,6 +535,30 @@ mod tests {
         assert_eq!(ch.top[0].category, "การเชื่อมต่อ");
         assert_eq!(ch.top[0].count, 2);
         assert_eq!(ch.top.len(), 3);
+    }
+
+    #[test]
+    fn day_and_week_of_month_fields() {
+        let (_d, c) = db(&[]);
+        // 1 Oct 2026 is a Thursday → W1 = 1–4, W2 = 5–11 … W5 = 26–31; 1 Sep is a Tuesday → 28–30 = W5
+        for (i, d) in ["2026-10-01", "2026-10-04", "2026-10-05", "2026-10-31", "2026-09-27", "2026-09-28", "2026-09-30"].iter().enumerate() {
+            c.execute(
+                "INSERT INTO tickets(id,ticket_no,date,month,service,problem_text,source_json,import_id) VALUES(?1,?1,?2,substr(?2,1,7),'Internet','x','{}','im')",
+                rusqlite::params![format!("D{i}"), d],
+            )
+            .unwrap();
+        }
+        let p = pivot(&c, &cfg(&["month", "week"], "day")).unwrap();
+        assert_eq!(p.col_keys, vec!["2026-09-27", "2026-09-28", "2026-09-30", "2026-10-01", "2026-10-04", "2026-10-05", "2026-10-31"]);
+        let weeks = |m: usize| p.rows[m].children.iter().map(|n| (n.key.clone(), n.total)).collect::<Vec<_>>();
+        assert_eq!(p.rows.iter().map(|n| n.key.as_str()).collect::<Vec<_>>(), vec!["2026-09", "2026-10"]);
+        assert_eq!(weeks(0), vec![("2026-09-W4".to_string(), 1), ("2026-09-W5".to_string(), 2)]);
+        assert_eq!(weeks(1), vec![("2026-10-W1".to_string(), 2), ("2026-10-W2".to_string(), 1), ("2026-10-W5".to_string(), 1)]);
+        let k = cfg(&["service"], "week");
+        let cell = Cell { path: vec![("service".into(), "Internet".into())], col: Some(("week".into(), "2026-10-W1".into())) };
+        assert_eq!(drill(&c, &k, &cell, 50).unwrap().total, 2);
+        let day = Cell { path: vec![], col: Some(("day".into(), "2026-09-30".into())) };
+        assert_eq!(drill(&c, &k, &day, 50).unwrap().total, 1);
     }
 
     #[test]

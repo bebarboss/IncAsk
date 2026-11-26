@@ -5,14 +5,24 @@ import type { Charts, PivotConfig, PivotNode, PivotResult, TicketRow } from "./t
 export const EMPTY = "(ว่าง)";
 export const UNCLASSIFIED = "(ยังไม่มีหมวด)";
 
-export type PivotTicket = Pick<TicketRow, "service" | "month" | "source" | "fields" | "sourceRow">;
+export type PivotTicket = Pick<TicketRow, "service" | "month" | "date" | "source" | "fields" | "sourceRow">;
 
 const emptyLabel = (field: string) => (field.startsWith("cat:") ? UNCLASSIFIED : EMPTY);
+
+export const isTime = (f: string) => f === "month" || f === "week" || f === "day";
+
+/** week of the month, Monday first, cut at month edges: 2026-10-01 (Thu) → "2026-10-W1" — same as pivot.rs */
+export function weekKey(date: string): string {
+  const first = new Date(`${date.slice(0, 7)}-01T00:00:00`).getDay(); // 0 = Sunday
+  return `${date.slice(0, 7)}-W${Math.floor((Number(date.slice(8, 10)) - 1 + ((first + 6) % 7)) / 7) + 1}`;
+}
 
 export function fieldValue(t: PivotTicket, field: string): string {
   let v: string | undefined | null;
   if (field === "service") v = t.service;
   else if (field === "month") v = t.month;
+  else if (field === "week") v = t.date ? weekKey(t.date) : null;
+  else if (field === "day") v = t.date?.slice(0, 10);
   else if (field === "source") v = t.source;
   else if (field.startsWith("cat:")) v = t.fields?.[field.slice(4)];
   else if (field.startsWith("src:")) v = t.sourceRow?.[field.slice(4)];
@@ -47,7 +57,7 @@ export function pivotJs(tickets: PivotTicket[], cfg: PivotConfig): PivotResult {
     }
   }
   const order = (nodes: PivotNode[], fields: string[]) => {
-    if (fields[0] === "month") nodes.sort((a, b) => a.key.localeCompare(b.key));
+    if (fields[0] && isTime(fields[0])) nodes.sort((a, b) => a.key.localeCompare(b.key));
     else nodes.sort((a, b) => b.total - a.total || a.key.localeCompare(b.key));
     nodes.forEach((n) => order(n.children, fields.slice(1)));
   };

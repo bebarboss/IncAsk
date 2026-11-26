@@ -8,7 +8,7 @@
 
 ## ติดตั้ง
 
-ตัวติดตั้งอยู่ใน `src-tauri/target/release/bundle/` หลัง build
+ดาวน์โหลดจากหน้า [Releases](https://github.com/bebarboss/IncAsk/releases/latest) (หรือ `src-tauri/target/release/bundle/` ถ้า build เอง)
 
 | ไฟล์ | ใช้เมื่อ |
 |---|---|
@@ -18,6 +18,7 @@
 - ตัวติดตั้งลงทะเบียนไฟล์ `.incask` ให้เปิดด้วย IncAsk (ดับเบิลคลิกได้)
 - ตัวติดตั้งยังไม่ได้เซ็นด้วยใบรับรอง — Windows อาจขึ้น "Windows protected your PC" ให้กด **More info › Run anyway**
 - ถอนการติดตั้งแล้ว **ข้อมูลใน `%APPDATA%\IncAsk` ยังอยู่** (โปรเจกต์ไม่หาย)
+- **อัปเดต**: เปิดแอปแล้วถ้ามีเวอร์ชันใหม่จะขึ้นแถบแจ้ง กด **อัปเดตเลย** แอปดาวน์โหลด ตรวจลายเซ็น ติดตั้ง แล้วเปิดใหม่เอง (ข้อมูลไม่หาย) · ตรวจเองได้ที่ ตั้งค่าโปรแกรม › อัปเดต
 
 ## เริ่มใช้งาน
 
@@ -80,8 +81,11 @@ npm run tauri dev    # แอปจริง ต่อ Gateway จริง
 npm run typecheck
 npm run build:report # แม่แบบรายงาน HTML → src-tauri/resources/report.html
 cd src-tauri; cargo test; cargo clippy --all-targets -- -D warnings
-npm run tauri build  # ตัวติดตั้ง MSI + NSIS → src-tauri/target/release/bundle
+$env:TAURI_SIGNING_PRIVATE_KEY = "$env:USERPROFILE\.tauri\incask-updater.key"; $env:TAURI_SIGNING_PRIVATE_KEY_PASSWORD = ""
+npm run tauri build  # ตัวติดตั้ง MSI + NSIS (+ .sig) → src-tauri/target/release/bundle
 ```
+
+build ตัวติดตั้งในเครื่องต้องมีกุญแจเซ็นอัปเดต (ข้างบน) เพราะเปิด `createUpdaterArtifacts` ไว้ — ปกติให้ GitHub Actions build แทน (ดู "ออกเวอร์ชันใหม่")
 
 ### Mock mode
 
@@ -93,8 +97,8 @@ npm run tauri build  # ตัวติดตั้ง MSI + NSIS → src-tauri/t
 
 ### ทดสอบ
 
-- `cargo test` — 94 เทสต์: CSV หลาย encoding, หาแถวหัวตาราง, header signature, วันที่ (พ.ศ., serial, กำกวม), รวมข้อความปัญหา,
-  ตรวจผล LLM, cache key, งานจัดหมวดทั้งระบบด้วย LLM ปลอม (429, ถามซ้ำ, Gateway ล่ม, pause/resume/cancel), pivot,
+- `cargo test` — 95 เทสต์: CSV หลาย encoding, หาแถวหัวตาราง, header signature, วันที่ (พ.ศ., serial, กำกวม), รวมข้อความปัญหา,
+  ตรวจผล LLM, cache key, งานจัดหมวดทั้งระบบด้วย LLM ปลอม (429, ถามซ้ำ, Gateway ล่ม, pause/resume/cancel), pivot (รวมสัปดาห์/วัน),
   CSV มี BOM, `.incask` ส่งออกแล้วนำเข้า/รวมกลับได้ครบ, รายงาน HTML ไม่มีความลับ, redact, คอนฟิกสำรอง
 - `cargo test --release pivot_benchmark -- --ignored --nocapture` — pivot 50,000 ทิกเก็ต × 12 เดือน (เกณฑ์ < 300 ms)
 - `cargo test --lib sample_report -- --ignored` — สร้างรายงาน HTML ตัวอย่าง 10,000 ทิกเก็ต ที่ `src-tauri/target/sample_report.html`
@@ -109,10 +113,24 @@ cargo run --bin classify_eval -- --tickets <ไฟล์ทิกเก็ต> -
 อ่าน key จาก Windows Credential Manager (ใส่ผ่านแอปก่อน) — ห้ามใส่ key ทาง argument · ทำงานในฐานข้อมูลชั่วคราว ไม่แตะโปรเจกต์
 รายงาน % ถูกต้อง (ถ้ามีเฉลย), % ไม่มั่นใจ, เวลาเฉลี่ยต่อ batch, โทเคนต่อแถว และตัวอย่างที่ผิด 10 แถว
 
+### ออกเวอร์ชันใหม่ (เหมือน DocAsk)
+
+```powershell
+npm run release -- 0.2.0
+```
+
+สคริปต์เปลี่ยนเวอร์ชันใน `package.json`, `package-lock.json`, `src-tauri/Cargo.toml`/`Cargo.lock` → commit `release v0.2.0` → tag `v0.2.0` → push
+แล้ว GitHub Actions ([.github/workflows/release.yml](.github/workflows/release.yml)) จะรันเทสต์, build MSI + NSIS ที่เซ็นแล้ว และสร้าง Release พร้อม `latest.json`
+เครื่องที่ติดตั้งไว้จะเห็นอัปเดตตอนเปิดแอปครั้งถัดไป (อ่านจาก `https://github.com/bebarboss/IncAsk/releases/latest/download/latest.json`)
+
+**ตั้งครั้งเดียว**: repo › Settings › Secrets and variables › Actions › New repository secret
+ชื่อ `TAURI_SIGNING_PRIVATE_KEY` ค่า = เนื้อไฟล์ `%USERPROFILE%\.tauri\incask-updater.key` (กุญแจนี้ไม่อยู่ใน repo — **อย่าทำหาย**
+ถ้าหาย เครื่องที่ติดตั้งแล้วจะรับอัปเดตไม่ได้ ต้องติดตั้งใหม่ด้วยมือ) · repo ต้องเป็น public หรือ Release ต้องดาวน์โหลดได้โดยไม่ต้อง login
+
 ### สำหรับ IT
 
-- **อัปเดตในแอป**: ใส่ endpoint (`latest.json`) ตอน build ด้วย `$env:INCASK_UPDATE_URL="https://.../latest.json"` และ `plugins.updater.pubkey`
-  ใน `src-tauri/tauri.conf.json` แล้วเปิด `bundle.createUpdaterArtifacts` — ตอนนี้ว่างไว้ ปุ่มตรวจหาอัปเดตจะบอกว่ายังไม่ได้ตั้ง
+- **อัปเดตในแอป**: ค่าเริ่มต้นชี้ไป GitHub Releases ของ repo นี้ · เปลี่ยนเป็น server ภายในได้ด้วย `$env:INCASK_UPDATE_URL="https://.../latest.json"` ตอน build
+  หรือในแอปที่ ตั้งค่าโปรแกรม › อัปเดต · ไฟล์อัปเดตต้องเซ็นด้วยกุญแจคู่กับ `plugins.updater.pubkey` ใน `src-tauri/tauri.conf.json` ไม่งั้นแอปไม่ติดตั้ง
 - **Code signing**: ใส่ `bundle.windows.certificateThumbprint` เมื่อมีใบรับรอง
 - เครือข่ายบริษัท: ใช้ proxy ของระบบ และใบรับรองจาก Windows certificate store (CA ภายในได้)
 

@@ -38,7 +38,7 @@ export default function SummaryPage({ project }: { project: Project }) {
 
   const catCols = useMemo(() => [...new Set(Object.values(tax ?? {}).flatMap((t) => t.service.columns))], [tax]);
   const colors = useMemo(() => Object.fromEntries(Object.values(tax ?? {}).map((t) => [t.service.name, t.service.color])), [tax]);
-  const fields = useMemo(() => ["service", "month", ...catCols.map((c) => `cat:${c}`), "source", ...srcCols.map((c) => `src:${c}`)], [catCols, srcCols]);
+  const fields = useMemo(() => ["service", "month", "week", "day", ...catCols.map((c) => `cat:${c}`), "source", ...srcCols.map((c) => `src:${c}`)], [catCols, srcCols]);
 
   // first load: months, views (the first one applied), heatmap preference
   useEffect(() => {
@@ -131,7 +131,7 @@ export default function SummaryPage({ project }: { project: Project }) {
             <TopBars charts={charts} />
             <TrendChart charts={charts} />
           </div>
-          <section className="card" aria-label="ตาราง pivot" style={{ overflow: "hidden" }}>
+          <section className="card" aria-label="ตาราง pivot" style={{ overflow: "hidden", flex: "none" }}>
             <div className="muted" style={{ padding: "10px 16px", fontSize: 12, borderBottom: "1px solid var(--border)" }}>
               คลิกตัวเลขเพื่อดูทิกเก็ตในช่องนั้น{view.filters.some((f) => f.values.length) ? " · มีตัวกรอง" : ""}
             </div>

@@ -135,6 +135,10 @@ impl Settings {
         if !self.update_url.is_empty() && !self.update_url.starts_with("https://") {
             self.update_url.clear();
         }
+        // copies installed before the release URL was baked in still find updates
+        if self.update_url.is_empty() {
+            self.update_url = crate::updater::DEFAULT_UPDATE_URL.into();
+        }
         self
     }
 }

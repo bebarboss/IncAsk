@@ -70,7 +70,7 @@ function Report({ data }: { data: Payload }) {
     return { total: all.length, rows: all.slice(0, 100) };
   }, [cell, rows, view, from, to]); // eslint-disable-line react-hooks/exhaustive-deps
   const colors = Object.fromEntries(data.services.map((s) => [s.name, s.color]));
-  const fields = ["service", "month", ...data.categories.map((c) => `cat:${c}`), "source", ...data.sourceHeaders.map((h) => `src:${h}`)];
+  const fields = ["service", "month", "week", "day", ...data.categories.map((c) => `cat:${c}`), "source", ...data.sourceHeaders.map((h) => `src:${h}`)];
   const taxonomy = Object.fromEntries(data.services.map((s) => [s.name, { service: { id: s.name, name: s.name, color: s.color, columns: s.columns, taxonomyVersion: 1, sort: 0 }, rows: [] }]));
   const setV = (p: Partial<ViewConfig>) => { setView((v) => ({ ...v, ...p })); setCell(null); };
 
@@ -107,7 +107,7 @@ function Report({ data }: { data: Payload }) {
           <TopBars charts={charts} />
           <TrendChart charts={charts} />
         </div>
-        <section className="card" aria-label="ตาราง pivot" style={{ overflow: "hidden" }}>
+        <section className="card" aria-label="ตาราง pivot" style={{ overflow: "hidden", flex: "none" }}>
           <div className="muted" style={{ padding: "10px 16px", fontSize: 12, borderBottom: "1px solid var(--border)" }}>คลิกตัวเลขเพื่อดูทิกเก็ตในช่องนั้น · รายงานนี้ดูได้อย่างเดียว แก้หมวดได้ในโปรแกรม IncAsk</div>
           <div className="table-wrap">
             <PivotTable result={pivot} rows={view.rows} col={view.col} value={view.value} heatOn={view.heat} colors={colors} onCell={setCell} selected={cell} />

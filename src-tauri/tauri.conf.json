@@ -66,7 +66,7 @@
         "installerIcon": "icons/icon.ico"
       }
     },
-    "createUpdaterArtifacts": false,
+    "createUpdaterArtifacts": true,
     "resources": {
       "resources/report.html": "resources/report.html"
     },
@@ -84,7 +84,7 @@
   },
   "plugins": {
     "updater": {
-      "pubkey": "",
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEQ3NDg3MDQ2NzA4NTVEOEEKUldTS1hZVndSbkJJMXdnSlcveHFaYy9tR1ppcDVjbXdYK3VQTHNNUE8ydE50VGcrYnVLRXQzOEwK",
       "endpoints": [],
       "windows": {
         "installMode": "passive"
