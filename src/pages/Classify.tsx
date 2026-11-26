@@ -63,15 +63,21 @@ export default function ClassifyPage({ project }: { project: Project }) {
         {active && (
           <div style={{ display: "flex", gap: 8 }}>
             {p.status === "running" ? (
-              <button className="btn" onClick={() => api.pauseClassify(p.runId)}><Pause size={16} strokeWidth={2} aria-hidden="true" />หยุดชั่วคราว</button>
+              <button className="btn" onClick={() => api.pauseClassify(p.projectId)}><Pause size={16} strokeWidth={2} aria-hidden="true" />หยุดชั่วคราว</button>
             ) : (
-              <button className="btn btn-primary" onClick={() => api.resumeClassify(p.runId)}><Play size={16} strokeWidth={2} aria-hidden="true" />ทำต่อ</button>
+              <button className="btn btn-primary" onClick={() => api.resumeClassify(p.projectId).catch((e) => app.toast(errMsg(e)))}><Play size={16} strokeWidth={2} aria-hidden="true" />ทำต่อ</button>
             )}
             <button className="btn btn-danger" onClick={() => setConfirmCancel(true)}>ยกเลิก</button>
           </div>
         )}
       </header>
 
+      {p.message && (
+        <div className="err-box" role="alert" style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+          <span style={{ flex: 1 }}>หยุดไว้ก่อน: {p.message} · แถวที่ยังไม่ได้จัดจะไม่ถูกนับเป็นผิดพลาด</span>
+          {p.status === "paused" && <button className="btn" onClick={() => api.resumeClassify(p.projectId).catch((e) => app.toast(errMsg(e)))}>ลองต่อ</button>}
+        </div>
+      )}
       <section className="card card-pad" aria-label="ความคืบหน้า">
         <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "baseline", gap: 8 }}>
           <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
@@ -124,7 +130,7 @@ export default function ClassifyPage({ project }: { project: Project }) {
           confirmLabel="ยกเลิกงาน"
           danger
           onCancel={() => setConfirmCancel(false)}
-          onConfirm={async () => { await api.cancelClassify(p.runId); setConfirmCancel(false); }}
+          onConfirm={async () => { await api.cancelClassify(p.projectId); setConfirmCancel(false); }}
         />
       )}
     </div>

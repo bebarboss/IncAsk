@@ -277,6 +277,9 @@ export function createMockBackend(): Backend {
     };
   };
   startJob("cc-a");
+  const prefs: Record<string, string> = {};
+  const lastImportFile: Record<string, string> = {};
+  const lowThreshold = (projectId: string) => Number(prefs[`${projectId}:low_threshold`] ?? 0.7);
   let patterns: (import("./types").ReportPattern & { projectId: string })[] = [
     { projectId: "cc-b", id: "rp-1", name: "รีพอร์ตอินซิเดนต์รายเดือน", headers: [...PREVIEW_HEADERS], roles: { ticket: "เลขอินซิเดนต์", date: "วันที่แจ้ง", service: "เซอร์วิส", problem: ["หัวข้อ", "รายละเอียดปัญหา"] }, dateFormat: "dmy" },
   ];
@@ -607,7 +610,7 @@ export function createMockBackend(): Backend {
         if (ex) Object.assign(ex, { name: patternName, roles: roleMap });
         else patterns.push({ projectId, id: `rp-${patterns.length + 1}`, name: patternName, headers: [...PREVIEW_HEADERS], roles: roleMap, dateFormat: "dmy" });
       }
-      startJob(projectId, path.split(/[\\/]/).pop() ?? path, patternName, true);
+      lastImportFile[projectId] = path.split(/[\\/]/).pop() ?? path;
       return { importId: "im-mock", rowsTotal: 4812, rowsNew: 4773, rowsDuplicate: 37, rowsInvalid: 2, unknownService: 12 };
     },
     listPatterns: async (projectId) => clone(patterns.filter((p) => p.projectId === projectId).map(({ projectId: _p, ...rest }) => rest)),
@@ -624,10 +627,43 @@ export function createMockBackend(): Backend {
     },
     deletePattern: async (_projectId, id) => { patterns = patterns.filter((p) => p.id !== id); },
 
+    startClassify: async (projectId) => {
+      if (jobs[projectId]?.status === "running" || jobs[projectId]?.status === "paused") throw { code: "job_running", message: "มีงานจัดหมวดของโปรเจกต์นี้อยู่แล้ว — หยุดหรือรอให้เสร็จก่อน" };
+      startJob(projectId, lastImportFile[projectId] ?? "incident_report_oct2026.xlsx", null, true);
+      return clone(jobs[projectId]);
+    },
     classifyStatus: async (projectId) => (jobs[projectId] ? clone(jobs[projectId]) : null),
-    pauseClassify: async (runId) => { const j = Object.values(jobs).find((x) => x.runId === runId); if (j) { j.status = "paused"; emit("classify://progress", clone(j)); } },
-    resumeClassify: async (runId) => { const j = Object.values(jobs).find((x) => x.runId === runId); if (j) { j.status = "running"; emit("classify://progress", clone(j)); } },
-    cancelClassify: async (runId) => { const j = Object.values(jobs).find((x) => x.runId === runId); if (j) { j.status = "cancelled"; emit("classify://progress", clone(j)); } },
+    pauseClassify: async (projectId) => { const j = jobs[projectId]; if (j) { j.status = "paused"; emit("classify://progress", clone(j)); } },
+    resumeClassify: async (projectId) => {
+      const j = jobs[projectId];
+      if (!j) throw { code: "not_found", message: "ไม่มีงานค้าง" };
+      j.status = "running";
+      j.message = null;
+      emit("classify://progress", clone(j));
+      return clone(j);
+    },
+    cancelClassify: async (projectId) => { const j = jobs[projectId]; if (j) { j.status = "cancelled"; emit("classify://progress", clone(j)); } },
+    reclassify: async (projectId, ticketIds, lowOnly) => {
+      const d = lazy(projectId);
+      const n = ticketIds ? ticketIds.length : d.tickets.filter((t) => t.source !== "human" && (t.source === "error" || (t.confidence ?? 1) < lowThreshold(projectId))).length;
+      startJob(projectId, "จัดใหม่", null, true);
+      jobs[projectId].total = n || (lowOnly ? 0 : 1);
+      return clone(jobs[projectId]);
+    },
+    classifyTrial: async (projectId) => {
+      await wait(1500);
+      const d = lazy(projectId);
+      const pick = d.services.flatMap((s) => d.tickets.filter((t) => t.service === s.name).slice(0, 5));
+      return {
+        items: pick.slice(0, 20).map((t, i) => ({
+          ticketNo: t.ticketNo, service: t.service, text: t.problemText, category: i % 9 === 4 ? null : Object.values(t.fields).join(" › ") || null,
+          confidence: i % 9 === 4 ? 0.3 : t.confidence ?? 0.8, reason: i % 9 === 4 ? "ไม่ตรงหมวดใดชัดเจน" : t.reason, low: i % 9 === 4 || (t.confidence ?? 1) < 0.7, error: null,
+        })),
+        tokensIn: 8200, tokensOut: 940, cost: 0.019, elapsedMs: 1480,
+      };
+    },
+    getPref: async (projectId, key) => prefs[`${projectId}:${key}`] ?? null,
+    setPref: async (projectId, key, value) => { prefs[`${projectId}:${key}`] = value; },
 
     queryResults: async (projectId, q) => {
       await wait(120);

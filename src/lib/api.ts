@@ -13,6 +13,7 @@ import type {
   ImportResult,
   DateOrder,
   ReportPattern,
+  TrialResult,
   KeyUsage,
   PivotResult,
   Project,
@@ -98,10 +99,16 @@ export interface Backend {
   updatePattern(projectId: string, id: string, patch: { name?: string; roles?: Role[] }): Promise<ReportPattern>;
   deletePattern(projectId: string, id: string): Promise<void>;
   // classify (step 6)
+  startClassify(projectId: string, importId: string | null): Promise<ClassifyProgress>;
   classifyStatus(projectId: string): Promise<ClassifyProgress | null>;
-  pauseClassify(runId: string): Promise<void>;
-  resumeClassify(runId: string): Promise<void>;
-  cancelClassify(runId: string): Promise<void>;
+  pauseClassify(projectId: string): Promise<void>;
+  resumeClassify(projectId: string): Promise<ClassifyProgress>;
+  cancelClassify(projectId: string): Promise<void>;
+  /** clear results of these tickets (or all low/error ones) and classify again */
+  reclassify(projectId: string, ticketIds: string[] | null, lowOnly: boolean, includeHuman: boolean): Promise<ClassifyProgress>;
+  classifyTrial(projectId: string, path: string, sheet: string | null, roles: Role[], dateOrder: DateOrder | null): Promise<TrialResult>;
+  getPref(projectId: string, key: string): Promise<string | null>;
+  setPref(projectId: string, key: string, value: string): Promise<void>;
   // results + summary (step 7–8)
   queryResults(projectId: string, q: ResultsQuery): Promise<ResultsPage>;
   projectMonths(projectId: string): Promise<string[]>;
@@ -187,10 +194,15 @@ function createTauriBackend(): Backend {
     listPatterns: (projectId) => call("list_patterns", { projectId }),
     updatePattern: (projectId, id, patch) => call("update_pattern", { projectId, id, name: patch.name ?? null, roles: patch.roles ?? null }),
     deletePattern: (projectId, id) => call("delete_pattern", { projectId, id }),
-    classifyStatus: async () => null,
-    pauseClassify: notYet,
-    resumeClassify: notYet,
-    cancelClassify: notYet,
+    startClassify: (projectId, importId) => call("start_classify", { projectId, importId }),
+    classifyStatus: (projectId) => call("classify_status", { projectId }),
+    pauseClassify: (projectId) => call("pause_classify", { projectId }),
+    resumeClassify: (projectId) => call("resume_classify", { projectId }),
+    cancelClassify: (projectId) => call("cancel_classify", { projectId }),
+    reclassify: (projectId, ticketIds, lowOnly, includeHuman) => call("reclassify", { projectId, ticketIds, lowOnly, includeHuman }),
+    classifyTrial: (projectId, path, sheet, roles, dateOrder) => call("classify_trial", { projectId, path, sheet, roles, dateOrder }),
+    getPref: (projectId, key) => call("get_pref", { projectId, key }),
+    setPref: (projectId, key, value) => call("set_pref", { projectId, key, value }),
     queryResults: notYet,
     projectMonths: (projectId) => call("project_months", { projectId }),
     pivot: notYet,

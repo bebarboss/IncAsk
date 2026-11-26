@@ -1,6 +1,7 @@
 //! IncAsk — classify incident/ticket files with the company LLM Gateway, summarise as a pivot.
 //! Sibling app of DocAsk: same shell, Gateway client, key storage and redaction.
 
+pub mod classify;
 pub mod commands;
 pub mod config;
 pub mod db;
@@ -64,6 +65,15 @@ pub fn run() {
             commands::list_patterns,
             commands::update_pattern,
             commands::delete_pattern,
+            commands::start_classify,
+            commands::classify_status,
+            commands::pause_classify,
+            commands::resume_classify,
+            commands::cancel_classify,
+            commands::reclassify,
+            commands::classify_trial,
+            commands::get_pref,
+            commands::set_pref,
             updater::check_update,
             updater::install_update,
         ])

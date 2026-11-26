@@ -34,6 +34,22 @@ pub fn get_meta(conn: &Connection, key: &str) -> AppResult<Option<String>> {
     Ok(conn.query_row("SELECT value FROM meta WHERE key = ?1", [key], |r| r.get(0)).optional()?)
 }
 
+/// Per-project preferences (table settings, low-confidence threshold, heatmap …) as text.
+pub fn get_pref(conn: &Connection, key: &str) -> AppResult<Option<String>> {
+    use rusqlite::OptionalExtension;
+    Ok(conn.query_row("SELECT value FROM prefs WHERE key = ?1", [key], |r| r.get(0)).optional()?)
+}
+
+pub fn set_pref(conn: &Connection, key: &str, value: &str) -> AppResult<()> {
+    conn.execute("INSERT INTO prefs(key, value) VALUES(?1, ?2) ON CONFLICT(key) DO UPDATE SET value = excluded.value", [key, value])?;
+    Ok(())
+}
+
+/// SPEC §6.2: below this confidence a result is "ไม่มั่นใจ" (default 0.7).
+pub fn low_threshold(conn: &Connection) -> f64 {
+    get_pref(conn, "low_threshold").ok().flatten().and_then(|v| v.parse::<f64>().ok()).filter(|v| (0.0..=1.0).contains(v)).unwrap_or(0.7)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

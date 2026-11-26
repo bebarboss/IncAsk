@@ -201,6 +201,30 @@ export interface ClassifyProgress {
   etaSec: number | null;
   concurrency: number;
   recent: RecentItem[];
+  /** why the job paused or failed (Gateway down, key rejected …) */
+  message?: string | null;
+  tokensIn?: number;
+  tokensOut?: number;
+  cost?: number | null;
+}
+
+export interface TrialItem {
+  ticketNo: string;
+  service: string;
+  text: string;
+  category: string | null;
+  confidence: number | null;
+  reason: string | null;
+  low: boolean;
+  error: string | null;
+}
+
+export interface TrialResult {
+  items: TrialItem[];
+  tokensIn: number;
+  tokensOut: number;
+  cost: number | null;
+  elapsedMs: number;
 }
 
 // ------------------------------------------------------------------ results / pivot

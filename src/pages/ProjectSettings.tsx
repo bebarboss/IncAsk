@@ -1,5 +1,5 @@
 // ตั้งค่าโปรเจกต์ (SPEC §7, canvas 5): sub-menu + sections.
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { api, errMsg } from "../lib/api";
 import type { Project } from "../lib/types";
 import { useApp } from "../state";
@@ -32,7 +32,8 @@ export default function ProjectSettingsPage({ project }: { project: Project }) {
           {section === "taxonomy" && <TaxonomyEditor project={project} />}
           {section === "share" && <ProjectIdentity project={project} />}
           {section === "patterns" && <PatternsEditor project={project} />}
-          {(section === "columns" || section === "display") && (
+          {section === "display" && <DisplaySettings project={project} />}
+          {section === "columns" && (
             <div className="card"><EmptyState title={SECTIONS.find(([id]) => id === section)![1]} body="ส่วนนี้จะทำในขั้นถัดไปตาม SPEC ข้อ 17" /></div>
           )}
         </div>
@@ -90,5 +91,32 @@ function ProjectIdentity({ project }: { project: Project }) {
       </section>
       {deleting && <DeleteProjectDialog project={project} onClose={() => setDeleting(false)} />}
     </>
+  );
+}
+
+/** สีและการแสดงผล: the "ไม่มั่นใจ" threshold (SPEC §6.2). Service colours live with each service. */
+function DisplaySettings({ project }: { project: Project }) {
+  const app = useApp();
+  const [thr, setThr] = useState<number | null>(null);
+  useEffect(() => {
+    api.getPref(project.id, "low_threshold").then((v) => setThr(v != null && !Number.isNaN(Number(v)) ? Number(v) : 0.7)).catch(() => setThr(0.7));
+  }, [project.id]);
+  const save = async (v: number) => {
+    setThr(v);
+    try { await api.setPref(project.id, "low_threshold", String(v)); } catch (e) { app.toast(errMsg(e)); }
+  };
+  if (thr == null) return null;
+  return (
+    <section className="card card-pad" aria-labelledby="disp-h">
+      <h2 id="disp-h">เกณฑ์ "ไม่มั่นใจ"</h2>
+      <p className="muted" style={{ fontSize: 13 }}>ผลที่ AI ให้ความมั่นใจต่ำกว่าค่านี้จะถูกไฮไลต์ในหน้าผลลัพธ์ และนับเป็น "ไม่มั่นใจ · ควรตรวจ"</p>
+      <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
+        <input type="range" min={0.5} max={0.95} step={0.05} value={thr} aria-label="เกณฑ์ความมั่นใจ" style={{ width: 260, accentColor: "var(--accent)" }}
+          onChange={(e) => setThr(Number(e.target.value))} onMouseUp={() => save(thr)} onKeyUp={() => save(thr)} onTouchEnd={() => save(thr)} />
+        <span className="num" style={{ fontWeight: 700, fontSize: 18 }}>{Math.round(thr * 100)}%</span>
+        {thr !== 0.7 && <button className="btn btn-ghost" onClick={() => save(0.7)}>ค่าเริ่มต้น 70%</button>}
+      </div>
+      <span className="field-hint">สีประจำเซอร์วิสตั้งได้ใน เซอร์วิสและหมวดหมู่ · มีผลกับงานจัดหมวดครั้งถัดไป</span>
+    </section>
   );
 }

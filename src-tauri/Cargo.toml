@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "IncAsk — จัดหมวดหมู่อินซิเดนต์/ทิกเก็ตด้วย LLM ผ่าน Gateway ของบริษัท"
 edition = "2021"
 rust-version = "1.77"
+default-run = "incask"
 
 [lib]
 name = "incask_lib"

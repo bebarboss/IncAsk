@@ -10,6 +10,7 @@ import { useApp } from "../state";
 import { EmptyState, ErrorState, SkeletonList } from "../components/ui";
 import { GatewayBanner } from "../components/GatewayBanner";
 import { useFileDrop } from "../components/useFileDrop";
+import { TrialDialog } from "../components/TrialDialog";
 
 const ROLES: Role[] = ["ticket", "date", "problem", "service", "none"];
 const SINGLE: Partial<Record<Role, true>> = { ticket: true, date: true, service: true };
@@ -39,6 +40,7 @@ export default function ImportPage({ project }: { project: Project }) {
   const [remember, setRemember] = useState(true);
   const [patternName, setPatternName] = useState("รีพอร์ตอินซิเดนต์รายเดือน");
   const [showInvalid, setShowInvalid] = useState(false);
+  const [trial, setTrial] = useState(false);
 
   const load = useCallback(async (p: string, sh: string | null) => {
     setLoading(true);
@@ -101,8 +103,12 @@ export default function ImportPage({ project }: { project: Project }) {
       setBusy(false);
     }
   };
-  /** step 6 starts the classification job here */
-  const afterCommit = async (_importId: string) => {
+  const afterCommit = async (importId: string) => {
+    try {
+      await api.startClassify(project.id, importId);
+    } catch (e) {
+      app.toast(errMsg(e));
+    }
     app.go({ name: "project", tab: "classify" });
   };
 
@@ -277,9 +283,13 @@ export default function ImportPage({ project }: { project: Project }) {
             {!rolesReady && <span className="muted" style={{ fontSize: 13 }}>เลือกคอลัมน์ให้ครบทั้งสี่บทบาทก่อน จึงจะเริ่มได้</span>}
             {rolesReady && needsOrder && <span style={{ fontSize: 13, color: "var(--warn-text)" }}>เลือกรูปแบบวันที่ก่อน</span>}
             {ready && gatewayDown && <span style={{ fontSize: 13, color: "var(--err-text)" }}>ต่อ Gateway ไม่ได้ — ยังเริ่มจัดหมวดไม่ได้</span>}
-            <button className="btn btn-lg" disabled={!ready || gatewayDown || busy} onClick={() => app.toast("ลองจัด 20 แถว — ทำในขั้นที่ 6")}>ลองจัด 20 แถว</button>
+            <button className="btn btn-lg" disabled={!ready || gatewayDown || busy} onClick={() => setTrial(true)}>ลองจัด 20 แถว</button>
             <button className="btn btn-lg btn-primary" disabled={!ready || gatewayDown || busy} onClick={start}>{busy ? "กำลังนำเข้า…" : "เริ่มจัดหมวด"}</button>
           </footer>
+          {trial && (
+            <TrialDialog projectId={project.id} path={path} sheet={sheet} roles={roles} dateOrder={dateOrder ?? summary?.dateOrder ?? null}
+              onClose={() => setTrial(false)} onStart={() => { setTrial(false); start(); }} />
+          )}
         </>
       )}
     </div>

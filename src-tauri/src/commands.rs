@@ -21,6 +21,8 @@ pub struct GatewayStatus {
 
 pub struct AppState {
     pub settings: Mutex<Settings>,
+    /// classification jobs of this session, by project id
+    pub jobs: Mutex<std::collections::HashMap<String, std::sync::Arc<crate::classify::Shared>>>,
     pub projects: Mutex<Registry>,
     pub status: Mutex<GatewayStatus>,
 }
@@ -31,6 +33,7 @@ impl AppState {
         std::fs::create_dir_all(config::projects_dir())?;
         Ok(Self {
             settings: Mutex::new(Settings::load()),
+            jobs: Mutex::new(std::collections::HashMap::new()),
             projects: Mutex::new(Registry::load(&config::projects_dir())?),
             status: Mutex::new(GatewayStatus { state: "unknown".into(), message: None, checked_at: 0 }),
         })
@@ -392,6 +395,225 @@ pub fn update_pattern(state: S<'_>, project_id: String, id: String, name: Option
 #[tauri::command]
 pub fn delete_pattern(state: S<'_>, project_id: String, id: String) -> AppResult<()> {
     patterns::delete(&open_project(&state, &project_id)?, &id)
+}
+
+// ------------------------------------------------------------------ classification (SPEC §6)
+
+use crate::classify::{self, JobConfig, Progress, Shared, TrialResult};
+use std::sync::Arc;
+
+struct TauriSink {
+    app: AppHandle,
+}
+
+impl classify::Sink for TauriSink {
+    fn progress(&self, p: &Progress) {
+        let _ = self.app.emit("classify://progress", p);
+    }
+    fn finished(&self, p: &Progress) {
+        if p.status == "done" {
+            use tauri_plugin_notification::NotificationExt;
+            let _ = self.app.notification().builder().title("IncAsk").body(format!("จัดหมวดเสร็จ {} แถว · ไม่มั่นใจ {}", p.done, p.low)).show();
+        }
+    }
+}
+
+fn job_config(state: &AppState, conn: &rusqlite::Connection) -> JobConfig {
+    let s = state.settings.lock().clone();
+    JobConfig {
+        model: s.model,
+        batch_size: s.batch_size as usize,
+        concurrency: s.concurrency as usize,
+        low_threshold: crate::db::low_threshold(conn),
+        backoff_base: std::time::Duration::from_secs(2),
+        restore_after: std::time::Duration::from_secs(60),
+    }
+}
+
+/// Start (or continue) the project's classification job in the background.
+fn spawn_job(app: &AppHandle, project_id: &str, import_id: Option<String>, kind: &str, resume_run: Option<Progress>) -> AppResult<Progress> {
+    let state = app.state::<AppState>();
+    if let Some(j) = state.jobs.lock().get(project_id) {
+        if j.is_active() {
+            return Err(AppError::new("job_running", "มีงานจัดหมวดของโปรเจกต์นี้อยู่แล้ว — หยุดหรือรอให้เสร็จก่อน"));
+        }
+    }
+    let key = secrets::require_key()?;
+    let conn = open_project(&state, project_id)?;
+    let cfg = job_config(&state, &conn);
+    let url = state.settings.lock().chat_url();
+    let (file_name, pattern_name): (String, Option<String>) = match &import_id {
+        Some(id) => conn
+            .query_row(
+                "SELECT COALESCE(i.file_name,''), p.name FROM imports i LEFT JOIN report_patterns p ON p.id = i.pattern_id WHERE i.id = ?1",
+                [id],
+                |r| Ok((r.get(0)?, r.get(1)?)),
+            )
+            .unwrap_or_default(),
+        None => (if kind == "reclassify" { "จัดใหม่".into() } else { String::new() }, None),
+    };
+    let mut p = resume_run.unwrap_or(Progress {
+        run_id: format!("run-{}", &uuid::Uuid::new_v4().simple().to_string()[..12]),
+        project_id: project_id.to_string(),
+        file_name,
+        pattern_name,
+        status: "running".into(),
+        total: 0,
+        done: 0,
+        ai: 0,
+        cached: 0,
+        low: 0,
+        error: 0,
+        eta_sec: None,
+        concurrency: cfg.concurrency,
+        recent: vec![],
+        message: None,
+        tokens_in: 0,
+        tokens_out: 0,
+        cost: None,
+    });
+    p.status = "running".into();
+    p.message = None;
+    p.concurrency = cfg.concurrency;
+    let shared = Shared::new(p);
+    state.jobs.lock().insert(project_id.to_string(), shared.clone());
+    let job = classify::Job {
+        conn: Arc::new(Mutex::new(conn)),
+        shared: shared.clone(),
+        llm: classify::gateway_llm(url, key, cfg.model.clone()),
+        cfg,
+        sink: Arc::new(TauriSink { app: app.clone() }),
+        import_id,
+        kind: kind.to_string(),
+    };
+    tauri::async_runtime::spawn(classify::run(job));
+    Ok(shared.snapshot())
+}
+
+#[tauri::command]
+pub fn start_classify(app: AppHandle, project_id: String, import_id: Option<String>) -> AppResult<Progress> {
+    spawn_job(&app, &project_id, import_id, "full", None)
+}
+
+/// The running job, else the project's last run (an unfinished one shows as paused).
+#[tauri::command]
+pub fn classify_status(state: S<'_>, project_id: String) -> AppResult<Option<Progress>> {
+    if let Some(j) = state.jobs.lock().get(&project_id) {
+        return Ok(Some(j.snapshot()));
+    }
+    classify::last_run(&open_project(&state, &project_id)?, &project_id)
+}
+
+#[tauri::command]
+pub fn pause_classify(app: AppHandle, project_id: String) -> AppResult<()> {
+    if let Some(j) = app.state::<AppState>().jobs.lock().get(&project_id) {
+        j.pause();
+        let _ = app.emit("classify://progress", j.snapshot());
+    }
+    Ok(())
+}
+
+/// Un-pause a job of this session, or continue an unfinished run from an earlier session.
+#[tauri::command]
+pub fn resume_classify(app: AppHandle, project_id: String) -> AppResult<Progress> {
+    let state = app.state::<AppState>();
+    let live = state.jobs.lock().get(&project_id).cloned();
+    if let Some(j) = live.filter(|j| j.is_active()) {
+        secrets::require_key()?;
+        j.resume();
+        let _ = app.emit("classify://progress", j.snapshot());
+        return Ok(j.snapshot());
+    }
+    let conn = open_project(&state, &project_id)?;
+    let resume = classify::last_run(&conn, &project_id)?.filter(|p| p.status == "paused");
+    let import_id: Option<String> = match &resume {
+        Some(p) => conn.query_row("SELECT import_id FROM runs WHERE id = ?1", [&p.run_id], |r| r.get(0)).unwrap_or(None),
+        None => None,
+    };
+    drop(conn);
+    spawn_job(&app, &project_id, import_id, "full", resume)
+}
+
+#[tauri::command]
+pub fn cancel_classify(state: S<'_>, project_id: String) -> AppResult<()> {
+    if let Some(j) = state.jobs.lock().get(&project_id) {
+        j.cancel();
+        return Ok(());
+    }
+    // an unfinished run from an earlier session: just close it
+    let conn = open_project(&state, &project_id)?;
+    conn.execute("UPDATE runs SET status = 'cancelled', finished_at = datetime('now') WHERE status IN ('running','paused')", [])?;
+    Ok(())
+}
+
+/// "จัดใหม่": clear the chosen tickets' results and classify them again. Rows edited by a person
+/// are kept unless include_human.
+#[tauri::command]
+pub fn reclassify(app: AppHandle, project_id: String, ticket_ids: Option<Vec<String>>, low_only: bool, include_human: bool) -> AppResult<Progress> {
+    let state = app.state::<AppState>();
+    {
+        let conn = open_project(&state, &project_id)?;
+        let thr = crate::db::low_threshold(&conn);
+        let human = if include_human { "" } else { " AND source != 'human'" };
+        match ticket_ids {
+            Some(ids) => {
+                let mut st = conn.prepare(&format!("DELETE FROM classifications WHERE ticket_id = ?1 AND source != 'unknown_service'{human}"))?;
+                for id in ids {
+                    st.execute([id])?;
+                }
+            }
+            None if low_only => {
+                conn.execute(&format!("DELETE FROM classifications WHERE (confidence < ?1 OR source = 'error') AND source != 'unknown_service'{human}"), [thr])?;
+            }
+            None => return Err(AppError::new("invalid", "เลือกแถวที่จะจัดใหม่ก่อน")),
+        }
+    }
+    spawn_job(&app, &project_id, None, "reclassify", None)
+}
+
+/// "ลองจัด 20 แถว": 20 rows of the file spread over its services, classified but not saved.
+#[tauri::command]
+pub async fn classify_trial(app: AppHandle, project_id: String, path: String, sheet: Option<String>, roles: Vec<Role>, date_order: Option<DateOrder>) -> AppResult<TrialResult> {
+    let key = secrets::require_key()?;
+    let (services, sample, cfg, url) = {
+        let state = app.state::<AppState>();
+        let conn = open_project(&state, &project_id)?;
+        let services = classify::load_services(&conn)?;
+        let p = ingest::load(std::path::Path::new(&path), sheet.as_deref())?;
+        let (order, _) = ingest::date_order_for(&p, &roles, date_order)?;
+        let (recs, _) = ingest::build_records(&p, &roles, order)?;
+        let mut by: Vec<(String, Vec<(String, String)>)> = vec![];
+        for r in recs.into_iter().filter(|r| services.contains_key(&r.service)) {
+            match by.iter_mut().find(|g| g.0 == r.service) {
+                Some(g) => g.1.push((r.ticket_no, r.problem_text)),
+                None => by.push((r.service.clone(), vec![(r.ticket_no, r.problem_text)])),
+            }
+        }
+        // take rows from across the file, not just its first lines
+        for g in by.iter_mut() {
+            let step = (g.1.len() / 20).max(1);
+            g.1 = g.1.iter().step_by(step).cloned().collect();
+        }
+        if by.is_empty() {
+            return Err(AppError::new("no_rows", "ไม่มีแถวของเซอร์วิสที่มีหมวดหมู่ให้ลองจัด"));
+        }
+        let sample: Vec<(String, String, String)> = classify::spread(&by, 20).into_iter().map(|(s, (no, t))| (s, no, t)).collect();
+        let cfg = job_config(&state, &conn);
+        let url = state.settings.lock().chat_url();
+        (services, sample, cfg, url)
+    };
+    let llm = classify::gateway_llm(url, key, cfg.model.clone());
+    Ok(classify::trial(&llm, &services, sample, &cfg).await)
+}
+
+#[tauri::command]
+pub fn get_pref(state: S<'_>, project_id: String, key: String) -> AppResult<Option<String>> {
+    crate::db::get_pref(&open_project(&state, &project_id)?, &key)
+}
+
+#[tauri::command]
+pub fn set_pref(state: S<'_>, project_id: String, key: String, value: String) -> AppResult<()> {
+    crate::db::set_pref(&open_project(&state, &project_id)?, &key, &value)
 }
 
 #[cfg(test)]
