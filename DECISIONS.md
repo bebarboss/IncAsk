@@ -19,3 +19,7 @@
 13. **Mock**: ชื่อผู้ใช้ตัวอย่าง "Somchai" (ไม่ใช้ชื่อจริงจากดีไซน์), ข้อมูลทิกเก็ตสร้างแบบ deterministic จากจำนวนในดีไซน์ (ส.ค.–ต.ค. 2569), เพิ่มเซอร์วิส "Smart Home" ในกล่องสรุปนำเข้าเพื่อโชว์สถานะ "ไม่มีหมวดหมู่"; ตัวช่วย URL `?page=setup|import|classify|results|summary|settings|app|usage` และ `?gateway=down`
 14. **ไอคอนแอป**: สร้างเองจาก SVG (`src-tauri/icons/app-icon.svg`, ตัว "I" บนพื้นเขียว #217346) ด้วย `tauri icon`
 15. **ชิป "ไม่มั่นใจ"/สีขึ้น-ลง**: ▲ ใช้สีส้มเข้ม `--up-text` (#9B4508 จากดีไซน์), ▼ ใช้ `--ok-text` — มีลูกศรเสมอ ไม่ใช้สีอย่างเดียว
+
+## ระหว่างขั้น 1–2
+
+16. **ทดสอบด้วย mock data ไม่ต้องใส่ API key** (ผู้ใช้สั่ง): ใน mock mode ปุ่มทดสอบการเชื่อมต่อ/รายชื่อโมเดล/หลอด usage ใช้ได้โดยไม่มี key · เพิ่ม `npm run tauri:mock` (`src-tauri/tauri.mock.conf.json`) เปิดหน้าต่าง Tauri จริงด้วยข้อมูล mock บน port 5180 ไม่ชนกับ dev server ของ DocAsk ที่ 5173

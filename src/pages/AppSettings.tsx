@@ -130,7 +130,7 @@ function GatewaySection({ highlight }: { highlight: boolean }) {
         </div>
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-        <button className="btn" disabled={busy || !info?.hasKey} onClick={test}>{busy ? "กำลังทดสอบ…" : "ทดสอบการเชื่อมต่อ"}</button>
+        <button className="btn" disabled={busy || (!api.mock && !info?.hasKey)} onClick={test}>{busy ? "กำลังทดสอบ…" : "ทดสอบการเชื่อมต่อ"}</button>
         {msg && (msg.ok
           ? <span className="ok-badge" role="status"><Check size={14} strokeWidth={3} aria-hidden="true" />{msg.text}</span>
           : <span role="alert" style={{ color: "var(--err-text)", fontSize: 13 }}>{msg.text}</span>)}

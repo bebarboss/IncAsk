@@ -356,20 +356,20 @@ export function createMockBackend(): Backend {
     gatewayModels: async () => {
       await wait(500);
       if (gatewayDown) throw { code: "gateway_unreachable", message: "ต่อ Gateway ไม่ได้ กรุณาต่อ VPN บริษัทแล้วลองใหม่" };
-      if (!gateway.hasKey) throw { code: "no_key", message: "ยังไม่ได้ใส่ API Key — ไปที่ ตั้งค่าโปรแกรม › Gateway และโมเดล" };
+      // mock mode needs no API key: the model list and the test pass without one
       return [...MODEL_IDS];
     },
     testGateway: async (model) => {
       await wait(900);
       const m = model ?? settings.model;
-      const ok = gateway.hasKey && !gatewayDown;
+      const ok = !gatewayDown;
       gateway = { ...gateway, lastTestAt: Date.now(), lastTestOk: ok };
       return {
         model: m, ok, reply: ok ? "GOSOFT LITELLM OK" : null, status: ok ? 200 : null, elapsedMs: 812, unreachable: gatewayDown,
-        error: ok ? null : gatewayDown ? "ต่อ Gateway ไม่ได้ กรุณาต่อ VPN บริษัทแล้วลองใหม่" : "ยังไม่ได้ใส่ API Key",
+        error: ok ? null : "ต่อ Gateway ไม่ได้ กรุณาต่อ VPN บริษัทแล้วลองใหม่",
       };
     },
-    gatewayKeyUsage: async () => (gateway.hasKey ? clone(keyUsage) : null),
+    gatewayKeyUsage: async () => (gatewayDown ? null : clone(keyUsage)),
     checkUpdate: async () => { await wait(600); return { available: false, currentVersion: __APP_VERSION__, version: null, notes: null, date: null }; },
     installUpdate: async () => { throw { code: "update_none", message: "ไม่มีเวอร์ชันใหม่" }; },
 

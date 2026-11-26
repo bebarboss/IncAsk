@@ -18,7 +18,8 @@
 npm install
 npm run dev          # เปิดในเบราว์เซอร์ http://localhost:5173 (mock mode อัตโนมัติ)
 npm run dev:mock     # บังคับ mock mode แม้รันใน Tauri
-npm run tauri dev    # แอปจริง
+npm run tauri:mock   # แอปจริง (หน้าต่าง Tauri) ด้วยข้อมูล mock ไม่ต้องใส่ API key — ใช้ port 5180
+npm run tauri dev    # แอปจริง ต่อ Gateway จริง
 npm run typecheck
 cd src-tauri; cargo test; cargo clippy --all-targets
 npm run tauri build  # ตัวติดตั้ง MSI + NSIS (src-tauri/target/release/bundle)
@@ -31,6 +32,8 @@ npm run tauri build  # ตัวติดตั้ง MSI + NSIS (src-tauri/targ
 
 ตัวช่วยดูหน้าต่างๆ ผ่าน URL: `?page=setup`, `?page=classify`, `?page=results`, `?page=summary`, `?page=settings`, `?page=app`, `?page=usage`
 และ `?gateway=down` เพื่อจำลองตอนต่อ VPN ไม่ได้
+
+ใน mock mode **ไม่ต้องใส่ API key** — ปุ่มทดสอบการเชื่อมต่อผ่านได้เลย
 
 ## การใส่ API Key
 

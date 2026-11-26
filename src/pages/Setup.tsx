@@ -100,13 +100,13 @@ function GatewayStep({ onNext }: { onNext: () => void }) {
             type="password"
             autoComplete="off"
             spellCheck={false}
-            placeholder={info?.hasKey ? `บันทึกแล้ว ••••${info.keyLast4 ?? ""} — ใส่ใหม่เพื่อเปลี่ยน` : "sk-…"}
+            placeholder={info?.hasKey ? `บันทึกแล้ว ••••${info.keyLast4 ?? ""} — ใส่ใหม่เพื่อเปลี่ยน` : api.mock ? "MOCK MODE — ไม่ต้องใส่ key กดทดสอบได้เลย" : "sk-…"}
             value={key}
             onChange={(e) => { setKey(e.target.value); setModels(null); }}
           />
         </div>
         <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 12 }}>
-          <button className="btn btn-lg" onClick={test} disabled={busy || (!key.trim() && !info?.hasKey)}>
+          <button className="btn btn-lg" onClick={test} disabled={busy || (!api.mock && !key.trim() && !info?.hasKey)}>
             <Wifi size={17} strokeWidth={1.8} aria-hidden="true" />
             {busy ? "กำลังทดสอบ…" : "ทดสอบการเชื่อมต่อ"}
           </button>
