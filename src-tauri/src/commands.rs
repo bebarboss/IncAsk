@@ -65,16 +65,24 @@ pub fn get_settings(state: S<'_>) -> Settings {
 #[tauri::command]
 pub fn save_settings(state: S<'_>, settings: Settings) -> AppResult<Settings> {
     let mut cur = state.settings.lock();
-    let next = Settings {
-        gateway_url: cur.gateway_url.clone(),
-        last_test_at: cur.last_test_at,
-        last_test_ok: cur.last_test_ok,
-        ..settings
-    }
-    .sanitize();
+    let next = merge_settings(&cur, settings);
     next.save()?;
     *cur = next.clone();
     Ok(next)
+}
+
+/// What the frontend may change through `save_settings`: everything but the Gateway URL and
+/// the connection-test bookkeeping. Choosing a model other than the one last tested clears the result.
+pub fn merge_settings(cur: &Settings, incoming: Settings) -> Settings {
+    let keep = cur.last_test_model.as_deref() == Some(incoming.model.trim());
+    Settings {
+        gateway_url: cur.gateway_url.clone(),
+        last_test_at: if keep { cur.last_test_at } else { None },
+        last_test_ok: if keep { cur.last_test_ok } else { None },
+        last_test_model: if keep { cur.last_test_model.clone() } else { None },
+        ..incoming
+    }
+    .sanitize()
 }
 
 // ------------------------------------------------------------------ gateway + key
@@ -108,10 +116,16 @@ pub fn set_gateway_url(state: S<'_>, url: String) -> AppResult<GatewayInfo> {
             s.gateway_url = base;
             s.last_test_at = None;
             s.last_test_ok = None;
+            s.last_test_model = None;
             s.save()?;
         }
     }
     Ok(gateway_info(&state))
+}
+
+#[tauri::command]
+pub fn reset_gateway_url(state: S<'_>) -> AppResult<GatewayInfo> {
+    set_gateway_url(state, config::DEFAULT_GATEWAY_URL.into())
 }
 
 /// The key goes straight to Windows Credential Manager; only "has key" + last 4 come back.
@@ -123,6 +137,7 @@ pub fn save_api_key(state: S<'_>, key: String) -> AppResult<GatewayInfo> {
         let mut s = state.settings.lock();
         s.last_test_at = None;
         s.last_test_ok = None;
+        s.last_test_model = None;
         s.save()?;
     }
     Ok(gateway_info(&state))
@@ -193,6 +208,7 @@ pub async fn test_gateway(app: AppHandle, model: Option<String>) -> AppResult<Te
         let mut s = state.settings.lock();
         s.last_test_at = Some(now_ms());
         s.last_test_ok = Some(r.ok);
+        s.last_test_model = Some(r.model.clone());
         s.save()?;
     }
     let (st, msg) = if r.ok {
@@ -214,4 +230,46 @@ pub async fn gateway_key_usage(app: AppHandle) -> AppResult<Option<llm::KeyUsage
     let base = app.state::<AppState>().settings.lock().gateway_base();
     let key = secrets::require_key()?;
     llm::key_info(&base, &key).await
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn save_settings_cannot_change_gateway_url_or_test_result() {
+        let cur = Settings {
+            gateway_url: "https://gw.example".into(),
+            last_test_at: Some(1),
+            last_test_ok: Some(true),
+            last_test_model: Some("godev1".into()),
+            ..Settings::default()
+        };
+        let incoming = Settings {
+            gateway_url: "https://evil.example".into(),
+            last_test_ok: Some(false),
+            theme: "dark".into(),
+            ..cur.clone()
+        };
+        let s = merge_settings(&cur, incoming);
+        assert_eq!(s.gateway_url, "https://gw.example");
+        assert_eq!(s.last_test_ok, Some(true));
+        assert_eq!(s.theme, "dark");
+    }
+
+    #[test]
+    fn changing_the_model_clears_the_last_test() {
+        let cur = Settings { model: "godev1".into(), last_test_at: Some(1), last_test_ok: Some(true), last_test_model: Some("godev1".into()), ..Settings::default() };
+        let s = merge_settings(&cur, Settings { model: "gothink1".into(), ..cur.clone() });
+        assert_eq!(s.model, "gothink1");
+        assert_eq!((s.last_test_at, s.last_test_ok), (None, None));
+    }
+
+    #[test]
+    fn saving_the_model_that_was_just_tested_keeps_the_result() {
+        // setup tests gothink1 while app.json still says godev1, then saves gothink1
+        let cur = Settings { model: "godev1".into(), last_test_at: Some(5), last_test_ok: Some(true), last_test_model: Some("gothink1".into()), ..Settings::default() };
+        let s = merge_settings(&cur, Settings { model: "gothink1".into(), ..cur.clone() });
+        assert_eq!((s.last_test_at, s.last_test_ok), (Some(5), Some(true)));
+    }
 }

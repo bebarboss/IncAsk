@@ -198,6 +198,7 @@ export function createMockBackend(): Backend {
     lastProjectId: "cc-a",
     lastTestAt: Date.now() - 86_400_000,
     lastTestOk: true,
+    lastTestModel: "godev1",
   };
   let gateway: GatewayInfo = {
     groupName: "Gosoft Agent Gateway",
@@ -322,8 +323,11 @@ export function createMockBackend(): Backend {
       rows: rows as number, cached: cached as number, tokens: tokens as number, cost: cost as number,
     })),
   };
+  // ?budget=high (88%) / ?budget=full (97%) preview the orange / red usage bar
+  const spendNow = params.get("budget") === "full" ? 48.5 : params.get("budget") === "high" ? 44.2 : 18.4;
+  usage.spend = spendNow;
   const keyUsage: KeyUsage = {
-    keyAlias: "incask-cc", spend: 18.4, maxBudget: 50, softBudget: 40, budgetDuration: "30d",
+    keyAlias: "incask-cc", spend: spendNow, maxBudget: 50, softBudget: 40, budgetDuration: "30d",
     budgetResetAt: "2026-12-01T00:00:00Z", expires: null, tpmLimit: 200_000, rpmLimit: 60, models: [...MODEL_IDS],
   };
 
@@ -331,7 +335,16 @@ export function createMockBackend(): Backend {
     mock: true,
     appInfo: async () => ({ version: __APP_VERSION__, dataDir: "%APPDATA%\\IncAsk (mock)", mock: true }),
     getSettings: async () => clone(settings),
-    saveSettings: async (s) => { await wait(60); settings = clone(s); return clone(settings); },
+    // same rule as Rust merge_settings: URL and test bookkeeping are not changed through saveSettings
+    saveSettings: async (s) => {
+      await wait(60);
+      const keep = settings.lastTestModel === s.model.trim();
+      settings = {
+        ...clone(s), gatewayUrl: settings.gatewayUrl,
+        lastTestAt: keep ? settings.lastTestAt : null, lastTestOk: keep ? settings.lastTestOk : null, lastTestModel: keep ? settings.lastTestModel : null,
+      };
+      return clone(settings);
+    },
     getGateway: async () => clone(gateway),
     setGatewayUrl: async (url) => {
       await wait(150);
@@ -339,6 +352,11 @@ export function createMockBackend(): Backend {
       if (!/^https:\/\/\S+$/.test(u)) throw { code: "invalid_url", message: "Gateway URL ต้องขึ้นต้นด้วย https:// และไม่มีช่องว่าง" };
       gateway = { ...gateway, url: u, lastTestAt: null, lastTestOk: null };
       settings.gatewayUrl = u;
+      return clone(gateway);
+    },
+    resetGatewayUrl: async () => {
+      gateway = { ...gateway, url: DEFAULT_GATEWAY_URL, lastTestAt: null, lastTestOk: null };
+      settings.gatewayUrl = DEFAULT_GATEWAY_URL;
       return clone(gateway);
     },
     saveApiKey: async (key) => {
@@ -362,11 +380,14 @@ export function createMockBackend(): Backend {
     testGateway: async (model) => {
       await wait(900);
       const m = model ?? settings.model;
-      const ok = !gatewayDown;
+      // godev3 simulates a model this key may not use (403), to exercise "pick another model"
+      const forbidden = m === "godev3";
+      const ok = !gatewayDown && !forbidden;
       gateway = { ...gateway, lastTestAt: Date.now(), lastTestOk: ok };
+      settings = { ...settings, lastTestAt: Date.now(), lastTestOk: ok, lastTestModel: m };
       return {
-        model: m, ok, reply: ok ? "GOSOFT LITELLM OK" : null, status: ok ? 200 : null, elapsedMs: 812, unreachable: gatewayDown,
-        error: ok ? null : "ต่อ Gateway ไม่ได้ กรุณาต่อ VPN บริษัทแล้วลองใหม่",
+        model: m, ok, reply: ok ? "GOSOFT LITELLM OK" : null, status: ok ? 200 : forbidden ? 403 : null, elapsedMs: 812, unreachable: gatewayDown,
+        error: ok ? null : forbidden ? "ไม่มีสิทธิ์ใช้โมเดลนี้ ตรวจสิทธิ์ Model/Policy และชนิดของ Key กับ Admin" : "ต่อ Gateway ไม่ได้ กรุณาต่อ VPN บริษัทแล้วลองใหม่",
       };
     },
     gatewayKeyUsage: async () => (gatewayDown ? null : clone(keyUsage)),

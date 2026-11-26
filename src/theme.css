@@ -337,6 +337,8 @@ code { font-family: var(--mono); font-size: 12.5px; background: var(--code); col
 .progress > div { height: 100%; border-radius: 3px; background: var(--accent); transition: width .3s; }
 .progress.lg { height: 10px; border-radius: 5px; }
 .progress.thin { height: 4px; }
+.progress.warn > div { background: var(--role-service); }
+.progress.err > div { background: var(--err-text); }
 
 .seg-tabs { display: inline-flex; gap: 2px; padding: 3px; background: var(--code); border: 1px solid var(--border); border-radius: 10px; flex-wrap: wrap; }
 .seg-tabs button { min-height: 30px; padding: 0 14px; border: none; background: none; color: var(--muted); font-size: 13px; font-weight: 600; border-radius: 7px; }

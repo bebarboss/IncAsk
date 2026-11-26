@@ -8,6 +8,8 @@ import { th } from "../i18n/th";
 import { useApp, type AppSection } from "../state";
 import { StatusPill } from "../components/StatusPill";
 import { UpdateDialog } from "../components/UpdateDialog";
+import { ConfirmDialog } from "../components/ui";
+import { thDateTime } from "../lib/format";
 import UsagePage from "./Usage";
 
 const SECTIONS: [AppSection, string][] = [
@@ -68,19 +70,36 @@ function GatewaySection({ highlight }: { highlight: boolean }) {
     setMsg(null);
     try { await fn(); } catch (e) { setMsg({ ok: false, text: errMsg(e) }); } finally { setBusy(false); }
   };
-  const saveUrl = () => run(async () => { setInfo(await api.setGatewayUrl(url)); setMsg({ ok: true, text: "บันทึก Gateway URL แล้ว" }); });
-  const saveKey = () => run(async () => {
-    setInfo(await api.saveApiKey(key));
-    setKey("");
-    setEditingKey(false);
-    setMsg({ ok: true, text: "บันทึก API Key ใน Windows Credential Manager แล้ว" });
+  const afterGatewayChange = async (g: GatewayInfo, text: string) => {
+    setInfo(g);
+    setUrl(g.url);
+    await app.refreshSettings();
+    setMsg({ ok: true, text });
     setModels(await api.gatewayModels().catch(() => models));
+    app.recheckGateway();
+  };
+  const saveUrl = () => run(async () => afterGatewayChange(await api.setGatewayUrl(url), "บันทึก Gateway URL แล้ว — กดทดสอบอีกครั้ง"));
+  const resetUrl = () => run(async () => afterGatewayChange(await api.resetGatewayUrl(), "กลับไปใช้ Gateway URL ค่าเริ่มต้นแล้ว"));
+  const saveKey = () => run(async () => {
+    const g = await api.saveApiKey(key);
+    setKey(""); // the key lives in Credential Manager now, not in this page
+    setEditingKey(false);
+    await afterGatewayChange(g, "บันทึก API Key ใน Windows Credential Manager แล้ว");
   });
+  const removeKey = async () => {
+    setInfo(await api.removeApiKey());
+    setConfirmRemove(false);
+    setMsg({ ok: true, text: "ลบ API Key ออกจากเครื่องแล้ว" });
+    app.recheckGateway();
+  };
   const test = () => run(async () => {
     const r = await api.testGateway();
-    setMsg(r.ok ? { ok: true, text: `เชื่อมต่อสำเร็จ · ${r.model} ตอบใน ${(r.elapsedMs / 1000).toFixed(1)} วิ` } : { ok: false, text: r.error ?? "ทดสอบไม่ผ่าน" });
+    await app.refreshSettings();
+    setMsg(r.ok ? { ok: true, text: `เชื่อมต่อสำเร็จ · ${r.model} ตอบใน ${(r.elapsedMs / 1000).toFixed(1)} วิ` } : { ok: false, text: `${r.model}: ${r.error ?? "ทดสอบไม่ผ่าน"}` });
     app.recheckGateway();
   });
+  const [confirmRemove, setConfirmRemove] = useState(false);
+  const last = app.settings.lastTestAt;
 
   return (
     <section className="card card-pad" aria-labelledby="gw-h" style={highlight ? { borderColor: "var(--ring)" } : undefined}>
@@ -93,6 +112,7 @@ function GatewaySection({ highlight }: { highlight: boolean }) {
         <div style={{ display: "flex", gap: 8 }}>
           <input id="as-url" className="input mono" type="url" value={url} onChange={(e) => setUrl(e.target.value)} />
           <button className="btn" disabled={busy || !url.trim() || url.trim() === info?.url} onClick={saveUrl}>{th.save}</button>
+          {info && info.url !== info.defaultUrl && <button className="btn btn-ghost" disabled={busy} onClick={resetUrl}>ใช้ค่าเริ่มต้น</button>}
         </div>
       </div>
       <div className="field">
@@ -107,6 +127,7 @@ function GatewaySection({ highlight }: { highlight: boolean }) {
             ? <button className="btn btn-primary" disabled={busy || !key.trim()} onClick={saveKey}>{th.save}</button>
             : <button className="btn" onClick={() => setEditingKey(true)}>{info?.hasKey ? "เปลี่ยน" : "ใส่ Key"}</button>}
           {editingKey && <button className="btn btn-ghost" onClick={() => { setEditingKey(false); setKey(""); }}>{th.cancel}</button>}
+          {!editingKey && info?.hasKey && <button className="btn btn-danger" onClick={() => setConfirmRemove(true)}>ลบ Key</button>}
         </div>
         <span className="field-hint">เก็บใน Windows Credential Manager ของเครื่อง ไม่บันทึกเป็นไฟล์</span>
       </div>
@@ -134,7 +155,22 @@ function GatewaySection({ highlight }: { highlight: boolean }) {
         {msg && (msg.ok
           ? <span className="ok-badge" role="status"><Check size={14} strokeWidth={3} aria-hidden="true" />{msg.text}</span>
           : <span role="alert" style={{ color: "var(--err-text)", fontSize: 13 }}>{msg.text}</span>)}
+        {!msg && last != null && (
+          <span className="muted" style={{ fontSize: 12 }}>
+            ทดสอบล่าสุด {thDateTime(last)}{app.settings.lastTestModel ? ` · ${app.settings.lastTestModel}` : ""} · {app.settings.lastTestOk ? "✓ ผ่าน" : "ไม่ผ่าน"}
+          </span>
+        )}
       </div>
+      {confirmRemove && (
+        <ConfirmDialog
+          title="ลบ API Key ออกจากเครื่อง?"
+          body="Key จะถูกลบจาก Windows Credential Manager จัดหมวดใหม่ไม่ได้จนกว่าจะใส่ Key อีกครั้ง ผลลัพธ์และสรุปผลเดิมยังดูได้ตามปกติ"
+          confirmLabel="ลบ Key"
+          danger
+          onCancel={() => setConfirmRemove(false)}
+          onConfirm={removeKey}
+        />
+      )}
     </section>
   );
 }

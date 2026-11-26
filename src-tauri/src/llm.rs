@@ -265,3 +265,110 @@ mod tests {
         assert_eq!(parse_models(&v), vec!["godev1", "gothink1"]);
     }
 }
+
+/// HTTP tests against a fake Gateway on 127.0.0.1 — no real key, no network.
+#[cfg(test)]
+mod http_tests {
+    use super::*;
+    use std::io::{Read, Write};
+    use std::net::TcpListener;
+
+    const FAKE_KEY: &str = "sk-unit-test-not-a-real-key";
+
+    /// Serve one canned HTTP response; returns the base URL and the raw request received.
+    fn fake_gateway(status: &str, headers: &str, body: &str) -> (String, std::thread::JoinHandle<String>) {
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let base = format!("http://{}", listener.local_addr().unwrap());
+        let resp = format!(
+            "HTTP/1.1 {status}\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n{headers}\r\n{body}",
+            body.len()
+        );
+        let h = std::thread::spawn(move || {
+            let (mut s, _) = listener.accept().unwrap();
+            let mut buf = Vec::new();
+            let mut chunk = [0u8; 4096];
+            loop {
+                let n = s.read(&mut chunk).unwrap();
+                buf.extend_from_slice(&chunk[..n]);
+                let text = String::from_utf8_lossy(&buf).to_string();
+                if let Some(end) = text.find("\r\n\r\n") {
+                    let len = text
+                        .lines()
+                        .find_map(|l| l.to_ascii_lowercase().strip_prefix("content-length:").map(|v| v.trim().parse::<usize>().unwrap_or(0)))
+                        .unwrap_or(0);
+                    if buf.len() >= end + 4 + len {
+                        break;
+                    }
+                }
+                if n == 0 {
+                    break;
+                }
+            }
+            s.write_all(resp.as_bytes()).unwrap();
+            String::from_utf8_lossy(&buf).to_string()
+        });
+        (base, h)
+    }
+
+    #[tokio::test]
+    async fn list_models_sends_bearer_and_reads_ids() {
+        let (base, h) = fake_gateway("200 OK", "", r#"{"data":[{"id":"godev1"},{"id":"gothink2"}]}"#);
+        let ids = list_models(&base, FAKE_KEY).await.unwrap();
+        assert_eq!(ids, vec!["godev1", "gothink2"]);
+        let req = h.join().unwrap();
+        assert!(req.starts_with("GET /v1/models"));
+        assert!(req.to_lowercase().contains(&format!("authorization: bearer {FAKE_KEY}")));
+    }
+
+    #[tokio::test]
+    async fn list_models_401_maps_to_spec_text_without_the_key() {
+        let body = format!(r#"{{"error":{{"message":"invalid key {FAKE_KEY}"}}}}"#);
+        let (base, h) = fake_gateway("401 Unauthorized", "", &body);
+        let e = list_models(&base, FAKE_KEY).await.unwrap_err();
+        h.join().unwrap();
+        assert_eq!(e.message, crate::errors::MSG_401);
+        assert!(!e.message.contains("unit-test"));
+    }
+
+    #[tokio::test]
+    async fn key_info_reads_info_and_hides_when_unsupported() {
+        let (base, h) = fake_gateway("200 OK", "", r#"{"info":{"spend":18.4,"max_budget":50,"budget_reset_at":"2026-12-01T00:00:00Z"}}"#);
+        let u = key_info(&base, FAKE_KEY).await.unwrap().unwrap();
+        let req = h.join().unwrap();
+        assert!(req.starts_with("GET /key/info"));
+        assert!(!req.lines().next().unwrap().contains("sk-"), "key must not be in the URL");
+        assert_eq!((u.spend, u.max_budget), (Some(18.4), Some(50.0)));
+
+        let (base, h) = fake_gateway("404 Not Found", "", r#"{"detail":"Not Found"}"#);
+        assert!(key_info(&base, FAKE_KEY).await.unwrap().is_none());
+        h.join().unwrap();
+    }
+
+    #[tokio::test]
+    async fn complete_reads_usage_and_litellm_cost() {
+        let (base, h) = fake_gateway(
+            "200 OK",
+            "x-litellm-response-cost: 0.00123\r\n",
+            r#"{"choices":[{"message":{"content":"GOSOFT LITELLM OK"}}],"usage":{"prompt_tokens":12,"completion_tokens":5}}"#,
+        );
+        let msgs = [ChatMessage::new("user", "hi")];
+        let url = crate::config::chat_url(&base);
+        let req = Request { url: &url, key: FAKE_KEY, model: "godev1", messages: &msgs, max_tokens: None, json_mode: true, timeout: Duration::from_secs(10) };
+        let c = complete(&req).await.unwrap();
+        let raw = h.join().unwrap();
+        assert!(raw.starts_with("POST /v1/chat/completions"));
+        assert!(raw.contains(r#""temperature":0.0"#));
+        assert!(raw.contains(r#""response_format":{"type":"json_object"}"#));
+        assert_eq!(c.content, "GOSOFT LITELLM OK");
+        assert_eq!((c.prompt_tokens, c.completion_tokens), (12, 5));
+        assert_eq!(c.cost, Some(0.00123));
+    }
+
+    #[tokio::test]
+    async fn unreachable_gateway_is_reported_as_vpn_problem() {
+        // bind then drop → nothing listens on this port
+        let port = TcpListener::bind("127.0.0.1:0").unwrap().local_addr().unwrap().port();
+        let e = list_models(&format!("http://127.0.0.1:{port}"), FAKE_KEY).await.unwrap_err();
+        assert!(e.is_unreachable(), "{}", e.message);
+    }
+}

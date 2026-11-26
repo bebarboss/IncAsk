@@ -1,4 +1,7 @@
-import { FolderPlus } from "lucide-react";
+import { useEffect, useState } from "react";
+import { FolderPlus, X } from "lucide-react";
+import type { UpdateInfo } from "./lib/types";
+import { UpdateDialog } from "./components/UpdateDialog";
 import { api } from "./lib/api";
 import { th } from "./i18n/th";
 import { useApp } from "./state";
@@ -17,6 +20,17 @@ import AppSettingsPage from "./pages/AppSettings";
 export default function App() {
   const app = useApp();
   const { page, ready, loadError, activeProject } = app;
+  const [update, setUpdate] = useState<UpdateInfo | null>(null);
+  const [updateOpen, setUpdateOpen] = useState(false);
+
+  // check for a new version once at startup; VPN/URL problems are ignored silently (as DocAsk)
+  useEffect(() => {
+    if (!ready || !app.settings.setupDone || !app.settings.autoCheckUpdate || api.mock) return;
+    const t = setTimeout(() => { api.checkUpdate().then((u) => u.available && setUpdate(u)).catch(() => {}); }, 4000);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready, app.settings.setupDone]);
+
   const badge = api.mock && <span className="mock-badge">{th.mock}</span>;
 
   if (loadError) {
@@ -51,6 +65,14 @@ export default function App() {
     <div className="app">
       <Sidebar />
       <main className="main">
+        {update && !updateOpen && (
+          <div className="banner info" role="status">
+            <span>มี IncAsk เวอร์ชันใหม่ <b className="mono">{update.version}</b> (ตอนนี้ใช้ {update.currentVersion})</span>
+            <button className="btn btn-primary" onClick={() => setUpdateOpen(true)}>อัปเดต</button>
+            <button className="icon-btn" aria-label="ซ่อนการแจ้งเตือนอัปเดต" onClick={() => setUpdate(null)}><X size={16} strokeWidth={1.8} /></button>
+          </div>
+        )}
+        {updateOpen && update && <UpdateDialog info={update} onClose={() => setUpdateOpen(false)} />}
         {page.name === "project" && (
           activeProject ? (
             <>

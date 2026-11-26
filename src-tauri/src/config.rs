@@ -69,6 +69,8 @@ pub struct Settings {
     pub last_project_id: Option<String>,
     pub last_test_at: Option<i64>,
     pub last_test_ok: Option<bool>,
+    /// the model the last connection test ran on
+    pub last_test_model: Option<String>,
 }
 
 impl Default for Settings {
@@ -88,6 +90,7 @@ impl Default for Settings {
             last_project_id: None,
             last_test_at: None,
             last_test_ok: None,
+            last_test_model: None,
         }
     }
 }

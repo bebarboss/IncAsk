@@ -32,6 +32,7 @@ export interface Settings {
   lastProjectId: string | null;
   lastTestAt: number | null;
   lastTestOk: boolean | null;
+  lastTestModel: string | null;
 }
 
 /** The frontend only learns whether a key exists and its last 4 characters. */

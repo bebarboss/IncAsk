@@ -30,6 +30,7 @@ pub fn run() {
             commands::save_settings,
             commands::get_gateway,
             commands::set_gateway_url,
+            commands::reset_gateway_url,
             commands::save_api_key,
             commands::remove_api_key,
             commands::check_gateway,

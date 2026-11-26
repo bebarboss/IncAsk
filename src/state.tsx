@@ -16,6 +16,8 @@ interface Ctx {
   info: AppInfo | null;
   settings: Settings;
   updateSettings: (patch: Partial<Settings>) => Promise<void>;
+  /** re-read app.json after a command that changed it on the Rust side (URL, test result) */
+  refreshSettings: () => Promise<void>;
   gateway: GatewayStatus;
   recheckGateway: () => Promise<void>;
   projects: Project[];
@@ -49,6 +51,7 @@ export const DEFAULT_SETTINGS: Settings = {
   lastProjectId: null,
   lastTestAt: null,
   lastTestOk: null,
+  lastTestModel: null,
 };
 
 export function AppProvider({ children }: { children: ReactNode }) {
@@ -134,6 +137,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setSettings(await api.saveSettings(next));
   }, []);
 
+  const refreshSettings = useCallback(async () => {
+    setSettings(await api.getSettings());
+  }, []);
+
   const setActiveProject = useCallback((id: string) => {
     setActiveId(id);
     if (settingsRef.current.lastProjectId !== id) updateSettings({ lastProjectId: id }).catch(() => {});
@@ -149,10 +156,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo<Ctx>(
     () => ({
-      ready, loadError, info, settings, updateSettings, gateway, recheckGateway, projects, refreshProjects,
+      ready, loadError, info, settings, updateSettings, refreshSettings, gateway, recheckGateway, projects, refreshProjects,
       activeProject, setActiveProject, jobs, page, go: setPage, exportOpen, setExportOpen, toast, reload,
     }),
-    [ready, loadError, info, settings, updateSettings, gateway, recheckGateway, projects, refreshProjects, activeProject, setActiveProject, jobs, page, exportOpen, toast, reload],
+    [ready, loadError, info, settings, updateSettings, refreshSettings, gateway, recheckGateway, projects, refreshProjects, activeProject, setActiveProject, jobs, page, exportOpen, toast, reload],
   );
 
   return (

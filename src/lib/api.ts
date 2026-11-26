@@ -53,6 +53,7 @@ export interface Backend {
   // gateway + key
   getGateway(): Promise<GatewayInfo>;
   setGatewayUrl(url: string): Promise<GatewayInfo>;
+  resetGatewayUrl(): Promise<GatewayInfo>;
   /** the key goes to Rust → Windows Credential Manager; it is never stored in the frontend */
   saveApiKey(key: string): Promise<GatewayInfo>;
   removeApiKey(): Promise<GatewayInfo>;
@@ -127,6 +128,7 @@ function createTauriBackend(): Backend {
     saveSettings: (settings) => call("save_settings", { settings }),
     getGateway: () => call("get_gateway"),
     setGatewayUrl: (url) => call("set_gateway_url", { url }),
+    resetGatewayUrl: () => call("reset_gateway_url"),
     saveApiKey: (key) => call("save_api_key", { key }),
     removeApiKey: () => call("remove_api_key"),
     gatewayStatus: () => call("gateway_status"),

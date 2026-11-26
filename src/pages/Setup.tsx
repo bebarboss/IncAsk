@@ -44,15 +44,18 @@ function GatewayStep({ onNext }: { onNext: () => void }) {
   const [info, setInfo] = useState<GatewayInfo | null>(null);
   const [models, setModels] = useState<string[] | null>(null);
   const [model, setModel] = useState(app.settings.model);
+  const [tested, setTested] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => { api.getGateway().then((g) => { setInfo(g); setUrl(g.url); }).catch(() => {}); }, []);
 
+  // 1) save URL/key  2) list models (proves URL + key + VPN)  3) "Reply exactly…" on the chosen model.
+  // The model list stays visible after step 2, so a model this key can't use (403) can be swapped and retested.
   const test = async () => {
     setBusy(true);
     setError(null);
-    setModels(null);
+    setTested(false);
     try {
       if (url.trim() !== info?.url) setInfo(await api.setGatewayUrl(url));
       if (key.trim()) {
@@ -61,10 +64,11 @@ function GatewayStep({ onNext }: { onNext: () => void }) {
       }
       const list = await api.gatewayModels();
       const pickModel = list.includes(model) ? model : list[0];
-      const r = await api.testGateway(pickModel);
-      if (!r.ok) throw { message: r.error ?? "ทดสอบไม่ผ่าน" };
       setModels(list);
       setModel(pickModel);
+      const r = await api.testGateway(pickModel);
+      if (!r.ok) throw { message: r.unreachable ? r.error : `${pickModel}: ${r.error ?? "ทดสอบไม่ผ่าน"} — ลองเลือกโมเดลอื่นแล้วทดสอบอีกครั้ง` };
+      setTested(true);
     } catch (e) {
       setError(errMsg(e));
     } finally {
@@ -74,6 +78,7 @@ function GatewayStep({ onNext }: { onNext: () => void }) {
 
   const next = async () => {
     await app.updateSettings({ userName: name.trim(), model });
+    await app.refreshSettings();
     onNext();
   };
 
@@ -110,8 +115,8 @@ function GatewayStep({ onNext }: { onNext: () => void }) {
             <Wifi size={17} strokeWidth={1.8} aria-hidden="true" />
             {busy ? "กำลังทดสอบ…" : "ทดสอบการเชื่อมต่อ"}
           </button>
-          {!models && !error && <span className="muted" style={{ fontSize: 13 }}>ต้องทดสอบผ่านก่อนจึงไปขั้นต่อไปได้</span>}
-          {models && (
+          {!tested && !error && !busy && <span className="muted" style={{ fontSize: 13 }}>ต้องทดสอบผ่านก่อนจึงไปขั้นต่อไปได้</span>}
+          {tested && models && (
             <span className="ok-badge" role="status"><Check size={14} strokeWidth={3} aria-hidden="true" />เชื่อมต่อสำเร็จ · พบ {models.length} โมเดล</span>
           )}
         </div>
@@ -119,7 +124,7 @@ function GatewayStep({ onNext }: { onNext: () => void }) {
         {models && (
           <div className="field">
             <label htmlFor="su-model">โมเดลที่ใช้จัดหมวด</label>
-            <select id="su-model" className="select lg mono" value={model} onChange={(e) => setModel(e.target.value)}>
+            <select id="su-model" className="select lg mono" value={model} onChange={(e) => { setModel(e.target.value); setTested(false); setError(null); }}>
               {models.map((m) => <option key={m} value={m}>{m}</option>)}
             </select>
             <span className="field-hint">รายชื่อดึงมาจาก Gateway เปลี่ยนทีหลังได้ในตั้งค่าโปรแกรม</span>
@@ -128,7 +133,7 @@ function GatewayStep({ onNext }: { onNext: () => void }) {
       </section>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
         <span className="muted" style={{ fontSize: 13 }}>กลับมาแก้ได้ทุกเมื่อจากเมนูชื่อของคุณ</span>
-        <button className="btn btn-lg btn-primary" disabled={!models || !name.trim()} onClick={next}>
+        <button className="btn btn-lg btn-primary" disabled={!tested || !name.trim()} onClick={next}>
           ถัดไป <ArrowRight size={17} strokeWidth={2} aria-hidden="true" />
         </button>
       </div>
