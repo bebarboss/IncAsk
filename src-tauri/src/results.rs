@@ -79,6 +79,29 @@ fn expr(key: &str) -> Option<(String, Option<String>)> {
 
 const FROM: &str = "FROM tickets t LEFT JOIN classifications c ON c.ticket_id = t.id";
 
+/// Columns read by `map_row` (also used by the pivot drill-down).
+pub const SELECT_COLS: &str = "t.id, t.ticket_no, t.date, t.month, t.service, t.problem_text, t.source_json, c.fields_json, c.ai_fields_json, c.confidence, c.reason, COALESCE(c.source,'pending'), c.edited_by";
+
+pub fn map_row(r: &rusqlite::Row) -> rusqlite::Result<Row> {
+    let parse = |s: Option<String>| s.and_then(|j| serde_json::from_str::<Values>(&j).ok());
+    let src: String = r.get(6)?;
+    Ok(Row {
+        id: r.get(0)?,
+        ticket_no: r.get(1)?,
+        date: r.get(2)?,
+        month: r.get(3)?,
+        service: r.get(4)?,
+        problem_text: r.get(5)?,
+        source_row: serde_json::from_str(&src).unwrap_or_default(),
+        fields: parse(r.get(7)?).unwrap_or_default(),
+        ai_fields: parse(r.get(8)?),
+        confidence: r.get(9)?,
+        reason: r.get(10)?,
+        source: r.get(11)?,
+        edited_by: r.get(12)?,
+    })
+}
+
 fn where_clause(q: &Query, threshold: f64, first_cols: &[String]) -> (String, Vec<Sql>) {
     let mut w: Vec<String> = vec!["1=1".into()];
     let mut p: Vec<Sql> = vec![];
@@ -142,36 +165,14 @@ pub fn query(conn: &Connection, q: &Query) -> AppResult<Page> {
     )?;
     let (order, order_arg) = q.sort.as_deref().and_then(expr).unwrap_or(("t.date".into(), None));
     let dir = if q.desc || q.sort.is_none() { "DESC" } else { "ASC" };
-    let sql = format!(
-        "SELECT t.id, t.ticket_no, t.date, t.month, t.service, t.problem_text, t.source_json, c.fields_json, c.ai_fields_json,
-                c.confidence, c.reason, COALESCE(c.source,'pending'), c.edited_by
-         {FROM} WHERE {w} ORDER BY {order} {dir} NULLS LAST, t.ticket_no {dir} LIMIT ? OFFSET ?"
-    );
+    let sql = format!("SELECT {SELECT_COLS} {FROM} WHERE {w} ORDER BY {order} {dir} NULLS LAST, t.ticket_no {dir} LIMIT ? OFFSET ?");
     if let Some(a) = order_arg {
         p.push(Sql::Text(a));
     }
     p.push(Sql::Integer(q.limit.clamp(1, 1000) as i64));
     p.push(Sql::Integer(q.offset as i64));
     let mut st = conn.prepare(&sql)?;
-    let parse = |s: Option<String>| s.and_then(|j| serde_json::from_str::<Values>(&j).ok());
-    let rows = st.query_map(params_from_iter(p.iter()), |r| {
-        let src: String = r.get(6)?;
-        Ok(Row {
-            id: r.get(0)?,
-            ticket_no: r.get(1)?,
-            date: r.get(2)?,
-            month: r.get(3)?,
-            service: r.get(4)?,
-            problem_text: r.get(5)?,
-            source_row: serde_json::from_str(&src).unwrap_or_default(),
-            fields: parse(r.get(7)?).unwrap_or_default(),
-            ai_fields: parse(r.get(8)?),
-            confidence: r.get(9)?,
-            reason: r.get(10)?,
-            source: r.get(11)?,
-            edited_by: r.get(12)?,
-        })
-    })?;
+    let rows = st.query_map(params_from_iter(p.iter()), map_row)?;
     Ok(Page { total: total as usize, low_count: low_count as usize, rows: rows.collect::<Result<_, _>>()? })
 }
 

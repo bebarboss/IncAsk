@@ -65,7 +65,7 @@ export default function App() {
 
   return (
     <div className="app">
-      <Sidebar />
+      {!app.fullscreen && <Sidebar />}
       <main className="main">
         {update && !updateOpen && (
           <div className="banner info" role="status">
@@ -78,7 +78,7 @@ export default function App() {
         {page.name === "project" && (
           activeProject ? (
             <>
-              <TopNav />
+              {!app.fullscreen && <TopNav />}
               <div className="scroll" style={{ display: "flex", flexDirection: "column" }}>
                 {page.tab === "import" && <ImportPage key={activeProject.id} project={activeProject} />}
                 {page.tab === "classify" && <ClassifyPage key={activeProject.id} project={activeProject} />}

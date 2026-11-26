@@ -47,3 +47,10 @@ lto = true
 opt-level = "s"
 panic = "unwind"
 strip = true
+
+# the bundled SQLite does the pivot GROUP BYs — always compile it fully optimised
+[profile.release.package.libsqlite3-sys]
+opt-level = 3
+
+[profile.dev.package.libsqlite3-sys]
+opt-level = 3

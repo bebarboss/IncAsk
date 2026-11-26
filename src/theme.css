@@ -479,3 +479,22 @@ code { font-family: var(--mono); font-size: 12.5px; background: var(--code); col
   .stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .drill { position: fixed; right: 0; top: 0; bottom: 0; z-index: 40; box-shadow: -8px 0 28px rgba(0, 0, 0, .15); }
 }
+
+/* pivot extras (step 8) */
+.pivot tr.subgroup th, .pivot tr.subgroup td { background: color-mix(in srgb, var(--surface-2) 50%, var(--surface)); font-weight: 600; }
+.pivot.large th, .pivot.large td, .pivot.large .pv-btn { font-size: 15px; }
+.pv-zone { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; min-height: 32px; padding: 2px 4px; border-radius: 8px; }
+.pv-zone:has(.chip.dashed):hover { background: var(--surface-2); }
+.chip[draggable="true"] { cursor: grab; }
+.attach-x { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; border: 0; border-radius: 6px; background: transparent; color: inherit; cursor: pointer; padding: 0; }
+.attach-x:hover { background: color-mix(in srgb, currentColor 15%, transparent); }
+.seg-tabs.sm button { min-height: 26px; padding: 0 10px; font-size: 12px; }
+.fs-bar {
+  position: fixed; top: 10px; left: 50%; transform: translate(-50%, -140%); z-index: 60; transition: transform .2s;
+  display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 12px; background: #16181D; box-shadow: 0 8px 28px rgba(20, 24, 32, .3);
+}
+.fs-bar.show, .fs-bar:focus-within { transform: translate(-50%, 0); }
+.fs-btn { white-space: nowrap; min-height: 34px; padding: 0 12px; border-radius: 8px; border: 1px solid #3B414C; background: #262A31; color: #ECEEF2; font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; }
+.fs-btn:hover { background: #30353D; }
+.fs-btn.on { background: #217346; border-color: #217346; color: #FFFFFF; }
+.fs-page { padding: 32px 40px; }

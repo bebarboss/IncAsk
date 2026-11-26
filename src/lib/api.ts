@@ -16,6 +16,9 @@ import type {
   TrialResult,
   KeyUsage,
   PivotResult,
+  PivotConfig,
+  Charts,
+  ViewConfig,
   Project,
   ResultsPage,
   ResultsQuery,
@@ -46,10 +49,9 @@ export type EventName = keyof EventMap;
 export type Unlisten = () => void;
 
 export interface DrillCell {
-  service: string;
-  /** value of the first category column, or null for the service total */
-  category: string | null;
-  month: string | null;
+  /** (field, value) from the outer row level down to the clicked one */
+  path: [string, string][];
+  col: [string, string] | null;
 }
 
 export interface Backend {
@@ -116,9 +118,14 @@ export interface Backend {
   /** one or more tickets of the same service → a category of that service; saved as human */
   setCategory(projectId: string, ticketIds: string[], fields: Record<string, string>): Promise<number>;
   projectMonths(projectId: string): Promise<string[]>;
-  pivot(projectId: string, from: string, to: string): Promise<PivotResult>;
-  drill(projectId: string, cell: DrillCell, from: string, to: string): Promise<{ total: number; rows: TicketRow[] }>;
+  pivot(projectId: string, cfg: PivotConfig): Promise<PivotResult>;
+  drill(projectId: string, cfg: PivotConfig, cell: DrillCell, limit: number): Promise<{ total: number; rows: TicketRow[] }>;
+  pivotCharts(projectId: string, from: string, to: string, filters: PivotConfig["filters"]): Promise<Charts>;
+  /** distinct values of a field in the period, for filter chips */
+  pivotValues(projectId: string, field: string, from: string, to: string): Promise<string[]>;
   savedViews(projectId: string): Promise<SavedView[]>;
+  saveView(projectId: string, id: string | null, name: string, config: ViewConfig): Promise<SavedView>;
+  deleteView(projectId: string, id: string): Promise<void>;
   // usage (step 10)
   usageSummary(): Promise<UsageSummary>;
   pickFile(filters: { name: string; extensions: string[] }[]): Promise<string | null>;
@@ -211,9 +218,13 @@ function createTauriBackend(): Backend {
     sourceColumns: (projectId) => call("source_columns", { projectId }),
     setCategory: (projectId, ticketIds, fields) => call("set_category", { projectId, ticketIds, fields }),
     projectMonths: (projectId) => call("project_months", { projectId }),
-    pivot: notYet,
-    drill: notYet,
-    savedViews: notYet,
+    pivot: (projectId, cfg) => call("pivot_query", { projectId, config: cfg }),
+    drill: (projectId, cfg, cell, limit) => call("pivot_drill", { projectId, config: cfg, cell, limit }),
+    pivotCharts: (projectId, from, to, filters) => call("pivot_charts", { projectId, from, to, filters }),
+    pivotValues: (projectId, field, from, to) => call("pivot_values", { projectId, field, from, to }),
+    savedViews: (projectId) => call("list_views", { projectId }),
+    saveView: (projectId, id, name, config) => call("save_view", { projectId, id, name, config }),
+    deleteView: (projectId, id) => call("delete_view", { projectId, id }),
     usageSummary: notYet,
     pickFile: async (filters) => {
       const { open } = await dialog;

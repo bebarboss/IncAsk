@@ -28,6 +28,9 @@ interface Ctx {
   jobs: Record<string, ClassifyProgress>;
   page: Page;
   go: (p: Page) => void;
+  /** summary page fullscreen (SPEC §9): hides sidebar + tabs, OS fullscreen in Tauri */
+  fullscreen: boolean;
+  setFullscreen: (v: boolean) => void;
   exportOpen: boolean;
   setExportOpen: (v: boolean) => void;
   toast: (msg: string) => void;
@@ -65,6 +68,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [jobs, setJobs] = useState<Record<string, ClassifyProgress>>({});
   const [page, setPage] = useState<Page>({ name: "project", tab: "import" });
   const [exportOpen, setExportOpen] = useState(false);
+  const [fullscreen, setFs] = useState(false);
+  const setFullscreen = useCallback((v: boolean) => {
+    setFs(v);
+    if (!api.mock) import("@tauri-apps/api/window").then(({ getCurrentWindow }) => getCurrentWindow().setFullscreen(v)).catch(() => {});
+  }, []);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   const toastTimer = useRef<number>();
   const settingsRef = useRef(settings);
@@ -157,9 +165,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const value = useMemo<Ctx>(
     () => ({
       ready, loadError, info, settings, updateSettings, refreshSettings, gateway, recheckGateway, projects, refreshProjects,
-      activeProject, setActiveProject, jobs, page, go: setPage, exportOpen, setExportOpen, toast, reload,
+      activeProject, setActiveProject, jobs, page, go: setPage, fullscreen, setFullscreen, exportOpen, setExportOpen, toast, reload,
     }),
-    [ready, loadError, info, settings, updateSettings, refreshSettings, gateway, recheckGateway, projects, refreshProjects, activeProject, setActiveProject, jobs, page, exportOpen, toast, reload],
+    [ready, loadError, info, settings, updateSettings, refreshSettings, gateway, recheckGateway, projects, refreshProjects, activeProject, setActiveProject, jobs, page, fullscreen, setFullscreen, exportOpen, toast, reload],
   );
 
   return (

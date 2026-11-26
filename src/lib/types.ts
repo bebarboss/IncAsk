@@ -270,30 +270,50 @@ export interface ResultsPage {
   rows: TicketRow[];
 }
 
-export interface PivotLeaf {
-  key: string;
-  values: number[];
-  total: number;
+export interface PivotConfig {
+  /** 1–3 fields, outer first: service | month | source | cat:<column> | src:<file column> */
+  rows: string[];
+  /** across, usually "month"; "" = one total column */
+  col: string;
+  filters: { field: string; values: string[] }[];
+  /** yyyy-mm inclusive */
+  from: string;
+  to: string;
 }
 
-export interface PivotGroup {
+export interface PivotNode {
   key: string;
-  color: string;
   values: number[];
   total: number;
-  children: PivotLeaf[];
+  children: PivotNode[];
 }
 
 export interface PivotResult {
-  months: string[];
-  groups: PivotGroup[];
+  colKeys: string[];
+  rows: PivotNode[];
   grand: number[];
   grandTotal: number;
+}
+
+export interface Charts {
+  months: string[];
+  trend: { name: string; color: string; values: number[] }[];
+  top: { service: string; category: string; color: string; count: number }[];
+}
+
+/** what a saved view remembers */
+export interface ViewConfig {
+  rows: string[];
+  col: string;
+  value: "count" | "share";
+  filters: { field: string; values: string[] }[];
+  heat: boolean;
 }
 
 export interface SavedView {
   id: string;
   name: string;
+  config: ViewConfig;
 }
 
 // ------------------------------------------------------------------ usage

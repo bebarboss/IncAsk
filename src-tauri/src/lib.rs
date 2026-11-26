@@ -9,6 +9,7 @@ pub mod errors;
 pub mod gateway_test;
 pub mod ingest;
 pub mod llm;
+pub mod pivot;
 pub mod redact;
 pub mod results;
 pub mod secrets;
@@ -78,6 +79,13 @@ pub fn run() {
             commands::query_results,
             commands::source_columns,
             commands::set_category,
+            commands::pivot_query,
+            commands::pivot_drill,
+            commands::pivot_charts,
+            commands::pivot_values,
+            commands::list_views,
+            commands::save_view,
+            commands::delete_view,
             updater::check_update,
             updater::install_update,
         ])

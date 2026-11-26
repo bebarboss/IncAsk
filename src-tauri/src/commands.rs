@@ -635,6 +635,45 @@ pub fn set_category(state: S<'_>, project_id: String, ticket_ids: Vec<String>, f
     crate::results::set_category(&mut open_project(&state, &project_id)?, &ticket_ids, &fields, &user)
 }
 
+// ------------------------------------------------------------------ summary / pivot (SPEC §9)
+
+use crate::pivot::{self, Charts, Drill, PivotResult, SavedView};
+
+#[tauri::command]
+pub fn pivot_query(state: S<'_>, project_id: String, config: pivot::Config) -> AppResult<PivotResult> {
+    pivot::pivot(&open_project(&state, &project_id)?, &config)
+}
+
+#[tauri::command]
+pub fn pivot_drill(state: S<'_>, project_id: String, config: pivot::Config, cell: pivot::Cell, limit: usize) -> AppResult<Drill> {
+    pivot::drill(&open_project(&state, &project_id)?, &config, &cell, limit)
+}
+
+#[tauri::command]
+pub fn pivot_charts(state: S<'_>, project_id: String, from: String, to: String, filters: Vec<pivot::Filter>) -> AppResult<Charts> {
+    pivot::charts(&open_project(&state, &project_id)?, &from, &to, &filters)
+}
+
+#[tauri::command]
+pub fn pivot_values(state: S<'_>, project_id: String, field: String, from: String, to: String) -> AppResult<Vec<String>> {
+    pivot::field_values(&open_project(&state, &project_id)?, &field, &from, &to)
+}
+
+#[tauri::command]
+pub fn list_views(state: S<'_>, project_id: String) -> AppResult<Vec<SavedView>> {
+    pivot::list_views(&open_project(&state, &project_id)?)
+}
+
+#[tauri::command]
+pub fn save_view(state: S<'_>, project_id: String, id: Option<String>, name: String, config: serde_json::Value) -> AppResult<SavedView> {
+    pivot::save_view(&open_project(&state, &project_id)?, id.as_deref(), &name, &config)
+}
+
+#[tauri::command]
+pub fn delete_view(state: S<'_>, project_id: String, id: String) -> AppResult<()> {
+    pivot::delete_view(&open_project(&state, &project_id)?, &id)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

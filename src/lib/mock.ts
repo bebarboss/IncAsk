@@ -9,7 +9,6 @@ import type {
   GatewayStatus,
   ImportPreview,
   KeyUsage,
-  PivotGroup,
   Project,
   RecentItem,
   Role,
@@ -19,6 +18,8 @@ import type {
   TicketRow,
   UsageSummary,
 } from "./types";
+import { chartsJs, drillJs, fieldValuesJs, pivotJs } from "./pivotjs";
+import type { SavedView } from "./types";
 import { DEFAULT_GATEWAY_URL, MODEL_IDS, PROJECT_COLORS, SERVICE_COLORS } from "./gateway";
 
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -279,6 +280,12 @@ export function createMockBackend(): Backend {
   startJob("cc-a");
   const prefs: Record<string, string> = {};
   const lastImportFile: Record<string, string> = {};
+  const views: Record<string, SavedView[]> = {};
+  const defaultViews = (): SavedView[] => [
+    { id: "v1", name: "รายงานประจำเดือน", config: { rows: ["service", "cat:หัวข้อหลัก"], col: "month", value: "count", filters: [], heat: true } },
+    { id: "v2", name: "แนวโน้มรายเดือน", config: { rows: ["month"], col: "service", value: "count", filters: [], heat: false } },
+    { id: "v3", name: "เฉพาะ Internet", config: { rows: ["cat:หัวข้อหลัก", "cat:หัวข้อย่อย"], col: "month", value: "count", filters: [{ field: "service", values: ["Internet"] }], heat: true } },
+  ];
   const lowThreshold = (projectId: string) => Number(prefs[`${projectId}:low_threshold`] ?? 0.7);
   let patterns: (import("./types").ReportPattern & { projectId: string })[] = [
     { projectId: "cc-b", id: "rp-1", name: "รีพอร์ตอินซิเดนต์รายเดือน", headers: [...PREVIEW_HEADERS], roles: { ticket: "เลขอินซิเดนต์", date: "วันที่แจ้ง", service: "เซอร์วิส", problem: ["หัวข้อ", "รายละเอียดปัญหา"] }, dateFormat: "dmy" },
@@ -320,8 +327,6 @@ export function createMockBackend(): Backend {
   }, 500);
 
   // ---------------------------------------------------------------- helpers
-  const inRange = (m: string, from: string, to: string) => m >= from && m <= to;
-  const main = (t: TicketRow) => t.fields[COLS[0]] ?? "(ไม่มีหมวด)";
 
   const usage: UsageSummary = {
     monthLabel: "2026-11",
@@ -716,37 +721,24 @@ export function createMockBackend(): Backend {
       return rows.length;
     },
     projectMonths: async (projectId) => [...new Set(lazy(projectId).tickets.map((t) => t.month))].sort(),
-    pivot: async (projectId, from, to) => {
-      await wait(100);
-      const d = lazy(projectId);
-      const months = MONTHS.filter((m) => inRange(m, from, to));
-      const groups: PivotGroup[] = d.services.map((s) => {
-        const leaves = new Map<string, number[]>();
-        for (const t of d.tickets) {
-          if (t.service !== s.name || !months.includes(t.month)) continue;
-          const k = main(t);
-          if (!leaves.has(k)) leaves.set(k, months.map(() => 0));
-          leaves.get(k)![months.indexOf(t.month)]++;
-        }
-        const children = [...leaves.entries()].map(([key, values]) => ({ key, values, total: values.reduce((a, b) => a + b, 0) }))
-          .sort((a, b) => b.total - a.total);
-        const values = months.map((_, i) => children.reduce((a, c) => a + c.values[i], 0));
-        return { key: s.name, color: s.color, values, total: values.reduce((a, b) => a + b, 0), children };
-      }).sort((a, b) => b.total - a.total);
-      const grand = months.map((_, i) => groups.reduce((a, g) => a + g.values[i], 0));
-      return { months, groups, grand, grandTotal: grand.reduce((a, b) => a + b, 0) };
+    // the same engine the offline HTML report uses (lib/pivotjs.ts)
+    pivot: async (projectId, cfg) => { await wait(40); return pivotJs(lazy(projectId).tickets, cfg); },
+    drill: async (projectId, cfg, cell: DrillCell, limit) => {
+      await wait(40);
+      const rows = drillJs(lazy(projectId).tickets, cfg, cell.path, cell.col);
+      return { total: rows.length, rows: clone(rows.slice(0, limit)) };
     },
-    drill: async (projectId, cell: DrillCell, from, to) => {
-      await wait(80);
-      const rows = lazy(projectId).tickets.filter((t) =>
-        t.service === cell.service && inRange(t.month, from, to) && (!cell.month || t.month === cell.month) && (cell.category == null || main(t) === cell.category));
-      return { total: rows.length, rows: clone(rows.slice(0, 50)) };
+    pivotCharts: async (projectId, from, to, filters) => chartsJs(lazy(projectId).tickets, { from, to, filters }, lazy(projectId).services),
+    pivotValues: async (projectId, field, from, to) => fieldValuesJs(lazy(projectId).tickets, field, from, to),
+    savedViews: async (projectId) => clone(views[projectId] ?? (views[projectId] = defaultViews())),
+    saveView: async (projectId, id, name, config) => {
+      const list = (views[projectId] ??= defaultViews());
+      const v = list.find((x) => x.id === id);
+      if (v) Object.assign(v, { name, config });
+      else list.push({ id: `v-${Date.now()}`, name, config });
+      return clone(v ?? list[list.length - 1]);
     },
-    savedViews: async () => [
-      { id: "v1", name: "รายงานประจำเดือน" },
-      { id: "v2", name: "แนวโน้มรายเดือน" },
-      { id: "v3", name: "เฉพาะ Internet" },
-    ],
+    deleteView: async (projectId, id) => { views[projectId] = (views[projectId] ?? []).filter((v) => v.id !== id); },
     usageSummary: async () => { await wait(150); return clone(usage); },
     pickFile: async () => "C:\\Users\\me\\Downloads\\incident_report_oct2026.xlsx",
     pickSavePath: async (name) => `C:\\Users\\me\\Downloads\\${name}`,

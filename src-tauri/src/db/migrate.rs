@@ -36,7 +36,7 @@ CREATE TABLE classifications(
   ai_fields_json TEXT,
   confidence REAL, reason TEXT,
   source TEXT NOT NULL,
-  model TEXT, taxonomy_version INTEGER, updated_at TEXT, edited_by TEXT);
+  model TEXT, taxonomy_version INTEGER, updated_at TEXT, edited_by TEXT) WITHOUT ROWID;
 CREATE TABLE cache(key TEXT PRIMARY KEY, fields_json TEXT, confidence REAL, reason TEXT, created_at TEXT);
 CREATE TABLE runs(
   id TEXT PRIMARY KEY, import_id TEXT, kind TEXT,
@@ -45,7 +45,8 @@ CREATE TABLE runs(
   tokens_in INTEGER, tokens_out INTEGER, cost REAL);
 CREATE TABLE saved_views(id TEXT PRIMARY KEY, name TEXT, config_json TEXT, sort INTEGER);
 CREATE TABLE prefs(key TEXT PRIMARY KEY, value TEXT);
-CREATE INDEX idx_tickets_month ON tickets(month, service);
+-- (month, service) per SPEC + id so the pivot/summary scans never touch the table rows
+CREATE INDEX idx_tickets_month ON tickets(month, service, id);
 "#;
 
 const MIGRATIONS: &[&str] = &[V1];
