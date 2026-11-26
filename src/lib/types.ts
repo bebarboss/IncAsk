@@ -174,7 +174,7 @@ export interface ReportPattern {
 
 // ------------------------------------------------------------------ classify
 
-export type ClassifySource = "ai" | "cache" | "human" | "error" | "unknown_service";
+export type ClassifySource = "ai" | "cache" | "human" | "error" | "unknown_service" | "pending";
 export type RunStatus = "running" | "paused" | "done" | "cancelled" | "failed";
 
 export interface RecentItem {
@@ -243,6 +243,7 @@ export interface TicketRow {
   confidence: number | null;
   reason: string | null;
   source: ClassifySource;
+  editedBy?: string | null;
   /** every column of the source file */
   sourceRow: Record<string, string>;
 }
@@ -251,8 +252,14 @@ export interface ResultsQuery {
   search?: string;
   service?: string;
   month?: string;
+  /** value of the top category column */
+  category?: string;
   lowOnly?: boolean;
   errorOnly?: boolean;
+  /** per-column contains filters; keys: ticketNo, date, service, problem, confidence, source, cat:<col>, src:<header> */
+  filters?: { key: string; value: string }[];
+  sort?: string | null;
+  desc?: boolean;
   offset: number;
   limit: number;
 }

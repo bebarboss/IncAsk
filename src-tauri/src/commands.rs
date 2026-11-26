@@ -616,6 +616,25 @@ pub fn set_pref(state: S<'_>, project_id: String, key: String, value: String) ->
     crate::db::set_pref(&open_project(&state, &project_id)?, &key, &value)
 }
 
+// ------------------------------------------------------------------ results (SPEC §8)
+
+#[tauri::command]
+pub fn query_results(state: S<'_>, project_id: String, query: crate::results::Query) -> AppResult<crate::results::Page> {
+    crate::results::query(&open_project(&state, &project_id)?, &query)
+}
+
+#[tauri::command]
+pub fn source_columns(state: S<'_>, project_id: String) -> AppResult<Vec<String>> {
+    crate::results::source_columns(&open_project(&state, &project_id)?)
+}
+
+/// Edit the category of one or more tickets (same service). Saved as `human` by the user's name.
+#[tauri::command]
+pub fn set_category(state: S<'_>, project_id: String, ticket_ids: Vec<String>, fields: crate::taxonomy::Values) -> AppResult<usize> {
+    let user = state.settings.lock().user_name.clone();
+    crate::results::set_category(&mut open_project(&state, &project_id)?, &ticket_ids, &fields, &user)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

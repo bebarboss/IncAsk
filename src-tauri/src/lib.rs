@@ -10,6 +10,7 @@ pub mod gateway_test;
 pub mod ingest;
 pub mod llm;
 pub mod redact;
+pub mod results;
 pub mod secrets;
 pub mod taxonomy;
 pub mod updater;
@@ -74,6 +75,9 @@ pub fn run() {
             commands::classify_trial,
             commands::get_pref,
             commands::set_pref,
+            commands::query_results,
+            commands::source_columns,
+            commands::set_category,
             updater::check_update,
             updater::install_update,
         ])

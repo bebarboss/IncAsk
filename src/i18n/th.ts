@@ -27,6 +27,7 @@ export const th = {
     human: "แก้โดยคน",
     error: "ผิดพลาด",
     unknown_service: "ไม่มีหมวดหมู่",
+    pending: "รอจัด",
   },
   menu: {
     gateway: "Gateway และโมเดล",

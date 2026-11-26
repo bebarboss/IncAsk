@@ -665,18 +665,55 @@ export function createMockBackend(): Backend {
     getPref: async (projectId, key) => prefs[`${projectId}:${key}`] ?? null,
     setPref: async (projectId, key, value) => { prefs[`${projectId}:${key}`] = value; },
 
+    // same semantics as results.rs (search, filters, per-column contains, sort, paging)
     queryResults: async (projectId, q) => {
-      await wait(120);
+      await wait(60);
+      const thr = lowThreshold(projectId);
+      const isLow = (t: TicketRow) => !["human", "error", "unknown_service"].includes(t.source) && (t.confidence ?? 0) < thr;
+      const val = (t: TicketRow, key: string): string | number | null => {
+        if (key === "ticketNo") return t.ticketNo;
+        if (key === "date") return t.date;
+        if (key === "service") return t.service;
+        if (key === "problem") return t.problemText;
+        if (key === "confidence") return t.confidence;
+        if (key === "source") return t.source;
+        if (key.startsWith("cat:")) return t.fields[key.slice(4)] ?? null;
+        if (key.startsWith("src:")) return t.sourceRow[key.slice(4)] ?? null;
+        return null;
+      };
       const s = (q.search ?? "").trim().toLowerCase();
-      const all = lazy(projectId).tickets.filter((t) =>
+      let all = lazy(projectId).tickets.filter((t) =>
         (!q.service || t.service === q.service) &&
         (!q.month || t.month === q.month) &&
-        (!q.lowOnly || (t.confidence != null && t.confidence < 0.7 && t.source !== "human")) &&
+        (!q.category || t.fields[COLS[0]] === q.category) &&
+        (!q.lowOnly || isLow(t)) &&
         (!q.errorOnly || t.source === "error") &&
-        (!s || t.ticketNo.toLowerCase().includes(s) || t.problemText.toLowerCase().includes(s)),
+        (!s || t.ticketNo.toLowerCase().includes(s) || t.problemText.toLowerCase().includes(s)) &&
+        (q.filters ?? []).every((f) => !f.value.trim() || String(val(t, f.key) ?? "").toLowerCase().includes(f.value.trim().toLowerCase())),
       );
-      const lowCount = lazy(projectId).tickets.filter((t) => t.confidence != null && t.confidence < 0.7 && t.source !== "human").length;
+      if (q.sort) {
+        const dir = q.desc ? -1 : 1;
+        all = [...all].sort((a, b) => {
+          const x = val(a, q.sort!), y = val(b, q.sort!);
+          if (x == null) return 1;
+          if (y == null) return -1;
+          return (x < y ? -1 : x > y ? 1 : 0) * dir;
+        });
+      }
+      const lowCount = lazy(projectId).tickets.filter(isLow).length;
       return { total: all.length, lowCount, rows: clone(all.slice(q.offset, q.offset + q.limit)) };
+    },
+    sourceColumns: async () => [...PREVIEW_HEADERS],
+    setCategory: async (projectId, ids, fields) => {
+      await wait(80);
+      const d = lazy(projectId);
+      const rows = d.tickets.filter((t) => ids.includes(t.id));
+      if (new Set(rows.map((r) => r.service)).size > 1) throw { code: "mixed_services", message: "แก้หลายแถวพร้อมกันได้เฉพาะทิกเก็ตของเซอร์วิสเดียวกัน" };
+      const svc = d.services.find((s) => s.name === rows[0]?.service);
+      const ok = svc && d.taxonomy.some((t) => t.serviceId === svc.id && svc.columns.every((c) => t.values[c] === fields[c]));
+      if (!ok) throw { code: "invalid_category", message: "หมวดนี้ไม่อยู่ในตารางหมวดหมู่ของเซอร์วิส" };
+      rows.forEach((r) => { r.fields = { ...fields }; r.source = "human"; r.editedBy = settings.userName; });
+      return rows.length;
     },
     projectMonths: async (projectId) => [...new Set(lazy(projectId).tickets.map((t) => t.month))].sort(),
     pivot: async (projectId, from, to) => {

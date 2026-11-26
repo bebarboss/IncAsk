@@ -111,6 +111,10 @@ export interface Backend {
   setPref(projectId: string, key: string, value: string): Promise<void>;
   // results + summary (step 7–8)
   queryResults(projectId: string, q: ResultsQuery): Promise<ResultsPage>;
+  /** every column of the imported files */
+  sourceColumns(projectId: string): Promise<string[]>;
+  /** one or more tickets of the same service → a category of that service; saved as human */
+  setCategory(projectId: string, ticketIds: string[], fields: Record<string, string>): Promise<number>;
   projectMonths(projectId: string): Promise<string[]>;
   pivot(projectId: string, from: string, to: string): Promise<PivotResult>;
   drill(projectId: string, cell: DrillCell, from: string, to: string): Promise<{ total: number; rows: TicketRow[] }>;
@@ -203,7 +207,9 @@ function createTauriBackend(): Backend {
     classifyTrial: (projectId, path, sheet, roles, dateOrder) => call("classify_trial", { projectId, path, sheet, roles, dateOrder }),
     getPref: (projectId, key) => call("get_pref", { projectId, key }),
     setPref: (projectId, key, value) => call("set_pref", { projectId, key, value }),
-    queryResults: notYet,
+    queryResults: (projectId, query) => call("query_results", { projectId, query: { ...query, filters: query.filters ?? [], sort: query.sort ?? null, desc: !!query.desc } }),
+    sourceColumns: (projectId) => call("source_columns", { projectId }),
+    setCategory: (projectId, ticketIds, fields) => call("set_category", { projectId, ticketIds, fields }),
     projectMonths: (projectId) => call("project_months", { projectId }),
     pivot: notYet,
     drill: notYet,
