@@ -34,8 +34,8 @@
     ],
     "publisher": "Gosoft (Thailand)",
     "category": "Productivity",
-    "shortDescription": "จัดหมวดหมู่อินซิเดนต์ด้วย AI",
-    "longDescription": "IncAsk จัดหมวดหมู่อินซิเดนต์/ทิกเก็ตจากไฟล์ CSV หรือ Excel ด้วย LLM ของบริษัทผ่าน Gateway แล้วสรุปผลเป็น pivot",
+    "shortDescription": "AI incident categorization",
+    "longDescription": "IncAsk categorizes incidents and tickets from CSV or Excel files with the company LLM via the Gateway and summarizes them as pivots.",
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
@@ -62,13 +62,25 @@
           "Thai",
           "English"
         ],
-        "displayLanguageSelector": false
+        "displayLanguageSelector": false,
+        "installerIcon": "icons/icon.ico"
       }
     },
     "createUpdaterArtifacts": false,
     "resources": {
       "resources/report.html": "resources/report.html"
-    }
+    },
+    "fileAssociations": [
+      {
+        "ext": [
+          "incask"
+        ],
+        "name": "IncAsk Project",
+        "description": "IncAsk Project",
+        "role": "Editor",
+        "mimeType": "application/x-incask"
+      }
+    ]
   },
   "plugins": {
     "updater": {

@@ -3,58 +3,132 @@
 แอป Windows สำหรับจัดหมวดหมู่อินซิเดนต์/ทิกเก็ตจากไฟล์ CSV หรือ Excel ด้วย LLM ของบริษัทผ่าน Gateway (LiteLLM)
 แล้วสรุปผลเป็น pivot ในแอป — แอปพี่น้องของ [DocAsk](https://github.com/bebarboss/local_notebook)
 
-> สถานะ: กำลังพัฒนา (ขั้นที่ 3 ตาม `SPEC.md` ข้อ 17 — โปรเจกต์ สร้าง/สลับ/ลบ + SQLite ต่อโปรเจกต์)
+ข้อมูลทิกเก็ตและผลจัดหมวดอยู่ในเครื่องเท่านั้น (SQLite) ส่งออกไปที่เดียวคือ Gateway ของบริษัทตอนจัดหมวด
+และส่งเฉพาะคอลัมน์ที่เลือกเป็น "ปัญหา"
 
-## ต้องติดตั้งก่อน
+## ติดตั้ง
 
-- **Node.js** 20 ขึ้นไป
-- **Rust** (stable, ผ่าน [rustup](https://rustup.rs)) — target `x86_64-pc-windows-msvc`
-- **Visual Studio Build Tools** พร้อม workload "Desktop development with C++"
-- WebView2 Runtime (มีใน Windows 10/11 อยู่แล้ว)
+ตัวติดตั้งอยู่ใน `src-tauri/target/release/bundle/` หลัง build
 
-## คำสั่ง
+| ไฟล์ | ใช้เมื่อ |
+|---|---|
+| `nsis/IncAsk_x.y.z_x64-setup.exe` | **แนะนำ** ติดตั้งให้ผู้ใช้คนเดียว ไม่ต้องใช้สิทธิ์ admin (ภาษาไทย) |
+| `msi/IncAsk_x.y.z_x64_en-US.msi` | ติดตั้งแบบ silent / ผ่านระบบจัดการเครื่อง: `msiexec /i IncAsk_x.y.z_x64_en-US.msi /qn` |
 
-```powershell
-npm install
-npm run dev          # เปิดในเบราว์เซอร์ http://localhost:5173 (mock mode อัตโนมัติ)
-npm run dev:mock     # บังคับ mock mode แม้รันใน Tauri
-npm run tauri:mock   # แอปจริง (หน้าต่าง Tauri) ด้วยข้อมูล mock ไม่ต้องใส่ API key — ใช้ port 5180
-npm run tauri dev    # แอปจริง ต่อ Gateway จริง
-npm run typecheck
-cd src-tauri; cargo test; cargo clippy --all-targets
-npm run tauri build  # ตัวติดตั้ง MSI + NSIS (src-tauri/target/release/bundle)
-```
+- ตัวติดตั้งลงทะเบียนไฟล์ `.incask` ให้เปิดด้วย IncAsk (ดับเบิลคลิกได้)
+- ตัวติดตั้งยังไม่ได้เซ็นด้วยใบรับรอง — Windows อาจขึ้น "Windows protected your PC" ให้กด **More info › Run anyway**
+- ถอนการติดตั้งแล้ว **ข้อมูลใน `%APPDATA%\IncAsk` ยังอยู่** (โปรเจกต์ไม่หาย)
 
-## Mock mode
+## เริ่มใช้งาน
 
-เปิดเองเมื่อไม่ได้รันใน Tauri หรือเมื่อตั้ง `INCASK_MOCK=1` — ใช้ข้อมูลตัวอย่างทั้งหมด (3 โปรเจกต์, 4 เซอร์วิส, ผลจัดหมวด 3 เดือน,
-งานจัดหมวดจำลอง, ข้อมูลการใช้งาน) **ไม่เรียกเครือข่าย** และมีป้าย `MOCK MODE` มุมขวาล่าง
-
-ตัวช่วยดูหน้าต่างๆ ผ่าน URL: `?page=setup`, `?page=classify`, `?page=results`, `?page=summary`, `?page=settings`, `?page=app`, `?page=usage`
-และ `?gateway=down` เพื่อจำลองตอนต่อ VPN ไม่ได้, `?budget=high` / `?budget=full` ดูหลอดการใช้งานตอนใกล้เต็มงบ (ส้ม / แดง)
-โมเดล `godev3` ใน mock จำลองกรณีไม่มีสิทธิ์ใช้โมเดล (403) เพื่อลองเปลี่ยนโมเดลแล้วทดสอบใหม่
-
-ใน mock mode **ไม่ต้องใส่ API key** — ปุ่มทดสอบการเชื่อมต่อผ่านได้เลย
+1. **ตั้งค่าครั้งแรก** — ใส่ชื่อ, Gateway URL (ค่าเริ่มต้น `https://agent-gateway.gosoft.co.th`), API Key → **ทดสอบการเชื่อมต่อ** (ต้องต่อ VPN บริษัท) → เลือกโมเดล
+2. **สร้างโปรเจกต์และนำเข้าหมวดหมู่** — ลากไฟล์ Excel หมวดหมู่มาวาง (ดูรูปแบบด้านล่าง) หรือ "ข้ามไปก่อน"
+3. **นำเข้าไฟล์** (Ctrl+O) — เลือกบทบาทของคอลัมน์: เลขทิกเก็ต, วันที่, เซอร์วิส, ปัญหา (เลือกได้หลายคอลัมน์) · แอปจำรูปแบบไว้ให้ครั้งหน้า
+4. **ลองจัด 20 แถว** ดูผลก่อน แล้ว **เริ่มจัดหมวด** — ปิดหน้าไปทำอย่างอื่นได้ จบแล้วมีแจ้งเตือน · ปิดแอปกลางทาง เปิดใหม่กด "ทำต่อ" ได้
+5. **ผลลัพธ์** — ตรวจแถวที่ AI ไม่มั่นใจ คลิกช่องหมวดเพื่อแก้ · **สรุปผล** — pivot, heatmap, กราฟ, คลิกตัวเลขเพื่อดูทิกเก็ต
+6. **ส่งออก** (Ctrl+E) — `.incask` (ให้เพื่อนที่มีโปรแกรม), รายงาน HTML (เปิดในเบราว์เซอร์ได้ไม่ต้องต่อเน็ต), CSV ดิบ
 
 ## การใส่ API Key
 
 ใส่ผ่านหน้า **ตั้งค่าครั้งแรก** หรือ **ตั้งค่าโปรแกรม › Gateway และโมเดล** เท่านั้น
 Key ถูกเก็บใน **Windows Credential Manager** (ชื่อ `IncAsk/Gateway`) ฝั่ง Rust เป็นคนแนบ key ตอนเรียก Gateway
-ไม่มี key อยู่ในไฟล์ใดๆ, log, ข้อความ error หรือไฟล์ส่งออก — frontend รู้แค่ว่ามี key แล้วหรือยัง และ 4 ตัวท้าย
+ไม่มี key อยู่ในไฟล์ใดๆ, log, ข้อความ error, ไฟล์ส่งออก หรือไฟล์คอนฟิกที่สำรอง — หน้าจอรู้แค่ว่ามี key แล้วหรือยัง และ 4 ตัวท้าย
+
+## รูปแบบไฟล์หมวดหมู่ (Excel / CSV)
+
+| เซอร์วิส | หัวข้อหลัก | หัวข้อย่อย | คำอธิบาย | ตัวอย่าง |
+|---|---|---|---|---|
+| Internet | การเชื่อมต่อ | เน็ตหลุดเป็นช่วง | ใช้งานได้แต่หลุดเป็นระยะ | เน็ตหลุดทุกคืน |
+
+- หัวคอลัมน์ `เซอร์วิส`, `คำอธิบาย`, `ตัวอย่าง` เป็นคอลัมน์พิเศษ คอลัมน์อื่นทั้งหมดคือ **คอลัมน์หมวด** เรียงจากชั้นบนไปชั้นล่าง (ซ้าย → ขวา) ตั้งชื่ออะไรก็ได้
+- ไม่มีคอลัมน์ `เซอร์วิส` = ทั้งไฟล์เป็นของเซอร์วิสเดียว (เซอร์วิสที่เลือกอยู่ หรือชื่อไฟล์ เช่น `Internet.xlsx`)
+- หัวข้อชั้นบนที่ merge cell ไว้ (เว้นว่างแถวล่าง) อ่านได้ · แถวซ้ำ/ช่องหมวดว่างจะไม่ถูกนำเข้า · ไม่มีคำอธิบายจะเตือนสีส้ม (AI อาจจัดได้แม่นน้อยลง)
+- **ดาวน์โหลดเทมเพลต** ได้จากหน้าตั้งค่าโปรเจกต์ · นำเข้าซ้ำ = แทนที่หมวดของเซอร์วิสนั้นทั้งชุด
+- ชื่อเซอร์วิสต้องตรงกับค่าในคอลัมน์เซอร์วิสของไฟล์ทิกเก็ต (หลังตัดช่องว่างหัวท้าย)
+
+## ไฟล์ทิกเก็ต
+
+- `.csv` (UTF-8 มี/ไม่มี BOM, UTF-16, หรือ Windows-874/TIS-620 ที่ Excel ภาษาไทยบันทึก), `.xlsx`, `.xls` — หลายชีตเลือกชีตได้
+- วันที่: Excel date, `dd/mm/yyyy`, `d/m/yy`, `yyyy-mm-dd` (มีเวลาต่อท้ายได้) · ปี พ.ศ. แปลงเป็น ค.ศ. ให้เอง · ถ้าอ่านได้ทั้ง วัน/เดือน และ เดือน/วัน แอปจะถาม
+- เดือนของข้อมูลมาจากคอลัมน์วันที่ ไฟล์ที่คร่อมหลายเดือนแบ่งให้เอง · ทิกเก็ตซ้ำ (เลขเดียวกัน) ข้ามหรือแทนที่ได้
 
 ## ที่เก็บข้อมูล
 
-- `%APPDATA%\IncAsk\app.json` — ค่าโปรแกรม (ไม่มี key)
-- `%APPDATA%\IncAsk\projects\<id>.sqlite` — ฐานข้อมูล SQLite หนึ่งไฟล์ต่อโปรเจกต์
-- `%APPDATA%\IncAsk\projects\index.json` — รายการโปรเจกต์ (ชื่อ สี ลำดับ) ถ้าหายจะสร้างใหม่จากไฟล์ `.sqlite` เอง
+- `%APPDATA%\IncAsk\app.json` — ค่าโปรแกรม (Gateway URL, โมเดล, ธีม, ฟอนต์ ฯลฯ — ไม่มี key)
+- `%APPDATA%\IncAsk\projects\<id>.sqlite` — ฐานข้อมูลหนึ่งไฟล์ต่อโปรเจกต์
+- `%APPDATA%\IncAsk\projects\index.json` — รายการโปรเจกต์ ถ้าหายจะสร้างใหม่จากไฟล์ `.sqlite` เอง
+
+## คีย์ลัด
+
+| คีย์ | ทำอะไร |
+|---|---|
+| Ctrl+O | นำเข้าไฟล์ทิกเก็ต |
+| Ctrl+E | ส่งออก |
+| Ctrl+F | ค้นหาในหน้าผลลัพธ์ |
+| F11 | เต็มจอในหน้าสรุปผล |
+| Esc | ออกจากเต็มจอ / ปิดหน้าต่าง |
+
+## สำหรับนักพัฒนา
+
+**ต้องมี:** Node.js 20+, Rust stable (target `x86_64-pc-windows-msvc`), Visual Studio Build Tools (Desktop development with C++), WebView2 Runtime
+
+```powershell
+npm install
+npm run dev          # เบราว์เซอร์ http://localhost:5173 — mock mode อัตโนมัติ
+npm run tauri:mock   # หน้าต่างแอปจริงด้วยข้อมูล mock ไม่ต้องใส่ API key (port 5180)
+npm run tauri dev    # แอปจริง ต่อ Gateway จริง
+npm run typecheck
+npm run build:report # แม่แบบรายงาน HTML → src-tauri/resources/report.html
+cd src-tauri; cargo test; cargo clippy --all-targets -- -D warnings
+npm run tauri build  # ตัวติดตั้ง MSI + NSIS → src-tauri/target/release/bundle
+```
+
+### Mock mode
+
+เปิดเองเมื่อไม่ได้รันใน Tauri หรือตั้ง `INCASK_MOCK=1` — ข้อมูลตัวอย่างทั้งหมด (3 โปรเจกต์, 4 เซอร์วิส, ผลจัดหมวด 3 เดือน,
+งานจัดหมวดจำลอง, การใช้งาน Key) **ไม่เรียกเครือข่าย** และ**ไม่ต้องใส่ API key** มีป้าย `MOCK MODE` มุมขวาบน
+
+ตัวช่วยใน URL: `?page=setup|import|classify|results|summary|settings|app|usage`, `?gateway=down` (จำลอง VPN หลุด),
+`?budget=high|full` (หลอดงบสีส้ม/แดง) · โมเดล `godev3` ใน mock จำลองกรณีไม่มีสิทธิ์ใช้โมเดล (403)
+
+### ทดสอบ
+
+- `cargo test` — 94 เทสต์: CSV หลาย encoding, หาแถวหัวตาราง, header signature, วันที่ (พ.ศ., serial, กำกวม), รวมข้อความปัญหา,
+  ตรวจผล LLM, cache key, งานจัดหมวดทั้งระบบด้วย LLM ปลอม (429, ถามซ้ำ, Gateway ล่ม, pause/resume/cancel), pivot,
+  CSV มี BOM, `.incask` ส่งออกแล้วนำเข้า/รวมกลับได้ครบ, รายงาน HTML ไม่มีความลับ, redact, คอนฟิกสำรอง
+- `cargo test --release pivot_benchmark -- --ignored --nocapture` — pivot 50,000 ทิกเก็ต × 12 เดือน (เกณฑ์ < 300 ms)
+- `cargo test --lib sample_report -- --ignored` — สร้างรายงาน HTML ตัวอย่าง 10,000 ทิกเก็ต ที่ `src-tauri/target/sample_report.html`
+
+### วัดความแม่นกับ Gateway จริง
+
+```powershell
+cd src-tauri
+cargo run --bin classify_eval -- --tickets <ไฟล์ทิกเก็ต> --taxonomy <ไฟล์หมวดหมู่> [--answers <ไฟล์เฉลย>] [--batch 1,10,20] [--limit 200]
+```
+
+อ่าน key จาก Windows Credential Manager (ใส่ผ่านแอปก่อน) — ห้ามใส่ key ทาง argument · ทำงานในฐานข้อมูลชั่วคราว ไม่แตะโปรเจกต์
+รายงาน % ถูกต้อง (ถ้ามีเฉลย), % ไม่มั่นใจ, เวลาเฉลี่ยต่อ batch, โทเคนต่อแถว และตัวอย่างที่ผิด 10 แถว
+
+### สำหรับ IT
+
+- **อัปเดตในแอป**: ใส่ endpoint (`latest.json`) ตอน build ด้วย `$env:INCASK_UPDATE_URL="https://.../latest.json"` และ `plugins.updater.pubkey`
+  ใน `src-tauri/tauri.conf.json` แล้วเปิด `bundle.createUpdaterArtifacts` — ตอนนี้ว่างไว้ ปุ่มตรวจหาอัปเดตจะบอกว่ายังไม่ได้ตั้ง
+- **Code signing**: ใส่ `bundle.windows.certificateThumbprint` เมื่อมีใบรับรอง
+- เครือข่ายบริษัท: ใช้ proxy ของระบบ และใบรับรองจาก Windows certificate store (CA ภายในได้)
 
 ## แก้ปัญหาที่พบบ่อย
 
 | อาการ | ตรวจ |
 |---|---|
-| ต่อ Gateway ไม่ได้ | ต่อ VPN บริษัทแล้วลองใหม่ · ตรวจ Gateway URL และ proxy ของเครื่อง |
+| ต่อ Gateway ไม่ได้ | ต่อ VPN บริษัทแล้วลองใหม่ · ตรวจ Gateway URL และ proxy ของเครื่อง · งานจัดหมวดจะหยุดชั่วคราวเอง กด "ลองต่อ" เมื่อพร้อม |
 | 401 | Virtual Key หมดอายุ ผิด หรือถูก revoke — ใส่ key ใหม่ |
-| 403 | ไม่มีสิทธิ์ใช้โมเดลนี้ ตรวจสิทธิ์กับ Admin |
+| 403 | ไม่มีสิทธิ์ใช้โมเดลนี้ — เลือกโมเดลอื่นแล้วทดสอบใหม่ หรือติดต่อ Admin |
 | 404 | Gateway URL หรือชื่อโมเดลไม่ถูกต้อง |
-| 429 | เกินโควตา RPM, TPM หรือ budget — รอสักครู่ |
-| `npm run dev` ขึ้น port 5173 ถูกใช้ | ปิดโปรแกรมอื่นที่ใช้ port นี้ (เช่น DocAsk dev) หรือรัน `npx vite --port 5180` |
+| 429 | เกินโควตา — แอปรอแล้วลองใหม่เอง (สูงสุด 5 ครั้ง) และลดจำนวนคำขอพร้อมกันชั่วคราว |
+| ภาษาไทยในไฟล์ CSV เพี้ยน | บันทึกจาก Excel เป็น "CSV UTF-8" หรือใช้ .xlsx · ไฟล์ CSV ที่ IncAsk ส่งออกมี BOM เปิดใน Excel ได้เลย |
+| "เซอร์วิส … ไม่มีหมวดหมู่" | ชื่อเซอร์วิสในไฟล์ไม่ตรงกับที่ตั้งไว้ — เพิ่มเซอร์วิสชื่อนั้นแล้วกดจัดหมวด แถวเหล่านั้นจะถูกจัดให้ |
+| AI ไม่มั่นใจหลายแถว | เพิ่มคำอธิบาย/ตัวอย่างให้หมวด · แก้ผลด้วยมือ (ใช้เป็นตัวอย่างให้ AI ครั้งต่อไป) · ปรับเกณฑ์ใน ตั้งค่าโปรเจกต์ › สีและการแสดงผล |
+| รายงาน HTML ไม่ขึ้นข้อมูล | ใช้เบราว์เซอร์รุ่นใหม่ (Chrome/Edge 80+, Firefox 113+) |
+| `npm run dev` ขึ้น port 5173 ถูกใช้ | ปิดโปรแกรมอื่นที่ใช้ port นี้ (เช่น dev server ของ DocAsk) หรือใช้ `npm run tauri:mock` |
+
+ดูการตัดสินใจระหว่างพัฒนาทั้งหมดได้ใน [DECISIONS.md](DECISIONS.md)
