@@ -3,7 +3,7 @@
 แอป Windows สำหรับจัดหมวดหมู่อินซิเดนต์/ทิกเก็ตจากไฟล์ CSV หรือ Excel ด้วย LLM ของบริษัทผ่าน Gateway (LiteLLM)
 แล้วสรุปผลเป็น pivot ในแอป — แอปพี่น้องของ [DocAsk](https://github.com/bebarboss/local_notebook)
 
-> สถานะ: กำลังพัฒนา (ขั้นที่ 1 ตาม `SPEC.md` ข้อ 17 — โครงแอป + mock mode)
+> สถานะ: กำลังพัฒนา (ขั้นที่ 2 ตาม `SPEC.md` ข้อ 17 — ตั้งค่าครั้งแรก, ตั้งค่าโปรแกรม, หลอดการใช้งาน Key)
 
 ## ต้องติดตั้งก่อน
 
@@ -31,7 +31,8 @@ npm run tauri build  # ตัวติดตั้ง MSI + NSIS (src-tauri/targ
 งานจัดหมวดจำลอง, ข้อมูลการใช้งาน) **ไม่เรียกเครือข่าย** และมีป้าย `MOCK MODE` มุมขวาล่าง
 
 ตัวช่วยดูหน้าต่างๆ ผ่าน URL: `?page=setup`, `?page=classify`, `?page=results`, `?page=summary`, `?page=settings`, `?page=app`, `?page=usage`
-และ `?gateway=down` เพื่อจำลองตอนต่อ VPN ไม่ได้
+และ `?gateway=down` เพื่อจำลองตอนต่อ VPN ไม่ได้, `?budget=high` / `?budget=full` ดูหลอดการใช้งานตอนใกล้เต็มงบ (ส้ม / แดง)
+โมเดล `godev3` ใน mock จำลองกรณีไม่มีสิทธิ์ใช้โมเดล (403) เพื่อลองเปลี่ยนโมเดลแล้วทดสอบใหม่
 
 ใน mock mode **ไม่ต้องใส่ API key** — ปุ่มทดสอบการเชื่อมต่อผ่านได้เลย
 
