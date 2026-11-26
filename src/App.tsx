@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { FolderPlus, X } from "lucide-react";
 import type { UpdateInfo } from "./lib/types";
 import { UpdateDialog } from "./components/UpdateDialog";
+import { ProjectFormDialog } from "./components/ProjectDialogs";
 import { api } from "./lib/api";
 import { th } from "./i18n/th";
 import { useApp } from "./state";
@@ -22,6 +23,7 @@ export default function App() {
   const { page, ready, loadError, activeProject } = app;
   const [update, setUpdate] = useState<UpdateInfo | null>(null);
   const [updateOpen, setUpdateOpen] = useState(false);
+  const [creating, setCreating] = useState(false);
 
   // check for a new version once at startup; VPN/URL problems are ignored silently (as DocAsk)
   useEffect(() => {
@@ -90,13 +92,14 @@ export default function App() {
               icon={<FolderPlus size={36} strokeWidth={1.6} aria-hidden="true" />}
               title="ยังไม่มีโปรเจกต์"
               body="แยกงานเป็นโปรเจกต์ เช่น Call Center A หรือ NOC Incident แต่ละโปรเจกต์มีเซอร์วิส หมวดหมู่ และข้อมูลของตัวเอง"
-              action={<button className="btn btn-lg btn-primary" onClick={() => app.toast("สร้างโปรเจกต์ — ทำในขั้นที่ 3")}>สร้างโปรเจกต์แรก</button>}
+              action={<button className="btn btn-lg btn-primary" onClick={() => setCreating(true)}>สร้างโปรเจกต์แรก</button>}
             />
           )
         )}
         {page.name === "app" && <div className="scroll"><AppSettingsPage section={page.section} /></div>}
       </main>
       <ExportDialog />
+      {creating && <ProjectFormDialog onClose={() => setCreating(false)} />}
       {badge}
     </div>
   );

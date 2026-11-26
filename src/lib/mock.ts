@@ -19,9 +19,15 @@ import type {
   TicketRow,
   UsageSummary,
 } from "./types";
-import { DEFAULT_GATEWAY_URL, MODEL_IDS } from "./gateway";
+import { DEFAULT_GATEWAY_URL, MODEL_IDS, PROJECT_COLORS } from "./gateway";
 
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+function cleanName(name: string): string {
+  const n = name.split(/\s+/).filter(Boolean).join(" ");
+  if (!n) throw { code: "invalid_name", message: "ใส่ชื่อโปรเจกต์ก่อน" };
+  if ([...n].length > 60) throw { code: "invalid_name", message: "ชื่อโปรเจกต์ยาวได้ไม่เกิน 60 ตัวอักษร" };
+  return n;
+}
 const clone = <T>(v: T): T => JSON.parse(JSON.stringify(v));
 type Listener = (p: unknown) => void;
 
@@ -220,7 +226,8 @@ export function createMockBackend(): Backend {
     if (!data[id]) {
       const p = projects.find((x) => x.id === id);
       if (!p) throw { code: "not_found", message: "ไม่พบโปรเจกต์" };
-      const def = PROJECT_DEFS[id];
+      // projects created in this session start empty, like a fresh .sqlite
+      const def = PROJECT_DEFS[id] ?? { scale: 0, seed: 1, services: [] };
       data[id] = buildProject(p, def.scale, def.seed, def.services);
     }
     return data[id];
@@ -395,6 +402,38 @@ export function createMockBackend(): Backend {
     installUpdate: async () => { throw { code: "update_none", message: "ไม่มีเวอร์ชันใหม่" }; },
 
     listProjects: async () => { await wait(120); return clone(projects); },
+    // same rules as db/projects.rs: trimmed + collapsed spaces, 1–60 chars, unique ignoring case
+    createProject: async (name, color) => {
+      await wait(120);
+      const n = cleanName(name);
+      if (projects.some((p) => p.name.toLowerCase() === n.toLowerCase())) throw { code: "duplicate_name", message: `มีโปรเจกต์ชื่อ "${n}" อยู่แล้ว` };
+      const id = `p-${Math.random().toString(16).slice(2, 14).padEnd(12, "0")}`;
+      const p: Project = { id, name: n, color: color ?? PROJECT_COLORS[projects.length % PROJECT_COLORS.length], sort: projects.length };
+      projects.push(p);
+      return clone(p);
+    },
+    updateProject: async (id, patch) => {
+      await wait(100);
+      const p = projects.find((x) => x.id === id);
+      if (!p) throw { code: "not_found", message: "ไม่พบโปรเจกต์" };
+      if (patch.name != null) {
+        const n = cleanName(patch.name);
+        if (projects.some((x) => x.id !== id && x.name.toLowerCase() === n.toLowerCase())) throw { code: "duplicate_name", message: `มีโปรเจกต์ชื่อ "${n}" อยู่แล้ว` };
+        p.name = n;
+      }
+      if (patch.color != null) p.color = patch.color;
+      if (data[id]) data[id].project = p;
+      return clone(p);
+    },
+    deleteProject: async (id) => {
+      await wait(150);
+      const i = projects.findIndex((x) => x.id === id);
+      if (i < 0) throw { code: "not_found", message: "ไม่พบโปรเจกต์" };
+      projects.splice(i, 1);
+      delete data[id];
+      delete jobs[id];
+      if (settings.lastProjectId === id) settings.lastProjectId = null;
+    },
     listServices: async (projectId) => { await wait(80); return clone(lazy(projectId).services); },
     listTaxonomy: async (projectId, serviceId) => clone(lazy(projectId).taxonomy.filter((t) => t.serviceId === serviceId)),
 
@@ -439,7 +478,7 @@ export function createMockBackend(): Backend {
       const lowCount = lazy(projectId).tickets.filter((t) => t.confidence != null && t.confidence < 0.7 && t.source !== "human").length;
       return { total: all.length, lowCount, rows: clone(all.slice(q.offset, q.offset + q.limit)) };
     },
-    projectMonths: async (projectId) => { lazy(projectId); return [...MONTHS]; },
+    projectMonths: async (projectId) => [...new Set(lazy(projectId).tickets.map((t) => t.month))].sort(),
     pivot: async (projectId, from, to) => {
       await wait(100);
       const d = lazy(projectId);

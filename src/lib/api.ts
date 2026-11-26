@@ -66,6 +66,10 @@ export interface Backend {
   installUpdate(): Promise<void>;
   // projects + taxonomy (step 3–4)
   listProjects(): Promise<Project[]>;
+  createProject(name: string, color?: string): Promise<Project>;
+  updateProject(id: string, patch: { name?: string; color?: string }): Promise<Project>;
+  /** deletes the project database — cannot be undone */
+  deleteProject(id: string): Promise<void>;
   listServices(projectId: string): Promise<Service[]>;
   listTaxonomy(projectId: string, serviceId: string): Promise<TaxonomyRow[]>;
   // import (step 5)
@@ -138,9 +142,11 @@ function createTauriBackend(): Backend {
     gatewayKeyUsage: () => call("gateway_key_usage"),
     checkUpdate: () => call("check_update"),
     installUpdate: () => call("install_update"),
-    // no projects until step 3 — the UI shows its empty state
-    listProjects: async () => [],
-    listServices: notYet,
+    listProjects: () => call("list_projects"),
+    createProject: (name, color) => call("create_project", { name, color: color ?? null }),
+    updateProject: (id, patch) => call("update_project", { id, name: patch.name ?? null, color: patch.color ?? null }),
+    deleteProject: (id) => call("delete_project", { id }),
+    listServices: (projectId) => call("list_services", { projectId }),
     listTaxonomy: notYet,
     previewImport: notYet,
     importSummary: notYet,
@@ -149,7 +155,7 @@ function createTauriBackend(): Backend {
     resumeClassify: notYet,
     cancelClassify: notYet,
     queryResults: notYet,
-    projectMonths: notYet,
+    projectMonths: (projectId) => call("project_months", { projectId }),
     pivot: notYet,
     drill: notYet,
     savedViews: notYet,

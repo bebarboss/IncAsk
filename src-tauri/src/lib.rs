@@ -3,11 +3,13 @@
 
 pub mod commands;
 pub mod config;
+pub mod db;
 pub mod errors;
 pub mod gateway_test;
 pub mod llm;
 pub mod redact;
 pub mod secrets;
+pub mod taxonomy;
 pub mod updater;
 
 use commands::AppState;
@@ -38,6 +40,12 @@ pub fn run() {
             commands::gateway_models,
             commands::test_gateway,
             commands::gateway_key_usage,
+            commands::list_projects,
+            commands::create_project,
+            commands::update_project,
+            commands::delete_project,
+            commands::list_services,
+            commands::project_months,
             updater::check_update,
             updater::install_update,
         ])

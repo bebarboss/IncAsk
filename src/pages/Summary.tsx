@@ -9,6 +9,7 @@ import { delta, fmtInt, thDate, thMonth } from "../lib/format";
 import { th } from "../i18n/th";
 import { useApp } from "../state";
 import { ErrorState, SkeletonList } from "../components/ui";
+import { NoData } from "../components/NoData";
 
 interface Cell { service: string; category: string | null; month: string | null; label: string }
 
@@ -29,6 +30,7 @@ function Delta({ prev, cur }: { prev: number; cur: number }) {
 export default function SummaryPage({ project }: { project: Project }) {
   const app = useApp();
   const [months, setMonths] = useState<string[]>([]);
+  const [noData, setNoData] = useState(false);
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [views, setViews] = useState<SavedView[]>([]);
@@ -40,8 +42,8 @@ export default function SummaryPage({ project }: { project: Project }) {
   const [cell, setCell] = useState<Cell | null>(null);
 
   useEffect(() => {
-    api.projectMonths(project.id).then((m) => { setMonths(m); setFrom(m[0] ?? ""); setTo(m[m.length - 1] ?? ""); }).catch((e) => setError(errMsg(e)));
-    api.savedViews(project.id).then((v) => { setViews(v); setView(v[0]?.id ?? null); }).catch(() => {});
+    api.projectMonths(project.id).then((m) => { setMonths(m); setNoData(m.length === 0); setFrom(m[0] ?? ""); setTo(m[m.length - 1] ?? ""); }).catch((e) => setError(errMsg(e)));
+    api.savedViews(project.id).then((v) => { setViews(v); setView(v[0]?.id ?? null); }).catch(() => setViews([]));
   }, [project.id]);
 
   useEffect(() => {
@@ -58,6 +60,10 @@ export default function SummaryPage({ project }: { project: Project }) {
   }, [pivot, last]);
 
   const open = (c: Cell) => setCell(c);
+
+  if (noData) {
+    return <div className="page" style={{ flex: 1 }}><h1 className="page-title">สรุปผล</h1><NoData title="ยังไม่มีข้อมูลสำหรับสรุปผล" /></div>;
+  }
 
   return (
     <div style={{ display: "flex", flex: 1, minHeight: 0 }}>

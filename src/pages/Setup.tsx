@@ -145,9 +145,35 @@ function CategoriesStep({ onBack, onNext }: { onBack: () => void; onNext: () => 
   const app = useApp();
   const [name, setName] = useState(app.projects[0]?.name ?? "");
   const [services, setServices] = useState<Service[]>([]);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   useEffect(() => {
     if (app.projects[0]) api.listServices(app.projects[0].id).then(setServices).catch(() => setServices([]));
   }, [app.projects]);
+
+  /** Create the first project from the typed name unless one with that name exists.
+   *  "ข้ามไปก่อน" with an empty name moves on without creating anything. */
+  const proceed = async (required: boolean) => {
+    const n = name.trim();
+    if (!n && !required) return onNext();
+    setBusy(true);
+    setError(null);
+    try {
+      const existing = app.projects.find((p) => p.name.toLowerCase() === n.toLowerCase());
+      if (!existing) {
+        const p = await api.createProject(n);
+        await app.refreshProjects();
+        app.setActiveProject(p.id);
+      } else {
+        app.setActiveProject(existing.id);
+      }
+      onNext();
+    } catch (e) {
+      setError(errMsg(e));
+    } finally {
+      setBusy(false);
+    }
+  };
   return (
     <>
       <section className="card card-pad" aria-labelledby="cat-h" style={{ padding: 24, gap: 18 }}>
@@ -174,12 +200,13 @@ function CategoriesStep({ onBack, onNext }: { onBack: () => void; onNext: () => 
             {services.map((s) => <ServiceSummaryRow key={s.id} projectId={app.projects[0].id} service={s} />)}
           </div>
         )}
+        {error && <div className="err-box" role="alert">{error}</div>}
       </section>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
         <button className="btn btn-lg btn-ghost" onClick={onBack}>‹ ย้อนกลับ</button>
         <div style={{ display: "flex", gap: 8 }}>
-          <button className="btn btn-lg" onClick={onNext}>ข้ามไปก่อน</button>
-          <button className="btn btn-lg btn-primary" onClick={onNext}>ถัดไป ›</button>
+          <button className="btn btn-lg" disabled={busy} onClick={() => proceed(false)}>ข้ามไปก่อน</button>
+          <button className="btn btn-lg btn-primary" disabled={busy || !name.trim()} onClick={() => proceed(true)}>ถัดไป ›</button>
         </div>
       </div>
     </>

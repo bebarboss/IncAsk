@@ -184,6 +184,7 @@ code { font-family: var(--mono); font-size: 12.5px; background: var(--code); col
 .btn-danger { color: var(--err-text); border-color: var(--err-border); }
 .btn-danger:hover:not(:disabled) { background: var(--err-bg); }
 .btn-danger-solid { background: var(--err-text); border-color: var(--err-text); color: var(--surface); }
+.btn-danger-solid:disabled { background: var(--track); border-color: var(--track); color: var(--muted); }
 .btn-lg { min-height: 44px; padding: 0 20px; border-radius: 12px; font-size: 14px; }
 .btn-ghost { border-color: transparent; background: transparent; color: var(--text-2); }
 .btn-ghost:hover:not(:disabled) { background: var(--hover); }

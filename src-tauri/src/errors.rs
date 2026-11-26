@@ -88,6 +88,12 @@ impl From<std::io::Error> for AppError {
     }
 }
 
+impl From<rusqlite::Error> for AppError {
+    fn from(e: rusqlite::Error) -> Self {
+        Self::new("db", format!("ฐานข้อมูลผิดพลาด: {e}"))
+    }
+}
+
 impl From<serde_json::Error> for AppError {
     fn from(e: serde_json::Error) -> Self {
         Self::new("json", format!("รูปแบบ JSON ไม่ถูกต้อง: {e}"))

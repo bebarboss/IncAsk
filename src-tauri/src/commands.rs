@@ -3,6 +3,7 @@
 //! Step 1: app info, settings, Gateway/key and connection test (ported from DocAsk's commands).
 
 use crate::config::{self, GatewayInfo, Settings};
+use crate::db::projects::{Project, Registry};
 use crate::errors::{AppError, AppResult};
 use crate::gateway_test::{self, TestResult};
 use crate::{llm, secrets};
@@ -20,6 +21,7 @@ pub struct GatewayStatus {
 
 pub struct AppState {
     pub settings: Mutex<Settings>,
+    pub projects: Mutex<Registry>,
     pub status: Mutex<GatewayStatus>,
 }
 
@@ -29,6 +31,7 @@ impl AppState {
         std::fs::create_dir_all(config::projects_dir())?;
         Ok(Self {
             settings: Mutex::new(Settings::load()),
+            projects: Mutex::new(Registry::load(&config::projects_dir())?),
             status: Mutex::new(GatewayStatus { state: "unknown".into(), message: None, checked_at: 0 }),
         })
     }
@@ -230,6 +233,54 @@ pub async fn gateway_key_usage(app: AppHandle) -> AppResult<Option<llm::KeyUsage
     let base = app.state::<AppState>().settings.lock().gateway_base();
     let key = secrets::require_key()?;
     llm::key_info(&base, &key).await
+}
+
+// ------------------------------------------------------------------ projects
+
+#[tauri::command]
+pub fn list_projects(state: S<'_>) -> Vec<Project> {
+    state.projects.lock().list()
+}
+
+#[tauri::command]
+pub fn create_project(state: S<'_>, name: String, color: Option<String>) -> AppResult<Project> {
+    state.projects.lock().create(&name, color.as_deref())
+}
+
+#[tauri::command]
+pub fn update_project(state: S<'_>, id: String, name: Option<String>, color: Option<String>) -> AppResult<Project> {
+    state.projects.lock().update(&id, name.as_deref(), color.as_deref())
+}
+
+/// Deletes the project file. If it was the last-opened project, app.json forgets it.
+#[tauri::command]
+pub fn delete_project(state: S<'_>, id: String) -> AppResult<()> {
+    state.projects.lock().delete(&id)?;
+    let mut s = state.settings.lock();
+    if s.last_project_id.as_deref() == Some(id.as_str()) {
+        s.last_project_id = None;
+        s.save()?;
+    }
+    Ok(())
+}
+
+fn open_project(state: &AppState, id: &str) -> AppResult<rusqlite::Connection> {
+    let path = {
+        let reg = state.projects.lock();
+        reg.get(id)?;
+        reg.db_path(id)?
+    };
+    crate::db::open(&path)
+}
+
+#[tauri::command]
+pub fn list_services(state: S<'_>, project_id: String) -> AppResult<Vec<crate::taxonomy::Service>> {
+    crate::taxonomy::list_services(&open_project(&state, &project_id)?)
+}
+
+#[tauri::command]
+pub fn project_months(state: S<'_>, project_id: String) -> AppResult<Vec<String>> {
+    crate::taxonomy::project_months(&open_project(&state, &project_id)?)
 }
 
 #[cfg(test)]

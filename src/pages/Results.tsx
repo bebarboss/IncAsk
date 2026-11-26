@@ -8,6 +8,7 @@ import { fmtInt, thDate, thMonth } from "../lib/format";
 import { th } from "../i18n/th";
 import { useApp } from "../state";
 import { ErrorState, SkeletonList } from "../components/ui";
+import { NoData } from "../components/NoData";
 
 const PAGE = 50;
 
@@ -15,6 +16,7 @@ export default function ResultsPageView({ project }: { project: Project }) {
   const app = useApp();
   const [services, setServices] = useState<Service[]>([]);
   const [months, setMonths] = useState<string[]>([]);
+  const [noData, setNoData] = useState(false);
   const [search, setSearch] = useState("");
   const [service, setService] = useState("");
   const [month, setMonth] = useState("");
@@ -27,12 +29,13 @@ export default function ResultsPageView({ project }: { project: Project }) {
 
   useEffect(() => {
     api.listServices(project.id).then(setServices).catch(() => {});
-    api.projectMonths(project.id).then(setMonths).catch(() => {});
+    api.projectMonths(project.id).then((m) => { setMonths(m); setNoData(m.length === 0); }).catch(() => {});
   }, [project.id]);
 
   useEffect(() => { setOffset(0); }, [search, service, month, lowOnly, errorOnly]);
 
   useEffect(() => {
+    if (noData) return;
     let alive = true;
     const t = setTimeout(() => {
       api.queryResults(project.id, { search, service: service || undefined, month: month || undefined, lowOnly, errorOnly, offset, limit: PAGE })
@@ -40,11 +43,15 @@ export default function ResultsPageView({ project }: { project: Project }) {
         .catch((e) => alive && setError(errMsg(e)));
     }, search ? 200 : 0);
     return () => { alive = false; clearTimeout(t); };
-  }, [project.id, search, service, month, lowOnly, errorOnly, offset]);
+  }, [project.id, search, service, month, lowOnly, errorOnly, offset, noData]);
 
   // category columns merged from every service (empty where a service doesn't use one)
   const catCols = useMemo(() => [...new Set(services.flatMap((s) => s.columns))], [services]);
   const pad = dense ? "5px 12px" : undefined;
+
+  if (noData) {
+    return <div className="page"><h1 className="page-title">ผลลัพธ์</h1><NoData title="ยังไม่มีผลลัพธ์" /></div>;
+  }
 
   return (
     <div className="page">

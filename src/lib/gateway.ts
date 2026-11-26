@@ -3,6 +3,12 @@ import { th } from "../i18n/th";
 
 export const DEFAULT_GATEWAY_URL = "https://agent-gateway.gosoft.co.th";
 export const MODEL_IDS = ["godev1", "godev2", "godev3", "gothink1", "gothink2", "gothink3"] as const;
+/** project colours: accent green + the service palette (mirrors db/projects.rs PROJECT_COLORS) */
+export const PROJECT_COLORS = ["#217346", "#B4530A", "#4A5A7A", "#2F6FB0", "#7B4FB0", "#0E7C74", "#B83E78", "#8A6D1F"] as const;
+export const PROJECT_COLOR_NAMES: Record<string, string> = {
+  "#217346": "เขียว", "#B4530A": "ส้มอิฐ", "#4A5A7A": "น้ำเงินเทา", "#2F6FB0": "น้ำเงิน",
+  "#7B4FB0": "ม่วง", "#0E7C74": "ฟ้าอมเขียว", "#B83E78": "ชมพู", "#8A6D1F": "น้ำตาลทอง",
+};
 /** default service colours (SPEC §11.2) — all pass contrast on white */
 export const SERVICE_COLORS = ["#2F6FB0", "#7B4FB0", "#C2631A", "#5B6270", "#0E7C74", "#B83E78", "#8A6D1F", "#3F7A2E"] as const;
 export const SERVICE_COLOR_NAMES: Record<string, string> = {
