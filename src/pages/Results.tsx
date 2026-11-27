@@ -14,6 +14,7 @@ import { ErrorState, Modal, usePopover } from "../components/ui";
 import { NoData } from "../components/NoData";
 import { CategoryPicker, categoryLabel, useTaxonomy } from "../components/CategoryPicker";
 import { CauseSelect } from "../components/Cause";
+import { TicketSidebar } from "../components/TicketPanel";
 import { CAUSE_LABEL, CAUSES, causeLabel } from "../lib/cause";
 
 const PAGE = 200;
@@ -55,6 +56,8 @@ export default function ResultsPageView({ project }: { project: Project }) {
   const [selected, setSelected] = useState<Map<string, string>>(new Map()); // id → service
   const [editing, setEditing] = useState<{ ids: string[]; service: string; current: Record<string, string> | null } | null>(null);
   const [reclass, setReclass] = useState(false);
+  /** the ticket shown in the side panel */
+  const [openId, setOpenId] = useState<string | null>(null);
   const searchRef = useRef<HTMLInputElement>(null);
   const [thr, setThr] = useState(0.7);
   useEffect(() => { api.getPref(project.id, "low_threshold").then((v) => v != null && setThr(Number(v))).catch(() => {}); }, [project.id]);
@@ -184,6 +187,30 @@ export default function ResultsPageView({ project }: { project: Project }) {
     }
   };
 
+  const openTicket = openId ? [...pages.current.values()].flat().find((r) => r.id === openId) ?? null : null;
+  const saveFields = async (t: TicketRow, f: Record<string, string>) => {
+    await api.setCategory(project.id, [t.id], f);
+    updateLocal([t.id], f);
+    app.toast(`✓ ${t.ticketNo} → ${categoryLabel(tax?.[t.service]?.service.columns, f)}`);
+  };
+  // Esc closes the panel; ↑/↓ move to the previous/next loaded row while it is open
+  useEffect(() => {
+    if (!openId) return;
+    const onKey = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement).tagName;
+      if (tag === "INPUT" || tag === "SELECT" || tag === "TEXTAREA" || document.querySelector(".modal")) return;
+      if (e.key === "Escape") setOpenId(null);
+      if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+        const all = [...pages.current.entries()].sort((a, b) => a[0] - b[0]).flatMap(([, rows]) => rows);
+        const i = all.findIndex((r) => r.id === openId);
+        const next = all[i + (e.key === "ArrowDown" ? 1 : -1)];
+        if (next) { e.preventDefault(); setOpenId(next.id); }
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [openId]);
+
   if (months && months.length === 0) {
     return <div className="page"><h1 className="page-title">ผลลัพธ์</h1><NoData title="ยังไม่มีผลลัพธ์" /></div>;
   }
@@ -219,7 +246,7 @@ export default function ResultsPageView({ project }: { project: Project }) {
     if (!svc || !svc.service.columns.includes(col)) return <span className="muted">—</span>;
     return (
       <button className="cat-btn ellipsis" style={{ maxWidth: "100%" }} title={r.source === "human" && r.editedBy ? `แก้โดย ${r.editedBy}` : "คลิกเพื่อแก้หมวด"}
-        onClick={() => setEditing({ ids: [r.id], service: r.service, current: r.fields })}>
+        onClick={() => setOpenId(r.id)}>
         {r.fields[col] || <span className="muted">เลือกหมวด</span>}
       </button>
     );
@@ -276,7 +303,8 @@ export default function ResultsPageView({ project }: { project: Project }) {
   const padBottom = vItems.length ? virt.getTotalSize() - vItems[vItems.length - 1].end : 0;
 
   return (
-    <div className="page" style={{ gap: 14 }}>
+    <div style={{ display: "flex", flex: 1, minHeight: 0, minWidth: 0 }}>
+    <div className="page" style={{ gap: 14, flex: 1, minWidth: 0, overflowY: "auto" }}>
       <header className="page-head">
         <div className="l">
           <h1 className="page-title">ผลลัพธ์</h1>
@@ -344,7 +372,9 @@ export default function ResultsPageView({ project }: { project: Project }) {
                 if (!r) return <tr key={v.key} style={{ height: rowH }}><td colSpan={headers.length} style={{ padding: pad }}><div className="skeleton" style={{ height: 12, width: "60%" }} /></td></tr>;
                 const low = r.confidence != null && !["human", "error", "unknown_service"].includes(r.source) && r.confidence < thr;
                 return (
-                  <tr key={r.id} style={{ height: rowH }} className={r.source === "error" ? "row-err" : low ? "row-low" : undefined} aria-selected={selected.has(r.id)}>
+                  <tr key={r.id} style={{ height: rowH, cursor: "pointer" }} className={`${r.source === "error" ? "row-err" : low ? "row-low" : ""}${openId === r.id ? " row-open" : ""}`} aria-selected={selected.has(r.id)}
+                    aria-current={openId === r.id ? "true" : undefined}
+                    onClick={(e) => { if (!(e.target as HTMLElement).closest("input, select, a")) setOpenId(r.id); }}>
                     {headers.map((h) => {
                       const pinned = h.column.getIsPinned();
                       return (
@@ -372,6 +402,13 @@ export default function ResultsPageView({ project }: { project: Project }) {
         <ReclassifyDialog projectId={project.id} selected={[...selected.keys()]} lowCount={lowCount} onClose={() => setReclass(false)}
           onStarted={() => { setReclass(false); setSelected(new Map()); app.go({ name: "project", tab: "classify" }); }} />
       )}
+    </div>
+    {openTicket && (
+      <TicketSidebar key={openTicket.id} ticket={openTicket} columns={tax?.[openTicket.service]?.service.columns ?? Object.keys(openTicket.fields)}
+        rows={tax?.[openTicket.service]?.rows} onClose={() => setOpenId(null)}
+        onSave={tax?.[openTicket.service] ? saveFields : undefined}
+        onSaveCause={async (t, c) => { await saveCause([t.id], c); }} />
+    )}
     </div>
   );
 }

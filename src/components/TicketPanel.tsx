@@ -68,8 +68,21 @@ export function TicketPanel({ cell, data, taxonomy, onClose, onSave, onSaveCause
   );
 }
 
+/** One ticket on its own in the side panel (หน้าผลลัพธ์): same detail + editors, no list to go back to. */
+export function TicketSidebar({ ticket, columns, rows, onClose, onSave, onSaveCause }: {
+  ticket: TicketRow; columns: string[]; rows?: TaxonomyRow[]; onClose: () => void;
+  onSave?: (ticket: TicketRow, fields: Record<string, string>) => Promise<void>;
+  onSaveCause?: (ticket: TicketRow, cause: string) => Promise<void>;
+}) {
+  return (
+    <aside className="drill" aria-label={`รายละเอียดทิกเก็ต ${ticket.ticketNo}`}>
+      <Detail ticket={ticket} columns={columns} rows={rows} onClose={onClose} onSave={onSave} onSaveCause={onSaveCause} />
+    </aside>
+  );
+}
+
 function Detail({ ticket, columns, rows, onBack, onClose, onSave, onSaveCause }: {
-  ticket: TicketRow; columns: string[]; rows?: TaxonomyRow[]; onBack: () => void; onClose: () => void;
+  ticket: TicketRow; columns: string[]; rows?: TaxonomyRow[]; onBack?: () => void; onClose: () => void;
   onSave?: (ticket: TicketRow, fields: Record<string, string>) => Promise<void>;
   onSaveCause?: (ticket: TicketRow, cause: string) => Promise<void>;
 }) {
@@ -102,10 +115,11 @@ function Detail({ ticket, columns, rows, onBack, onClose, onSave, onSaveCause }:
   return (
     <>
       <div className="drill-head" style={{ alignItems: "center" }}>
-        <button className="btn btn-ghost" onClick={onBack}><ChevronLeft size={16} strokeWidth={2} aria-hidden="true" />กลับไปรายการ</button>
+        {onBack ? <button className="btn btn-ghost" onClick={onBack}><ChevronLeft size={16} strokeWidth={2} aria-hidden="true" />กลับไปรายการ</button>
+          : <span className="muted" style={{ fontSize: 12 }}>{thDate(ticket.date)} · {ticket.service}</span>}
         <button className="icon-btn" aria-label="ปิดแผง" onClick={onClose}><X size={18} strokeWidth={1.8} /></button>
       </div>
-      <div style={{ flex: 1, overflowY: "auto", padding: 16, display: "flex", flexDirection: "column", gap: 14 }}>
+      <div className="drill-body" style={{ flex: 1, overflowY: "auto", padding: 16, display: "flex", flexDirection: "column", gap: 14 }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
           <h2 className="mono" style={{ fontSize: 16, fontWeight: 700 }}>{ticket.ticketNo}</h2>
           <p style={{ fontSize: 13, lineHeight: 1.7 }}>{ticket.problemText}</p>
@@ -143,7 +157,7 @@ function Detail({ ticket, columns, rows, onBack, onClose, onSave, onSaveCause }:
             ))}
             {error && <div className="err-box" role="alert">{error}</div>}
             <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
-              <button className="btn" onClick={onBack}>{th.cancel}</button>
+              <button className="btn" onClick={onBack ?? (() => setPick({ ...ticket.fields }))}>{onBack ? th.cancel : "คืนค่า"}</button>
               <button className="btn btn-primary" disabled={!changed || busy} onClick={save}>{busy ? "กำลังบันทึก…" : th.save}</button>
             </div>
           </>
