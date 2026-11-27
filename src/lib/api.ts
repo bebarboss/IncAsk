@@ -140,6 +140,8 @@ export interface Backend {
   exportIncask(projectId: string, scope: ExportScope, path: string): Promise<IncaskManifest>;
   /** returns the file size in bytes */
   exportHtml(projectId: string, scope: ExportScope, path: string): Promise<number>;
+  /** Excel รายงานวิเคราะห์ (days / weeks / months per category); returns tickets counted */
+  exportAnalysis(projectId: string, scope: ExportScope, path: string): Promise<number>;
   revealFile(path: string): Promise<void>;
   inspectIncask(path: string, projectId: string | null): Promise<IncaskInspect>;
   importIncask(path: string, name: string | null): Promise<Project>;
@@ -253,6 +255,7 @@ function createTauriBackend(): Backend {
     exportCsv: (projectId, scope, path) => call("export_csv", { projectId, scope, path }),
     exportIncask: (projectId, scope, path) => call("export_incask", { projectId, scope, path }),
     exportHtml: (projectId, scope, path) => call("export_html", { projectId, scope, path }),
+    exportAnalysis: (projectId, scope, path) => call("export_analysis", { projectId, scope, path }),
     revealFile: (path) => call("reveal_file", { path }),
     inspectIncask: (path, projectId) => call("inspect_incask", { path, projectId }),
     importIncask: (path, name) => call("import_incask", { path, name }),

@@ -1,6 +1,7 @@
 //! Exports (SPEC §10): raw CSV, `.incask` project file (+ import / merge), single-file HTML report.
 //! None of them ever contains the API key, the Gateway URL or costs.
 
+pub mod analysis;
 pub mod csv_export;
 pub mod html;
 pub mod incask;

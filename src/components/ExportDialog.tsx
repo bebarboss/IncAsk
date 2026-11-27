@@ -12,6 +12,7 @@ import { Modal } from "./ui";
 const OPTS = [
   { id: "incask", ext: ".incask", file: "incask", filter: "ไฟล์โปรเจกต์ IncAsk", title: "ไฟล์โปรเจกต์", desc: "ทั้งฐานข้อมูล หมวดหมู่ รูปแบบรีพอร์ต สี และมุมมองที่บันทึก เปิดแล้วเห็นเหมือนเราทุกอย่าง", who: "สำหรับคนที่มีโปรแกรม IncAsk", cta: "บันทึกไฟล์ .incask" },
   { id: "html", ext: "HTML", file: "html", filter: "รายงาน HTML", title: "รายงาน HTML", desc: "ไฟล์เดียว ดับเบิลคลิกเปิดในเบราว์เซอร์ ปรับ pivot และดูรายละเอียดทิกเก็ตได้ แต่แก้หมวดไม่ได้", who: "สำหรับหัวหน้าหรือคนนอกทีม", cta: "บันทึกรายงาน HTML" },
+  { id: "xlsx", ext: "Excel", file: "xlsx", filter: "Excel", title: "Excel รายงานวิเคราะห์", desc: "หนึ่งชีตต่อเซอร์วิส แถว = ทุกหมวด + Classification · คอลัมน์ = รายวัน ยอดรายสัปดาห์ และยอดรวมรายเดือน (สูตร SUM แก้ต่อได้)", who: "สำหรับประชุมสรุปปัญหารายเดือน", cta: "บันทึกไฟล์ Excel" },
   { id: "csv", ext: "CSV", file: "csv", filter: "CSV (UTF-8)", title: "CSV ดิบ", desc: "ข้อมูลทีละแถวพร้อมหมวดหมู่ เข้ารหัส UTF-8 พร้อม BOM เปิดใน Excel แล้วภาษาไทยไม่เพี้ยน", who: "สำหรับคนที่จะเอาข้อมูลไปทำต่อเอง", cta: "บันทึกไฟล์ CSV" },
 ] as const;
 
@@ -51,6 +52,7 @@ export function ExportDialog() {
       let text = "";
       if (sel === "csv") text = `ส่งออก ${fmtInt(await api.exportCsv(project.id, scope, path))} ทิกเก็ต`;
       if (sel === "incask") text = `ส่งออก ${fmtInt((await api.exportIncask(project.id, scope, path)).tickets)} ทิกเก็ต`;
+      if (sel === "xlsx") text = `ส่งออก ${fmtInt(await api.exportAnalysis(project.id, scope, path))} ทิกเก็ต`;
       if (sel === "html") text = `รายงานขนาด ${formatBytes(await api.exportHtml(project.id, scope, path))}`;
       setDone({ path, text });
     } catch (e) {

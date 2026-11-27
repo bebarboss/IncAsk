@@ -104,6 +104,7 @@ pub fn run() {
             commands::export_csv,
             commands::export_incask,
             commands::export_html,
+            commands::export_analysis,
             commands::reveal_file,
             commands::inspect_incask,
             commands::import_incask,

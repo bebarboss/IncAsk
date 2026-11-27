@@ -746,6 +746,7 @@ export function createMockBackend(): Backend {
       return { format: "incask", version: 1, exportedAt: new Date().toISOString(), appVersion: __APP_VERSION__, from: scope.from, to: scope.to, service: scope.service, projectName: p.name, projectColor: p.color, schemaVersion: 1, tickets: n };
     },
     exportHtml: async () => { await wait(700); return 512_000; },
+    exportAnalysis: async (projectId, scope) => { await wait(500); return lazy(projectId).tickets.filter((t) => t.month >= scope.from && t.month <= scope.to && (!scope.service || t.service === scope.service)).length; },
     revealFile: async () => {},
     inspectIncask: async (_path, projectId) => {
       await wait(300);

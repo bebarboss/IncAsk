@@ -737,6 +737,12 @@ fn report_template(app: &AppHandle) -> AppResult<String> {
     Err(AppError::new("report", "ไม่พบแม่แบบรายงาน HTML — รัน npm run build:report แล้วลองใหม่"))
 }
 
+/// Excel รายงานวิเคราะห์: rows = categories + Classification, columns = days, week and month totals.
+#[tauri::command]
+pub fn export_analysis(state: S<'_>, project_id: String, scope: Scope, path: String) -> AppResult<usize> {
+    export::analysis::export(&open_project(&state, &project_id)?, &scope, std::path::Path::new(&path))
+}
+
 #[tauri::command]
 pub fn export_html(app: AppHandle, project_id: String, scope: Scope, path: String) -> AppResult<usize> {
     let state = app.state::<AppState>();
