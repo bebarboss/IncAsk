@@ -1,6 +1,6 @@
 // Small shared primitives (from DocAsk components/ui.tsx): Modal, ConfirmDialog, Switch, Popover hook,
 // Skeleton, ErrorState, EmptyState, Logo. DocAsk's CodeBadge is dropped.
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { th } from "../i18n/th";
@@ -82,6 +82,17 @@ export function usePopover() {
     document.addEventListener("mousedown", onDown);
     document.addEventListener("keydown", onKey);
     return () => { document.removeEventListener("mousedown", onDown); document.removeEventListener("keydown", onKey); };
+  }, [open]);
+  // keep the menu inside the page: a toolbar that wraps can put its button at the left edge, where a
+  // right-anchored menu would be cut off (and the other way round)
+  useLayoutEffect(() => {
+    if (!open || !ref.current) return;
+    const p = ref.current.querySelector<HTMLElement>(":scope > .popover");
+    if (!p) return;
+    const clip = (ref.current.closest(".page") ?? document.body).getBoundingClientRect();
+    const r = p.getBoundingClientRect();
+    if (r.left < clip.left + 8) { p.style.left = "0"; p.style.right = "auto"; }
+    else if (r.right > clip.right - 8) { p.style.right = "0"; p.style.left = "auto"; }
   }, [open]);
   return { open, setOpen, ref };
 }
