@@ -1,6 +1,6 @@
 [package]
 name = "incask"
-version = "0.2.0"
+version = "0.2.1"
 description = "IncAsk — จัดหมวดหมู่อินซิเดนต์/ทิกเก็ตด้วย LLM ผ่าน Gateway ของบริษัท"
 edition = "2021"
 rust-version = "1.77"
