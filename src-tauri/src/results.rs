@@ -16,6 +16,8 @@ pub struct Query {
     pub category: Option<String>,
     pub low_only: bool,
     pub error_only: bool,
+    /// user | program | unclear | none (not assessed yet)
+    pub cause: Option<String>,
     /// per-column "contains" filters: key → text
     pub filters: Vec<ColumnFilter>,
     pub sort: Option<String>,
@@ -46,6 +48,9 @@ pub struct Row {
     /// ai | cache | human | error | unknown_service | pending (not classified yet)
     pub source: String,
     pub edited_by: Option<String>,
+    /// ต้นเหตุ: user | program | unclear; None = not assessed (classified before ต้นเหตุ existed)
+    pub cause: Option<String>,
+    pub ai_cause: Option<String>,
     pub source_row: serde_json::Map<String, serde_json::Value>,
 }
 
@@ -71,6 +76,7 @@ fn expr(key: &str) -> Option<(String, Option<String>)> {
         "problem" => ("t.problem_text".into(), None),
         "confidence" => ("c.confidence".into(), None),
         "source" => ("COALESCE(c.source,'pending')".into(), None),
+        "cause" => ("c.cause".into(), None),
         k if k.starts_with("cat:") => ("json_extract(c.fields_json, ?)".into(), Some(json_path(&k[4..]))),
         k if k.starts_with("src:") => ("json_extract(t.source_json, ?)".into(), Some(json_path(&k[4..]))),
         _ => return None,
@@ -80,7 +86,7 @@ fn expr(key: &str) -> Option<(String, Option<String>)> {
 const FROM: &str = "FROM tickets t LEFT JOIN classifications c ON c.ticket_id = t.id";
 
 /// Columns read by `map_row` (also used by the pivot drill-down).
-pub const SELECT_COLS: &str = "t.id, t.ticket_no, t.date, t.month, t.service, t.problem_text, t.source_json, c.fields_json, c.ai_fields_json, c.confidence, c.reason, COALESCE(c.source,'pending'), c.edited_by";
+pub const SELECT_COLS: &str = "t.id, t.ticket_no, t.date, t.month, t.service, t.problem_text, t.source_json, c.fields_json, c.ai_fields_json, c.confidence, c.reason, COALESCE(c.source,'pending'), c.edited_by, c.cause, c.ai_cause";
 
 pub fn map_row(r: &rusqlite::Row) -> rusqlite::Result<Row> {
     let parse = |s: Option<String>| s.and_then(|j| serde_json::from_str::<Values>(&j).ok());
@@ -99,6 +105,8 @@ pub fn map_row(r: &rusqlite::Row) -> rusqlite::Result<Row> {
         reason: r.get(10)?,
         source: r.get(11)?,
         edited_by: r.get(12)?,
+        cause: r.get(13)?,
+        ai_cause: r.get(14)?,
     })
 }
 
@@ -135,6 +143,14 @@ fn where_clause(q: &Query, threshold: f64, first_cols: &[String]) -> (String, Ve
     }
     if q.error_only {
         w.push("c.source = 'error'".into());
+    }
+    match q.cause.as_deref() {
+        Some("none") => w.push("c.cause IS NULL".into()),
+        Some(v) if !v.is_empty() => {
+            w.push("c.cause = ?".into());
+            p.push(Sql::Text(v.into()));
+        }
+        _ => {}
     }
     for f in &q.filters {
         let v = f.value.trim();
@@ -191,6 +207,32 @@ pub fn source_columns(conn: &Connection) -> AppResult<Vec<String>> {
         }
     }
     Ok(out)
+}
+
+pub const CAUSES: [&str; 3] = ["user", "program", "unclear"];
+
+/// A person sets ต้นเหตุ for one or more classified tickets (any service). The AI's answer stays in
+/// `ai_cause`; the category and its source are left alone.
+pub fn set_cause(conn: &mut Connection, ticket_ids: &[String], cause: &str, user: &str) -> AppResult<usize> {
+    if !CAUSES.contains(&cause) {
+        return Err(AppError::new("invalid_cause", "ต้นเหตุต้องเป็น ผู้ใช้ โปรแกรม หรือ ไม่ชัดเจน"));
+    }
+    let tx = conn.transaction()?;
+    let mut n = 0;
+    {
+        let mut st = tx.prepare(
+            "UPDATE classifications SET cause = ?1, edited_by = ?2, updated_at = datetime('now')
+             WHERE ticket_id = ?3 AND source NOT IN ('error', 'unknown_service')",
+        )?;
+        for id in ticket_ids {
+            n += st.execute(rusqlite::params![cause, user, id])?;
+        }
+    }
+    tx.commit()?;
+    if n == 0 && !ticket_ids.is_empty() {
+        return Err(AppError::new("not_classified", "ทิกเก็ตนี้ยังไม่ได้จัดหมวด — จัดหมวดก่อนแล้วค่อยแก้ต้นเหตุ"));
+    }
+    Ok(n)
 }
 
 /// Set the category of one or more tickets of ONE service (SPEC §8): must be a category of that
@@ -270,6 +312,21 @@ mod tests {
             }
         }
         (dir, c)
+    }
+
+    #[test]
+    fn cause_is_set_by_hand_filtered_and_kept_apart_from_the_ai_answer() {
+        let (_d, mut c) = setup();
+        c.execute("UPDATE classifications SET cause='program', ai_cause='program' WHERE ticket_id='T1'", []).unwrap();
+        let q = |c: &Connection, cause: &str| ids(&query(c, &Query { limit: 50, cause: Some(cause.into()), ..Default::default() }).unwrap()).into_iter().map(String::from).collect::<Vec<_>>();
+        assert_eq!(q(&c, "program"), vec!["T1"]);
+        assert_eq!(q(&c, "none"), vec!["T2", "T4", "T3"]); // T4 has no classification row at all
+        assert_eq!(set_cause(&mut c, &["T1".into(), "T2".into()], "user", "สมชาย").unwrap(), 2);
+        let r = &query(&c, &Query { limit: 50, cause: Some("user".into()), ..Default::default() }).unwrap().rows;
+        let t1 = r.iter().find(|x| x.id == "T1").unwrap();
+        assert_eq!((t1.cause.as_deref(), t1.ai_cause.as_deref(), t1.source.as_str(), t1.edited_by.as_deref()), (Some("user"), Some("program"), "ai", Some("สมชาย")));
+        assert!(set_cause(&mut c, &["T1".into()], "network", "x").is_err());
+        assert!(set_cause(&mut c, &["T4".into()], "user", "x").is_err()); // not classified yet
     }
 
     fn ids(p: &Page) -> Vec<&str> {

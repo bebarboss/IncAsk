@@ -631,6 +631,13 @@ pub fn source_columns(state: S<'_>, project_id: String) -> AppResult<Vec<String>
     crate::results::source_columns(&open_project(&state, &project_id)?)
 }
 
+/// Edit ต้นเหตุ (user | program | unclear) of one or more classified tickets.
+#[tauri::command]
+pub fn set_cause(state: S<'_>, project_id: String, ticket_ids: Vec<String>, cause: String) -> AppResult<usize> {
+    let user = state.settings.lock().user_name.clone();
+    crate::results::set_cause(&mut open_project(&state, &project_id)?, &ticket_ids, &cause, &user)
+}
+
 /// Edit the category of one or more tickets (same service). Saved as `human` by the user's name.
 #[tauri::command]
 pub fn set_category(state: S<'_>, project_id: String, ticket_ids: Vec<String>, fields: crate::taxonomy::Values) -> AppResult<usize> {

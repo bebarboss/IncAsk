@@ -230,7 +230,7 @@ mod tests {
         let out = dir.path().join("a.incask");
         let all = Scope { from: "2026-01".into(), to: "2026-12".into(), service: None };
         let m = export(&c, &all, "Call Center A", "#217346", "0.1.0", &out).unwrap();
-        assert_eq!((m.format.as_str(), m.tickets, m.schema_version), ("incask", 3, 1));
+        assert_eq!((m.format.as_str(), m.tickets, m.schema_version), ("incask", 3, crate::db::migrate::SCHEMA_VERSION));
 
         let reg_dir = dir.path().join("projects");
         let mut reg = Registry::load(&reg_dir).unwrap();

@@ -176,6 +176,8 @@ function buildProject(project: Project, scale: number, seed: number, serviceName
             confidence: conf,
             reason: source === "error" ? "AI ตอบหมวดที่ไม่อยู่ในรายการ 2 ครั้ง" : `ข้อความพูดถึง${sub}`,
             source,
+            // ต้นเหตุ: mostly program for outages/errors, user for usage questions, some unclear
+            cause: source === "error" ? null : roll > 0.97 ? null : r() < 0.15 ? "unclear" : /ติดตั้ง|บิล|รหัส|ตั้งค่า|แพ็กเกจ/.test(main + sub) ? (r() < 0.75 ? "user" : "program") : r() < 0.7 ? "program" : "user",
             sourceRow: {
               "เลขอินซิเดนต์": ticketNo,
               "วันที่แจ้ง": `${String(day).padStart(2, "0")}/${month.slice(5)}/${Number(month.slice(0, 4)) + 543}`,
@@ -636,7 +638,7 @@ export function createMockBackend(): Backend {
       return {
         items: pick.slice(0, 20).map((t, i) => ({
           ticketNo: t.ticketNo, service: t.service, text: t.problemText, category: i % 9 === 4 ? null : Object.values(t.fields).join(" › ") || null,
-          confidence: i % 9 === 4 ? 0.3 : t.confidence ?? 0.8, reason: i % 9 === 4 ? "ไม่ตรงหมวดใดชัดเจน" : t.reason, low: i % 9 === 4 || (t.confidence ?? 1) < 0.7, error: null,
+          confidence: i % 9 === 4 ? 0.3 : t.confidence ?? 0.8, reason: i % 9 === 4 ? "ไม่ตรงหมวดใดชัดเจน" : t.reason, cause: i % 9 === 4 ? "unclear" : t.cause ?? "unclear", low: i % 9 === 4 || (t.confidence ?? 1) < 0.7, error: null,
         })),
         tokensIn: 8200, tokensOut: 940, cost: 0.019, elapsedMs: 1480,
       };
@@ -656,6 +658,7 @@ export function createMockBackend(): Backend {
         if (key === "problem") return t.problemText;
         if (key === "confidence") return t.confidence;
         if (key === "source") return t.source;
+        if (key === "cause") return t.cause ?? null;
         if (key.startsWith("cat:")) return t.fields[key.slice(4)] ?? null;
         if (key.startsWith("src:")) return t.sourceRow[key.slice(4)] ?? null;
         return null;
@@ -667,6 +670,7 @@ export function createMockBackend(): Backend {
         (!q.category || t.fields[COLS[0]] === q.category) &&
         (!q.lowOnly || isLow(t)) &&
         (!q.errorOnly || t.source === "error") &&
+        (!q.cause || (q.cause === "none" ? !t.cause : t.cause === q.cause)) &&
         (!s || t.ticketNo.toLowerCase().includes(s) || t.problemText.toLowerCase().includes(s)) &&
         (q.filters ?? []).every((f) => !f.value.trim() || String(val(t, f.key) ?? "").toLowerCase().includes(f.value.trim().toLowerCase())),
       );
@@ -692,6 +696,14 @@ export function createMockBackend(): Backend {
       const ok = svc && d.taxonomy.some((t) => t.serviceId === svc.id && svc.columns.every((c) => t.values[c] === fields[c]));
       if (!ok) throw { code: "invalid_category", message: "หมวดนี้ไม่อยู่ในตารางหมวดหมู่ของเซอร์วิส" };
       rows.forEach((r) => { r.fields = { ...fields }; r.source = "human"; r.editedBy = settings.userName; });
+      return rows.length;
+    },
+    setCause: async (projectId, ids, cause) => {
+      await wait(60);
+      if (!["user", "program", "unclear"].includes(cause)) throw { code: "invalid_cause", message: "ต้นเหตุต้องเป็น ผู้ใช้ โปรแกรม หรือ ไม่ชัดเจน" };
+      const rows = lazy(projectId).tickets.filter((t) => ids.includes(t.id) && !["error", "unknown_service", "pending"].includes(t.source));
+      if (!rows.length) throw { code: "not_classified", message: "ทิกเก็ตนี้ยังไม่ได้จัดหมวด — จัดหมวดก่อนแล้วค่อยแก้ต้นเหตุ" };
+      rows.forEach((r) => { r.aiCause ??= r.cause ?? null; r.cause = cause; r.editedBy = settings.userName; });
       return rows.length;
     },
     projectMonths: async (projectId) => [...new Set(lazy(projectId).tickets.map((t) => t.month))].sort(),

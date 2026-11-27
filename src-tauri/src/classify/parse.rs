@@ -11,6 +11,22 @@ pub struct Answer {
     pub code: Option<String>,
     pub confidence: f64,
     pub reason: String,
+    /// user | program | unclear — None when the model left it out (the category still counts)
+    pub cause: Option<String>,
+}
+
+/// The model's ต้นเหตุ → user | program | unclear (English or Thai, any case).
+pub fn cause_of(v: Option<&Value>) -> Option<String> {
+    let s = v?.as_str()?.trim().to_lowercase();
+    Some(
+        match s.as_str() {
+            "user" | "ผู้ใช้" | "ผู้ใช้งาน" | "ลูกค้า" => "user",
+            "program" | "system" | "โปรแกรม" | "ระบบ" => "program",
+            "unclear" | "unknown" | "ไม่ชัดเจน" | "ไม่แน่ใจ" => "unclear",
+            _ => return None,
+        }
+        .to_string(),
+    )
 }
 
 /// The first `{ … }` object in the reply (models sometimes wrap JSON in ``` fences or prose).
@@ -52,7 +68,8 @@ pub fn parse_reply(text: &str, expected: &[String], codes: &HashSet<String>) -> 
             };
             let Some(conf) = conf.filter(|c| (0.0..=1.0).contains(c)) else { continue };
             let reason: String = item.get("reason").and_then(|r| r.as_str()).unwrap_or("").trim().chars().take(300).collect();
-            ok.insert(id.to_string(), Answer { id: id.to_string(), code, confidence: conf, reason });
+            let cause = cause_of(item.get("cause"));
+            ok.insert(id.to_string(), Answer { id: id.to_string(), code, confidence: conf, reason, cause });
         }
     }
     let missing = expected.iter().filter(|e| !ok.contains_key(*e)).cloned().collect();
@@ -74,12 +91,25 @@ mod tests {
 
     #[test]
     fn reads_a_clean_answer() {
-        let t = r#"{"results":[{"id":"r1","code":"C01","confidence":0.92,"reason":"หลุดเป็นช่วง"},{"id":"r2","code":"c02","confidence":"0.4","reason":""}]}"#;
+        let t = r#"{"results":[{"id":"r1","code":"C01","cause":"Program","confidence":0.92,"reason":"หลุดเป็นช่วง"},{"id":"r2","code":"c02","confidence":"0.4","reason":""}]}"#;
         let (a, miss) = parse_reply(t, &ids(2), &codes());
         assert!(miss.is_empty());
-        assert_eq!(a[0], Answer { id: "r1".into(), code: Some("C01".into()), confidence: 0.92, reason: "หลุดเป็นช่วง".into() });
+        assert_eq!(a[0], Answer { id: "r1".into(), code: Some("C01".into()), confidence: 0.92, reason: "หลุดเป็นช่วง".into(), cause: Some("program".into()) });
+        assert_eq!(a[1].cause, None); // no cause → still a valid answer
         assert_eq!(a[1].code.as_deref(), Some("C02"));
         assert_eq!(a[1].confidence, 0.4);
+    }
+
+    #[test]
+    fn cause_accepts_english_and_thai_only_known_values() {
+        let v = |s: &str| cause_of(Some(&Value::String(s.into())));
+        assert_eq!(v("user").as_deref(), Some("user"));
+        assert_eq!(v(" ผู้ใช้ ").as_deref(), Some("user"));
+        assert_eq!(v("ระบบ").as_deref(), Some("program"));
+        assert_eq!(v("UNCLEAR").as_deref(), Some("unclear"));
+        assert_eq!(v("network"), None);
+        assert_eq!(cause_of(None), None);
+        assert_eq!(cause_of(Some(&Value::Null)), None);
     }
 
     #[test]

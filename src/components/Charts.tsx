@@ -2,6 +2,9 @@
 import type { Charts } from "../lib/types";
 import { fmtInt, thMonth } from "../lib/format";
 
+/** charts are hidden for now (user request) — flip to bring them back on the summary page and in the report */
+export const SHOW_CHARTS = false;
+
 export function TopBars({ charts }: { charts: Charts }) {
   const last = charts.months[charts.months.length - 1];
   const max = charts.top[0]?.count ?? 0;

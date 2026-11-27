@@ -62,7 +62,7 @@ mod tests {
         let fk: i64 = c.query_row("PRAGMA foreign_keys", [], |r| r.get(0)).unwrap();
         assert_eq!(mode.to_lowercase(), "wal");
         assert_eq!(fk, 1);
-        assert_eq!(get_meta(&c, "schema_version").unwrap().as_deref(), Some("1"));
+        assert_eq!(get_meta(&c, "schema_version").unwrap().as_deref(), Some(crate::db::migrate::SCHEMA_VERSION.to_string().as_str()));
     }
 
     #[test]

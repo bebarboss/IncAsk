@@ -1,13 +1,14 @@
 // The pivot engine in TypeScript — same output shape as src-tauri/src/pivot.rs. Used by mock mode
 // and by the offline HTML report (which carries the tickets inside the file).
 import type { Charts, PivotConfig, PivotNode, PivotResult, TicketRow } from "./types";
+import { NOT_ASSESSED } from "./cause";
 
 export const EMPTY = "(ว่าง)";
 export const UNCLASSIFIED = "(ยังไม่มีหมวด)";
 
-export type PivotTicket = Pick<TicketRow, "service" | "month" | "date" | "source" | "fields" | "sourceRow">;
+export type PivotTicket = Pick<TicketRow, "service" | "month" | "date" | "source" | "cause" | "fields" | "sourceRow">;
 
-const emptyLabel = (field: string) => (field.startsWith("cat:") ? UNCLASSIFIED : EMPTY);
+const emptyLabel = (field: string) => (field.startsWith("cat:") ? UNCLASSIFIED : field === "cause" ? NOT_ASSESSED : EMPTY);
 
 export const isTime = (f: string) => f === "month" || f === "week" || f === "day";
 
@@ -24,6 +25,7 @@ export function fieldValue(t: PivotTicket, field: string): string {
   else if (field === "week") v = t.date ? weekKey(t.date) : null;
   else if (field === "day") v = t.date?.slice(0, 10);
   else if (field === "source") v = t.source;
+  else if (field === "cause") v = t.cause;
   else if (field.startsWith("cat:")) v = t.fields?.[field.slice(4)];
   else if (field.startsWith("src:")) v = t.sourceRow?.[field.slice(4)];
   return v ? String(v) : emptyLabel(field);
@@ -39,6 +41,10 @@ export function pivotJs(tickets: PivotTicket[], cfg: PivotConfig): PivotResult {
   const hasCol = !!cfg.col;
   let colKeys = hasCol ? [...new Set(rows.map((t) => fieldValue(t, cfg.col)))].sort() : ["รวม"];
   if (!hasCol) colKeys = ["รวม"];
+  if (cfg.col === "cause") {
+    const rank = (v: string) => { const i = ["user", "program", "unclear"].indexOf(v); return i < 0 ? 3 : i; };
+    colKeys.sort((a, b) => rank(a) - rank(b));
+  }
   const idx = new Map(colKeys.map((k, i) => [k, i]));
   const width = colKeys.length;
   const tree: PivotNode[] = [];

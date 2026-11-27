@@ -98,7 +98,7 @@ pub mod testdata {
             .unwrap();
             if let Some((src, conf)) = cls {
                 let f = serde_json::to_string(&vals("การเชื่อมต่อ", "เน็ตหลุด")).unwrap();
-                c.execute("INSERT INTO classifications(ticket_id,fields_json,ai_fields_json,confidence,source) VALUES(?1,?2,?2,?3,?4)", params![id, f, conf, src]).unwrap();
+                c.execute("INSERT INTO classifications(ticket_id,fields_json,ai_fields_json,confidence,source,cause,ai_cause) VALUES(?1,?2,?2,?3,?4,'program','program')", params![id, f, conf, src]).unwrap();
             }
         }
         crate::pivot::save_view(&c, None, "รายงานประจำเดือน", &serde_json::json!({"rows":["service"]})).unwrap();

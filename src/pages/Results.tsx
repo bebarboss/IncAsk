@@ -13,6 +13,8 @@ import { useApp } from "../state";
 import { ErrorState, Modal, usePopover } from "../components/ui";
 import { NoData } from "../components/NoData";
 import { CategoryPicker, categoryLabel, useTaxonomy } from "../components/CategoryPicker";
+import { CauseSelect } from "../components/Cause";
+import { CAUSE_LABEL, CAUSES, causeLabel } from "../lib/cause";
 
 const PAGE = 200;
 const PREF = "results_columns";
@@ -27,8 +29,8 @@ interface Prefs {
 }
 const DEFAULT_PREFS: Prefs = { order: [], visibility: {}, sizing: {}, pinning: { left: ["select", "ticketNo"] }, srcCols: [], dense: false };
 
-const BASE_LABEL: Record<string, string> = { ticketNo: "เลขทิกเก็ต", date: "วันที่", service: "เซอร์วิส", problem: "ข้อความปัญหา", confidence: "ความมั่นใจ", source: "ที่มา" };
-const BASE_SIZE: Record<string, number> = { select: 40, ticketNo: 132, date: 104, service: 110, problem: 340, confidence: 108, source: 108 };
+const BASE_LABEL: Record<string, string> = { ticketNo: "เลขทิกเก็ต", date: "วันที่", service: "เซอร์วิส", problem: "ข้อความปัญหา", confidence: "ความมั่นใจ", source: "ที่มา", cause: "ต้นเหตุ" };
+const BASE_SIZE: Record<string, number> = { select: 40, ticketNo: 132, date: 104, service: 110, problem: 340, confidence: 108, source: 108, cause: 140 };
 
 function colLabel(key: string): string {
   if (key.startsWith("cat:") || key.startsWith("src:")) return key.slice(4);
@@ -46,6 +48,7 @@ export default function ResultsPageView({ project }: { project: Project }) {
   const [category, setCategory] = useState("");
   const [lowOnly, setLowOnly] = useState(false);
   const [errorOnly, setErrorOnly] = useState(false);
+  const [cause, setCause] = useState("");
   const [colFilters, setColFilters] = useState<Record<string, string>>({});
   const [sort, setSort] = useState<{ key: string; desc: boolean } | null>(null);
   const [prefs, setPrefs] = useState<Prefs | null>(null);
@@ -85,7 +88,7 @@ export default function ResultsPageView({ project }: { project: Project }) {
     Object.values(tax ?? {}).forEach((t) => t.rows.forEach((r) => { const v = r.values[t.service.columns[0]]; if (v) vals.add(v); }));
     return [...vals].sort((a, b) => a.localeCompare(b, "th"));
   }, [tax]);
-  const keys = useMemo(() => ["select", "ticketNo", "date", "service", "problem", ...catCols.map((c) => `cat:${c}`), "confidence", "source", ...(prefs?.srcCols ?? []).map((c) => `src:${c}`)], [catCols, prefs?.srcCols]);
+  const keys = useMemo(() => ["select", "ticketNo", "date", "service", "problem", ...catCols.map((c) => `cat:${c}`), "cause", "confidence", "source", ...(prefs?.srcCols ?? []).map((c) => `src:${c}`)], [catCols, prefs?.srcCols]);
   const columns = useMemo<ColumnDef<TicketRow>[]>(() => keys.map((k) => ({ id: k, header: colLabel(k), size: BASE_SIZE[k] ?? (k.startsWith("cat:") ? 170 : 150), minSize: k === "select" ? 40 : 70, enableResizing: k !== "select" })), [keys]);
 
   const table = useReactTable<TicketRow>({
@@ -107,10 +110,10 @@ export default function ResultsPageView({ project }: { project: Project }) {
 
   // ---- data: pages cached per query
   const query = useMemo<Omit<ResultsQuery, "offset" | "limit">>(() => ({
-    search, service: service || undefined, month: month || undefined, category: category || undefined, lowOnly, errorOnly,
+    search, service: service || undefined, month: month || undefined, category: category || undefined, lowOnly, errorOnly, cause: cause || undefined,
     filters: Object.entries(colFilters).filter(([, v]) => v.trim()).map(([key, value]) => ({ key, value })),
     sort: sort?.key ?? null, desc: sort?.desc ?? true,
-  }), [search, service, month, category, lowOnly, errorOnly, colFilters, sort]);
+  }), [search, service, month, category, lowOnly, errorOnly, cause, colFilters, sort]);
   const [debounced, setDebounced] = useState(query);
   useEffect(() => { const t = setTimeout(() => setDebounced(query), 220); return () => clearTimeout(t); }, [query]);
   const pages = useRef(new Map<number, TicketRow[]>());
@@ -168,6 +171,18 @@ export default function ResultsPageView({ project }: { project: Project }) {
     }
     bump((n) => n + 1);
   };
+  const saveCause = async (ids: string[], c: string) => {
+    try {
+      const n = await api.setCause(project.id, ids, c);
+      for (const rows of pages.current.values()) {
+        rows.forEach((r) => { if (ids.includes(r.id) && !["error", "unknown_service", "pending"].includes(r.source)) { r.aiCause ??= r.cause ?? null; r.cause = c; r.editedBy = app.settings.userName; } });
+      }
+      bump((x) => x + 1);
+      app.toast(`✓ ตั้งต้นเหตุเป็น ${causeLabel(c)}${n > 1 ? ` · ${fmtInt(n)} แถว` : ""}`);
+    } catch (e) {
+      app.toast(errMsg(e));
+    }
+  };
 
   if (months && months.length === 0) {
     return <div className="page"><h1 className="page-title">ผลลัพธ์</h1><NoData title="ยังไม่มีผลลัพธ์" /></div>;
@@ -194,6 +209,9 @@ export default function ResultsPageView({ project }: { project: Project }) {
       case "confidence": return r.confidence == null ? <span className="muted">—</span> : low
         ? <span style={{ color: "var(--warn-text)", fontWeight: 600 }}>ต่ำ · {Math.round(r.confidence * 100)}%</span>
         : `${Math.round(r.confidence * 100)}%`;
+      case "cause": return ["error", "unknown_service", "pending"].includes(r.source)
+        ? <span className="muted">—</span>
+        : <CauseSelect compact value={r.cause ?? null} label={`ต้นเหตุของ ${r.ticketNo}`} onChange={(c) => saveCause([r.id], c)} />;
       case "source": return <span className={`chip ${r.source === "human" ? "" : r.source === "error" || r.source === "unknown_service" ? "err" : "neutral"}`}>{th.source[r.source]}</span>;
     }
     if (key.startsWith("src:")) return <span title={r.sourceRow[key.slice(4)]}>{r.sourceRow[key.slice(4)]}</span>;
@@ -239,7 +257,7 @@ export default function ResultsPageView({ project }: { project: Project }) {
             </button>
           )}
         </div>
-        {key !== "select" && (
+        {key !== "select" && key !== "cause" && (
           <div style={{ padding: "0 6px 6px" }}>
             <input className="input" aria-label={`กรอง ${colLabel(key)}`} placeholder="กรอง…" style={{ minHeight: 26, padding: "2px 6px", fontSize: 12, borderRadius: 6 }}
               value={colFilters[key] ?? ""} onChange={(e) => setColFilters({ ...colFilters, [key]: e.target.value })} />
@@ -286,6 +304,11 @@ export default function ResultsPageView({ project }: { project: Project }) {
           <option value="">ทุกหมวด</option>
           {topValues.map((v) => <option key={v} value={v}>{v}</option>)}
         </select>
+        <select className="select sm" aria-label="ต้นเหตุ" value={cause} onChange={(e) => setCause(e.target.value)}>
+          <option value="">ทุกต้นเหตุ</option>
+          {CAUSES.map((c) => <option key={c} value={c}>{CAUSE_LABEL[c]}</option>)}
+          <option value="none">ยังไม่ประเมิน</option>
+        </select>
         <select className="select sm" aria-label="เดือน" value={month} onChange={(e) => setMonth(e.target.value)}>
           <option value="">ทุกเดือน</option>
           {(months ?? []).map((m) => <option key={m} value={m}>{thMonth(m)}</option>)}
@@ -302,6 +325,7 @@ export default function ResultsPageView({ project }: { project: Project }) {
           <span>เลือก {fmtInt(selected.size)} แถว{selService.length > 1 ? " · หลายเซอร์วิส ตั้งหมวดพร้อมกันไม่ได้" : ""}</span>
           <button className="btn btn-primary" disabled={selService.length !== 1 || !tax?.[selService[0]]}
             onClick={() => setEditing({ ids: [...selected.keys()], service: selService[0], current: null })}>ตั้งหมวดเป็น…</button>
+          <CauseSelect value={null} placeholder="ตั้งต้นเหตุเป็น…" label="ตั้งต้นเหตุของแถวที่เลือก" onChange={(c) => saveCause([...selected.keys()], c)} />
           <button className="btn" onClick={() => setReclass(true)}>จัดใหม่</button>
           <button className="icon-btn" aria-label="ล้างการเลือก" onClick={() => setSelected(new Map())}><X size={16} strokeWidth={1.8} /></button>
         </div>

@@ -215,6 +215,7 @@ export interface TrialItem {
   category: string | null;
   confidence: number | null;
   reason: string | null;
+  cause?: string | null;
   low: boolean;
   error: string | null;
 }
@@ -244,6 +245,9 @@ export interface TicketRow {
   reason: string | null;
   source: ClassifySource;
   editedBy?: string | null;
+  /** ต้นเหตุ: user | program | unclear; null = not assessed */
+  cause?: string | null;
+  aiCause?: string | null;
   /** every column of the source file */
   sourceRow: Record<string, string>;
 }
@@ -256,6 +260,8 @@ export interface ResultsQuery {
   category?: string;
   lowOnly?: boolean;
   errorOnly?: boolean;
+  /** ต้นเหตุ: user | program | unclear | none (not assessed) */
+  cause?: string;
   /** per-column contains filters; keys: ticketNo, date, service, problem, confidence, source, cat:<col>, src:<header> */
   filters?: { key: string; value: string }[];
   sort?: string | null;

@@ -6,6 +6,7 @@ import type { DateOrder, Role, TrialResult } from "../lib/types";
 import { fmtInt, money } from "../lib/format";
 import { th } from "../i18n/th";
 import { Modal, SkeletonList } from "./ui";
+import { CauseChip } from "./Cause";
 
 export function TrialDialog({ projectId, path, sheet, roles, dateOrder, onClose, onStart }: {
   projectId: string; path: string; sheet: string | null; roles: Role[]; dateOrder: DateOrder | null; onClose: () => void; onStart: () => void;
@@ -32,7 +33,7 @@ export function TrialDialog({ projectId, path, sheet, roles, dateOrder, onClose,
           </div>
           <div className="table-wrap" style={{ maxHeight: "55vh", border: "1px solid var(--border)", borderRadius: 10 }}>
             <table className="tbl">
-              <thead><tr><th>เลขทิกเก็ต</th><th>เซอร์วิส</th><th>ข้อความ</th><th>หมวดที่ AI เลือก</th><th className="r">ความมั่นใจ</th></tr></thead>
+              <thead><tr><th>เลขทิกเก็ต</th><th>เซอร์วิส</th><th>ข้อความ</th><th>หมวดที่ AI เลือก</th><th>ต้นเหตุ</th><th className="r">ความมั่นใจ</th></tr></thead>
               <tbody>
                 {r.items.map((i) => (
                   <tr key={i.ticketNo} className={i.error ? "row-err" : i.low ? "row-low" : undefined}>
@@ -49,6 +50,7 @@ export function TrialDialog({ projectId, path, sheet, roles, dateOrder, onClose,
                         </>
                       )}
                     </td>
+                    <td style={{ whiteSpace: "nowrap" }}>{i.error ? "—" : <CauseChip cause={i.cause} />}</td>
                     <td className="r" style={{ whiteSpace: "nowrap", color: i.low ? "var(--warn-text)" : undefined, fontWeight: i.low ? 600 : undefined }}>
                       {i.confidence != null ? `${i.low ? "ต่ำ · " : ""}${Math.round(i.confidence * 100)}%` : "—"}
                     </td>

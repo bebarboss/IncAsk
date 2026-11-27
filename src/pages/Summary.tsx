@@ -10,11 +10,12 @@ import { useApp } from "../state";
 import { ErrorState, Modal, SkeletonList } from "../components/ui";
 import { NoData } from "../components/NoData";
 import { Delta, PivotTable, type CellRef } from "../components/PivotTable";
-import { TopBars, TrendChart } from "../components/Charts";
+import { SHOW_CHARTS, TopBars, TrendChart } from "../components/Charts";
 import { TicketPanel } from "../components/TicketPanel";
 import { normalizeView } from "../lib/pivotjs";
 import { PivotConfigBar, placeField, type Zone } from "../components/PivotConfigBar";
 import { categoryLabel, useTaxonomy } from "../components/CategoryPicker";
+import { causeLabel } from "../lib/cause";
 
 const DEFAULT_VIEW: ViewConfig = { rows: ["service"], col: "month", value: "count", filters: [], heat: true };
 
@@ -38,7 +39,7 @@ export default function SummaryPage({ project }: { project: Project }) {
 
   const catCols = useMemo(() => [...new Set(Object.values(tax ?? {}).flatMap((t) => t.service.columns))], [tax]);
   const colors = useMemo(() => Object.fromEntries(Object.values(tax ?? {}).map((t) => [t.service.name, t.service.color])), [tax]);
-  const fields = useMemo(() => ["service", "month", "week", "day", ...catCols.map((c) => `cat:${c}`), "source", ...srcCols.map((c) => `src:${c}`)], [catCols, srcCols]);
+  const fields = useMemo(() => ["service", "month", "week", "day", ...catCols.map((c) => `cat:${c}`), "cause", "source", ...srcCols.map((c) => `src:${c}`)], [catCols, srcCols]);
 
   // first load: months, views (the first one applied), heatmap preference
   useEffect(() => {
@@ -101,6 +102,12 @@ export default function SummaryPage({ project }: { project: Project }) {
     app.toast(`✓ ${ticket.ticketNo} → ${categoryLabel(tax?.[ticket.service]?.service.columns, f)}`);
   };
 
+  const saveCause = async (ticket: TicketRow, c: string) => {
+    await api.setCause(project.id, [ticket.id], c);
+    await Promise.all([load(), cell ? loadDrill(cell) : Promise.resolve()]);
+    app.toast(`✓ ${ticket.ticketNo} → ต้นเหตุ ${causeLabel(c)}`);
+  };
+
   if (months && months.length === 0) {
     return <div className="page" style={{ flex: 1 }}><h1 className="page-title">สรุปผล</h1><NoData title="ยังไม่มีข้อมูลสำหรับสรุปผล" /></div>;
   }
@@ -127,10 +134,12 @@ export default function SummaryPage({ project }: { project: Project }) {
       {pivot && charts && (
         <>
           {fs && <ServiceCards charts={charts} />}
-          <div className="two-col" style={{ gridTemplateColumns: "minmax(0,1fr) minmax(0,1fr)" }}>
-            <TopBars charts={charts} />
-            <TrendChart charts={charts} />
-          </div>
+          {SHOW_CHARTS && (
+            <div className="two-col" style={{ gridTemplateColumns: "minmax(0,1fr) minmax(0,1fr)" }}>
+              <TopBars charts={charts} />
+              <TrendChart charts={charts} />
+            </div>
+          )}
           <section className="card" aria-label="ตาราง pivot" style={{ overflow: "hidden", flex: "none" }}>
             <div className="muted" style={{ padding: "10px 16px", fontSize: 12, borderBottom: "1px solid var(--border)" }}>
               คลิกตัวเลขเพื่อดูทิกเก็ตในช่องนั้น{view.filters.some((f) => f.values.length) ? " · มีตัวกรอง" : ""}
@@ -164,7 +173,7 @@ export default function SummaryPage({ project }: { project: Project }) {
           </div>
           {body}
         </div>
-        {cell && <TicketPanel cell={cell} data={drill} taxonomy={tax} onClose={() => setCell(null)} onSave={save} />}
+        {cell && <TicketPanel cell={cell} data={drill} taxonomy={tax} onClose={() => setCell(null)} onSave={save} onSaveCause={saveCause} />}
       </div>
     );
   }
@@ -201,7 +210,7 @@ export default function SummaryPage({ project }: { project: Project }) {
         <PivotConfigBar view={view} fields={fields} loadValues={(f) => api.pivotValues(project.id, f, from, to)} onPlace={place} onChange={setV} />
         {body}
       </div>
-      {cell && <TicketPanel cell={cell} data={drill} taxonomy={tax} onClose={() => setCell(null)} onSave={save}
+      {cell && <TicketPanel cell={cell} data={drill} taxonomy={tax} onClose={() => setCell(null)} onSave={save} onSaveCause={saveCause}
         onSeeAll={() => app.go({ name: "project", tab: "results" })} />}
       {saving && (
         <SaveViewDialog views={views} activeView={activeView} onClose={() => setSaving(false)} onSave={async (id, name) => {

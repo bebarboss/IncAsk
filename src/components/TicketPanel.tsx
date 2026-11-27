@@ -7,14 +7,18 @@ import type { Service, TaxonomyRow, TicketRow } from "../lib/types";
 import { categoryLabel, fmtInt, thDate } from "../lib/format";
 import { th } from "../i18n/th";
 import type { CellRef } from "./PivotTable";
+import { CauseChip, CauseSelect } from "./Cause";
+import { causeLabel } from "../lib/cause";
 
-export function TicketPanel({ cell, data, taxonomy, onClose, onSave, onSeeAll, emptyText }: {
+export function TicketPanel({ cell, data, taxonomy, onClose, onSave, onSaveCause, onSeeAll, emptyText }: {
   cell: CellRef;
   data: { total: number; rows: TicketRow[] } | null;
   taxonomy?: Record<string, { service: Service; rows: TaxonomyRow[] }> | null;
   onClose: () => void;
   /** save a new category for one ticket; resolves when pivot/charts have been refreshed */
   onSave?: (ticket: TicketRow, fields: Record<string, string>) => Promise<void>;
+  /** save ต้นเหตุ for one ticket */
+  onSaveCause?: (ticket: TicketRow, cause: string) => Promise<void>;
   onSeeAll?: () => void;
   emptyText?: string;
 }) {
@@ -44,7 +48,10 @@ export function TicketPanel({ cell, data, taxonomy, onClose, onSave, onSeeAll, e
                   {t.source === "human" && <span className="chip" style={{ marginLeft: "auto" }}>แก้โดยคน</span>}
                 </span>
                 <span className="ellipsis" style={{ fontSize: 13, color: "var(--text-2)", width: "100%" }}>{t.problemText}</span>
-                <span style={{ fontSize: 12, color: "var(--accent-ink)", fontWeight: 600 }}>{categoryLabel(cols(t), t.fields) || th.source[t.source]}</span>
+                <span style={{ display: "flex", alignItems: "center", gap: 8, width: "100%" }}>
+                  <span className="ellipsis" style={{ fontSize: 12, color: "var(--accent-ink)", fontWeight: 600 }}>{categoryLabel(cols(t), t.fields) || th.source[t.source]}</span>
+                  {t.cause && <span style={{ marginLeft: "auto" }}><CauseChip cause={t.cause} /></span>}
+                </span>
               </button>
             ))}
           </div>
@@ -55,15 +62,16 @@ export function TicketPanel({ cell, data, taxonomy, onClose, onSave, onSeeAll, e
           )}
         </>
       ) : (
-        <Detail ticket={detail} columns={cols(detail)} rows={taxonomy?.[detail.service]?.rows} onBack={() => setDetailId(null)} onClose={onClose} onSave={onSave} />
+        <Detail ticket={detail} columns={cols(detail)} rows={taxonomy?.[detail.service]?.rows} onBack={() => setDetailId(null)} onClose={onClose} onSave={onSave} onSaveCause={onSaveCause} />
       )}
     </aside>
   );
 }
 
-function Detail({ ticket, columns, rows, onBack, onClose, onSave }: {
+function Detail({ ticket, columns, rows, onBack, onClose, onSave, onSaveCause }: {
   ticket: TicketRow; columns: string[]; rows?: TaxonomyRow[]; onBack: () => void; onClose: () => void;
   onSave?: (ticket: TicketRow, fields: Record<string, string>) => Promise<void>;
+  onSaveCause?: (ticket: TicketRow, cause: string) => Promise<void>;
 }) {
   const [pick, setPick] = useState<Record<string, string>>({ ...ticket.fields });
   const [busy, setBusy] = useState(false);
@@ -110,8 +118,15 @@ function Detail({ ticket, columns, rows, onBack, onClose, onSave }: {
             <span className="muted" style={{ fontSize: 12 }}>AI จัดหมวดเป็น · ความมั่นใจ {ticket.confidence != null ? `${Math.round(ticket.confidence * 100)}%` : "—"}</span>
             <span style={{ fontWeight: 600, color: "var(--text)" }}>{aiLabel || "ไม่ตรงหมวดใด"}</span>
             {ticket.reason && <span style={{ fontSize: 12 }}>เหตุผล: {ticket.reason}</span>}
+            {(ticket.aiCause ?? ticket.cause) && <span style={{ fontSize: 12 }}>ต้นเหตุที่ AI ประเมิน: {causeLabel(ticket.aiCause ?? ticket.cause)}</span>}
           </div>
         )}
+        <div className="field">
+          <label htmlFor="td-cause">ต้นเหตุ</label>
+          {onSaveCause && !["error", "unknown_service", "pending"].includes(ticket.source) ? (
+            <CauseSelect id="td-cause" value={ticket.cause ?? null} onChange={(c) => onSaveCause(ticket, c).catch((e) => setError((e as { message?: string }).message ?? String(e)))} />
+          ) : <span><CauseChip cause={ticket.cause} /></span>}
+        </div>
         {ticket.source === "human" && (
           <div className="chip" style={{ whiteSpace: "normal" }}>แก้โดยคน{ticket.editedBy ? ` (${ticket.editedBy})` : ""}{aiLabel ? ` · เดิม AI จัดเป็น ${aiLabel}` : ""}</div>
         )}

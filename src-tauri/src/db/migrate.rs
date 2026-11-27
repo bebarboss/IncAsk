@@ -3,7 +3,7 @@
 
 use rusqlite::{Connection, OptionalExtension};
 
-pub const SCHEMA_VERSION: i64 = 1;
+pub const SCHEMA_VERSION: i64 = 2;
 
 const V1: &str = r#"
 CREATE TABLE IF NOT EXISTS meta(key TEXT PRIMARY KEY, value TEXT);
@@ -49,7 +49,14 @@ CREATE TABLE prefs(key TEXT PRIMARY KEY, value TEXT);
 CREATE INDEX idx_tickets_month ON tickets(month, service, id);
 "#;
 
-const MIGRATIONS: &[&str] = &[V1];
+/// ต้นเหตุ (user | program | unclear): the AI's answer and the current one (a person may change it)
+const V2: &str = r#"
+ALTER TABLE classifications ADD COLUMN cause TEXT;
+ALTER TABLE classifications ADD COLUMN ai_cause TEXT;
+ALTER TABLE cache ADD COLUMN cause TEXT;
+"#;
+
+const MIGRATIONS: &[&str] = &[V1, V2];
 
 pub fn current_version(conn: &Connection) -> rusqlite::Result<i64> {
     let has_meta: bool = conn
@@ -99,14 +106,16 @@ mod tests {
     #[test]
     fn creates_every_spec_table_once() {
         let mut c = Connection::open_in_memory().unwrap();
-        assert_eq!(migrate(&mut c).unwrap(), 1);
+        assert_eq!(migrate(&mut c).unwrap(), SCHEMA_VERSION);
         assert_eq!(
             tables(&c),
             vec!["cache", "classifications", "imports", "meta", "prefs", "report_patterns", "runs", "saved_views", "services", "taxonomy_rows", "tickets"]
         );
         // running again is a no-op
-        assert_eq!(migrate(&mut c).unwrap(), 1);
-        assert_eq!(current_version(&c).unwrap(), 1);
+        assert_eq!(migrate(&mut c).unwrap(), SCHEMA_VERSION);
+        assert_eq!(current_version(&c).unwrap(), SCHEMA_VERSION);
+        let cols: Vec<String> = c.prepare("SELECT name FROM pragma_table_info('classifications')").unwrap().query_map([], |r| r.get(0)).unwrap().map(|r| r.unwrap()).collect();
+        assert!(cols.ends_with(&["cause".to_string(), "ai_cause".to_string()]));
     }
 
     #[test]

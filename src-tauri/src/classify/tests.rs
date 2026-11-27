@@ -71,7 +71,14 @@ fn fake_llm(calls: Arc<AtomicU32>, fail_429_first: u32) -> LlmFn {
                 } else {
                     (serde_json::Value::Null, 0.2)
                 };
-                results.push(serde_json::json!({"id": t["id"], "code": code, "confidence": conf, "reason": "ทดสอบ"}));
+                let mut r = serde_json::json!({"id": t["id"], "code": code, "confidence": conf, "reason": "ทดสอบ"});
+                // ต้นเหตุ: หลุด → program, ช้า → ผู้ใช้ (Thai answer), otherwise left out
+                if text.contains("หลุด") {
+                    r["cause"] = "program".into();
+                } else if text.contains("ช้า") {
+                    r["cause"] = "ผู้ใช้".into();
+                }
+                results.push(r);
             }
             Ok(Completion { content: serde_json::json!({ "results": results }).to_string(), prompt_tokens: 100, completion_tokens: 10, cost: Some(0.001) })
         })
@@ -120,6 +127,9 @@ async fn classifies_retries_reasks_and_uses_the_cache() {
         let c = conn.lock();
         assert_eq!(count(&c, "SELECT COUNT(*) FROM classifications WHERE source='ai'"), 11);
         assert_eq!(count(&c, "SELECT COUNT(*) FROM classifications WHERE source='error'"), 1);
+        assert!(count(&c, "SELECT COUNT(*) FROM classifications WHERE cause='program' AND ai_cause='program'") > 0);
+        assert!(count(&c, "SELECT COUNT(*) FROM classifications WHERE cause='user'") > 0);
+        assert_eq!(count(&c, "SELECT COUNT(*) FROM classifications WHERE source='error' AND cause IS NOT NULL"), 0);
         let f: String = c.query_row("SELECT fields_json FROM classifications WHERE ticket_id='T000'", [], |r| r.get(0)).unwrap();
         assert_eq!(serde_json::from_str::<Values>(&f).unwrap(), vals("การเชื่อมต่อ", "เน็ตหลุด"));
         let null_fields: Option<String> = c.query_row("SELECT fields_json FROM classifications WHERE ticket_id='T002'", [], |r| r.get(0)).unwrap();
@@ -134,6 +144,8 @@ async fn classifies_retries_reasks_and_uses_the_cache() {
     let p2 = run_job(conn.clone(), fake_llm(calls.clone(), 0), "run2").await;
     assert_eq!((p2.total, p2.cached, p2.ai), (2, 2, 0));
     assert_eq!(calls.load(Ordering::SeqCst), before); // no LLM call at all
+    // the cache carries ต้นเหตุ too
+    assert_eq!(count(&conn.lock(), "SELECT COUNT(*) FROM classifications WHERE source='cache' AND cause IS NULL AND fields_json IS NOT NULL"), 0);
     assert_eq!(last_run(&conn.lock(), "p").unwrap().unwrap().run_id, "run2");
 }
 
@@ -206,6 +218,7 @@ async fn trial_spreads_over_services_and_writes_nothing() {
     let r = trial(&fake_llm(Arc::new(AtomicU32::new(0)), 0), &services, sample, &cfg()).await;
     assert_eq!(r.items.len(), 4);
     assert_eq!(r.items[0].category.as_deref(), Some("การเชื่อมต่อ › เน็ตหลุด"));
+    assert_eq!(r.items[0].cause.as_deref(), Some("program"));
     assert_eq!(count(&conn.lock(), "SELECT COUNT(*) FROM classifications"), 0);
     assert_eq!(count(&conn.lock(), "SELECT COUNT(*) FROM cache"), 0);
 }

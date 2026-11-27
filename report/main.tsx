@@ -13,11 +13,11 @@ import type { SavedView, TicketRow, ViewConfig } from "../src/lib/types";
 import { chartsJs, drillJs, fieldValuesJs, normalizeView, pivotJs } from "../src/lib/pivotjs";
 import { fmtInt, thMonth } from "../src/lib/format";
 import { PivotTable, type CellRef } from "../src/components/PivotTable";
-import { TopBars, TrendChart } from "../src/components/Charts";
+import { SHOW_CHARTS, TopBars, TrendChart } from "../src/components/Charts";
 import { TicketPanel } from "../src/components/TicketPanel";
 import { PivotConfigBar, placeField } from "../src/components/PivotConfigBar";
 
-type Compact = [string, string, string, string, string, string[], number | null, TicketRow["source"], string[] | null, string | null, string[]];
+type Compact = [string, string, string, string, string, string[], number | null, TicketRow["source"], string[] | null, string | null, string[], (string | null)?];
 interface Payload {
   v: number;
   project: [string, string];
@@ -45,7 +45,7 @@ function toRows(p: Payload): TicketRow[] {
     id: String(i),
     ticketNo: t[0], date: t[1], month: t[2], service: t[3], problemText: t[4],
     fields: zip(p.categories, t[5]) ?? {}, confidence: t[6], source: t[7], aiFields: zip(p.categories, t[8]),
-    editedBy: t[9], reason: null, sourceRow: zip(p.sourceHeaders, t[10]) ?? {},
+    editedBy: t[9], reason: null, sourceRow: zip(p.sourceHeaders, t[10]) ?? {}, cause: t[11] ?? null,
   }));
 }
 
@@ -70,7 +70,7 @@ function Report({ data }: { data: Payload }) {
     return { total: all.length, rows: all.slice(0, 100) };
   }, [cell, rows, view, from, to]); // eslint-disable-line react-hooks/exhaustive-deps
   const colors = Object.fromEntries(data.services.map((s) => [s.name, s.color]));
-  const fields = ["service", "month", "week", "day", ...data.categories.map((c) => `cat:${c}`), "source", ...data.sourceHeaders.map((h) => `src:${h}`)];
+  const fields = ["service", "month", "week", "day", ...data.categories.map((c) => `cat:${c}`), "cause", "source", ...data.sourceHeaders.map((h) => `src:${h}`)];
   const taxonomy = Object.fromEntries(data.services.map((s) => [s.name, { service: { id: s.name, name: s.name, color: s.color, columns: s.columns, taxonomyVersion: 1, sort: 0 }, rows: [] }]));
   const setV = (p: Partial<ViewConfig>) => { setView((v) => ({ ...v, ...p })); setCell(null); };
 
@@ -103,10 +103,12 @@ function Report({ data }: { data: Payload }) {
           </div>
         )}
         <PivotConfigBar view={view} fields={fields} loadValues={async (f) => fieldValuesJs(rows, f, from, to)} onPlace={(f, z) => setV(placeField(view, f, z))} onChange={setV} />
-        <div className="two-col" style={{ gridTemplateColumns: "minmax(0,1fr) minmax(0,1fr)" }}>
-          <TopBars charts={charts} />
-          <TrendChart charts={charts} />
-        </div>
+        {SHOW_CHARTS && (
+          <div className="two-col" style={{ gridTemplateColumns: "minmax(0,1fr) minmax(0,1fr)" }}>
+            <TopBars charts={charts} />
+            <TrendChart charts={charts} />
+          </div>
+        )}
         <section className="card" aria-label="ตาราง pivot" style={{ overflow: "hidden", flex: "none" }}>
           <div className="muted" style={{ padding: "10px 16px", fontSize: 12, borderBottom: "1px solid var(--border)" }}>คลิกตัวเลขเพื่อดูทิกเก็ตในช่องนั้น · รายงานนี้ดูได้อย่างเดียว แก้หมวดได้ในโปรแกรม IncAsk</div>
           <div className="table-wrap">

@@ -20,8 +20,8 @@ struct Svc {
 }
 
 /// Compact ticket: [ticketNo, date, month, service, problem, [category values], confidence,
-/// source, [ai values] | null, editedBy, [source-file values]]
-type T = (String, String, String, String, String, Vec<String>, Option<f64>, String, Option<Vec<String>>, Option<String>, Vec<String>);
+/// source, [ai values] | null, editedBy, [source-file values], cause | null]
+type T = (String, String, String, String, String, Vec<String>, Option<f64>, String, Option<Vec<String>>, Option<String>, Vec<String>, Option<String>);
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -65,7 +65,7 @@ pub fn payload_json(conn: &Connection, scope: &Scope, project: (&str, &str)) -> 
                 let catv = cats.iter().map(|c| r.fields.get(c).cloned().unwrap_or_default()).collect();
                 let ai = r.ai_fields.as_ref().map(|a| cats.iter().map(|c| a.get(c).cloned().unwrap_or_default()).collect());
                 let src = src_headers.iter().map(|h| r.source_row.get(h).and_then(|v| v.as_str()).unwrap_or("").to_string()).collect();
-                (r.ticket_no, r.date, r.month, r.service, r.problem_text, catv, r.confidence, r.source, ai, r.edited_by, src)
+                (r.ticket_no, r.date, r.month, r.service, r.problem_text, catv, r.confidence, r.source, ai, r.edited_by, src, r.cause)
             })
             .collect(),
         categories: cats,

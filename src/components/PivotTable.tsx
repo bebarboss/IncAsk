@@ -8,8 +8,9 @@ import { ChevronDown, ChevronRight } from "lucide-react";
 import type { PivotNode, PivotResult } from "../lib/types";
 import { delta, fmtInt, thMonth } from "../lib/format";
 import { weekKey } from "../lib/pivotjs";
+import { CAUSE_LABEL } from "../lib/cause";
 
-export const FIELD_LABEL: Record<string, string> = { service: "เซอร์วิส", month: "เดือน", week: "สัปดาห์", day: "วัน", source: "ที่มา" };
+export const FIELD_LABEL: Record<string, string> = { service: "เซอร์วิส", month: "เดือน", week: "สัปดาห์", day: "วัน", source: "ที่มา", cause: "ต้นเหตุ" };
 const SOURCE_LABEL: Record<string, string> = { ai: "AI", cache: "แคช", human: "แก้โดยคน", error: "ผิดพลาด", unknown_service: "ไม่มีหมวดหมู่", pending: "รอจัด" };
 
 export function fieldLabel(f: string): string {
@@ -37,6 +38,7 @@ export function valueLabel(field: string, v: string, short = false): string {
     return dayDate(v).toLocaleDateString("th-TH", short ? { weekday: "short", day: "numeric", month: "short" } : { weekday: "short", day: "numeric", month: "short", year: "2-digit" });
   }
   if (field === "source") return SOURCE_LABEL[v] ?? v;
+  if (field === "cause") return CAUSE_LABEL[v] ?? v;
   return v;
 }
 

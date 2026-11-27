@@ -275,14 +275,15 @@ pub async fn ask_batch(llm: &LlmFn, svc: &ServiceCtx, items: &[Item], base: Dura
 // ---------------------------------------------------------------- writing
 
 #[allow(clippy::too_many_arguments)]
-fn write_answer(conn: &Connection, ticket_id: &str, fields: Option<&str>, conf: f64, reason: &str, source: &str, model: &str, version: i64) -> AppResult<()> {
+fn write_answer(conn: &Connection, ticket_id: &str, fields: Option<&str>, conf: f64, reason: &str, cause: Option<&str>, source: &str, model: &str, version: i64) -> AppResult<()> {
     conn.execute(
-        "INSERT INTO classifications(ticket_id, fields_json, ai_fields_json, confidence, reason, source, model, taxonomy_version, updated_at, edited_by)
-         VALUES(?1, ?2, ?2, ?3, ?4, ?5, ?6, ?7, datetime('now'), NULL)
+        "INSERT INTO classifications(ticket_id, fields_json, ai_fields_json, confidence, reason, source, model, taxonomy_version, updated_at, edited_by, cause, ai_cause)
+         VALUES(?1, ?2, ?2, ?3, ?4, ?5, ?6, ?7, datetime('now'), NULL, ?8, ?8)
          ON CONFLICT(ticket_id) DO UPDATE SET fields_json = excluded.fields_json, ai_fields_json = excluded.ai_fields_json,
            confidence = excluded.confidence, reason = excluded.reason, source = excluded.source, model = excluded.model,
-           taxonomy_version = excluded.taxonomy_version, updated_at = excluded.updated_at, edited_by = NULL",
-        params![ticket_id, fields, conf, reason, source, model, version],
+           taxonomy_version = excluded.taxonomy_version, updated_at = excluded.updated_at, edited_by = NULL,
+           cause = excluded.cause, ai_cause = excluded.ai_cause",
+        params![ticket_id, fields, conf, reason, source, model, version, cause],
     )?;
     Ok(())
 }
@@ -291,7 +292,7 @@ fn write_error(conn: &Connection, ticket_id: &str, model: &str, version: i64) ->
     conn.execute(
         "INSERT INTO classifications(ticket_id, fields_json, ai_fields_json, confidence, reason, source, model, taxonomy_version, updated_at)
          VALUES(?1, NULL, NULL, NULL, 'AI ตอบไม่ถูกรูปแบบ 2 ครั้ง', 'error', ?2, ?3, datetime('now'))
-         ON CONFLICT(ticket_id) DO UPDATE SET fields_json = NULL, ai_fields_json = NULL, confidence = NULL,
+         ON CONFLICT(ticket_id) DO UPDATE SET fields_json = NULL, ai_fields_json = NULL, confidence = NULL, cause = NULL, ai_cause = NULL,
            reason = excluded.reason, source = 'error', model = excluded.model, taxonomy_version = excluded.taxonomy_version, updated_at = excluded.updated_at",
         params![ticket_id, model, version],
     )?;
@@ -416,7 +417,7 @@ pub async fn run(job: Job) {
             let key = cache::key(&service, &text, svc.version, &cfg.model);
             if let Some(hit) = cache::get(&c, &key)? {
                 let conf = hit.confidence.unwrap_or(0.0);
-                write_answer(&c, &ticket_id, hit.fields_json.as_deref(), conf, hit.reason.as_deref().unwrap_or(""), "cache", &cfg.model, svc.version)?;
+                write_answer(&c, &ticket_id, hit.fields_json.as_deref(), conf, hit.reason.as_deref().unwrap_or(""), hit.cause.as_deref(), "cache", &cfg.model, svc.version)?;
                 let label = hit.fields_json.as_deref().and_then(|j| serde_json::from_str::<Values>(j).ok()).map(|v| svc.columns.iter().map(|c| v.get(c).cloned().unwrap_or_default()).collect::<Vec<_>>().join(" › ")).unwrap_or_else(|| "—".into());
                 let mut p = shared.progress.lock();
                 p.done += 1;
@@ -518,8 +519,8 @@ pub async fn run(job: Job) {
                             if let Some(a) = out.answers.get(&i) {
                                 let cat = a.code.as_deref().and_then(|code| svc.cat(code));
                                 let fields = cat.map(|c| serde_json::to_string(&c.values).unwrap_or_default());
-                                let ok = write_answer(&c, &item.ticket_id, fields.as_deref(), a.confidence, &a.reason, "ai", &cfg.model, svc.version)
-                                    .and_then(|_| cache::put(&c, &item.cache_key, fields.as_deref(), a.confidence, &a.reason));
+                                let ok = write_answer(&c, &item.ticket_id, fields.as_deref(), a.confidence, &a.reason, a.cause.as_deref(), "ai", &cfg.model, svc.version)
+                                    .and_then(|_| cache::put(&c, &item.cache_key, fields.as_deref(), a.confidence, &a.reason, a.cause.as_deref()));
                                 if ok.is_err() {
                                     p.error += 1;
                                     p.done += 1;
@@ -588,6 +589,8 @@ pub struct TrialItem {
     pub category: Option<String>,
     pub confidence: Option<f64>,
     pub reason: Option<String>,
+    /// ต้นเหตุ: user | program | unclear
+    pub cause: Option<String>,
     pub low: bool,
     pub error: Option<String>,
 }
@@ -657,6 +660,7 @@ pub async fn trial(llm: &LlmFn, services: &HashMap<String, ServiceCtx>, sample: 
                             category: a.and_then(|a| a.code.as_deref()).and_then(|c| svc.cat(c)).map(|c| c.label(&svc.columns)),
                             confidence: a.map(|a| a.confidence),
                             reason: a.map(|a| a.reason.clone()),
+                            cause: a.and_then(|a| a.cause.clone()),
                             low: a.is_none_or_low(cfg.low_threshold),
                             error: a.is_none().then(|| "AI ตอบไม่ถูกรูปแบบ".to_string()),
                         });
@@ -664,7 +668,7 @@ pub async fn trial(llm: &LlmFn, services: &HashMap<String, ServiceCtx>, sample: 
                 }
                 Err(e) => {
                     for item in &batch {
-                        res.items.push(TrialItem { ticket_no: item.ticket_no.clone(), service: service.clone(), text: short(&item.text), category: None, confidence: None, reason: None, low: true, error: Some(e.message.clone()) });
+                        res.items.push(TrialItem { ticket_no: item.ticket_no.clone(), service: service.clone(), text: short(&item.text), category: None, confidence: None, reason: None, cause: None, low: true, error: Some(e.message.clone()) });
                     }
                 }
             }

@@ -12,6 +12,7 @@ use std::collections::{BTreeMap, HashMap};
 
 pub const EMPTY: &str = "(ว่าง)";
 pub const UNCLASSIFIED: &str = "(ยังไม่มีหมวด)";
+pub const NOT_ASSESSED: &str = "(ยังไม่ประเมิน)";
 
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
 pub struct Filter {
@@ -64,6 +65,7 @@ fn field_expr(field: &str) -> AppResult<(String, Option<String>)> {
         "week" => (WEEK_EXPR.into(), None),
         "day" => ("substr(t.date, 1, 10)".into(), None),
         "source" => ("COALESCE(c.source,'pending')".into(), None),
+        "cause" => ("c.cause".into(), None),
         f if f.starts_with("cat:") => ("json_extract(c.fields_json, ?)".into(), Some(json_path(&f[4..]))),
         f if f.starts_with("src:") => ("NULLIF(json_extract(t.source_json, ?), '')".into(), Some(json_path(&f[4..]))),
         _ => return Err(AppError::new("invalid_field", format!("ไม่รู้จักฟิลด์ {field}"))),
@@ -104,7 +106,13 @@ fn base_where(from: &str, to: &str, filters: &[Filter]) -> AppResult<(String, Ve
 }
 
 fn empty_label(field: &str) -> &'static str {
-    if field.starts_with("cat:") { UNCLASSIFIED } else { EMPTY }
+    if field.starts_with("cat:") {
+        UNCLASSIFIED
+    } else if field == "cause" {
+        NOT_ASSESSED
+    } else {
+        EMPTY
+    }
 }
 
 /// What SQLite groups by for a field: plain columns as is, every `cat:` field through the raw
@@ -198,6 +206,10 @@ pub fn pivot(conn: &Connection, cfg: &Config) -> AppResult<PivotResult> {
         let mut k: Vec<String> = cells.iter().map(|c| c.1.clone()).collect();
         k.sort();
         k.dedup();
+        if cfg.col == "cause" {
+            // ผู้ใช้ › โปรแกรม › ไม่ชัดเจน › not assessed
+            k.sort_by_key(|v| ["user", "program", "unclear"].iter().position(|c| c == v).unwrap_or(3));
+        }
         k
     } else {
         vec![]

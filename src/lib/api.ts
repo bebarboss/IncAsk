@@ -122,6 +122,8 @@ export interface Backend {
   sourceColumns(projectId: string): Promise<string[]>;
   /** one or more tickets of the same service → a category of that service; saved as human */
   setCategory(projectId: string, ticketIds: string[], fields: Record<string, string>): Promise<number>;
+  /** ต้นเหตุ by hand: user | program | unclear */
+  setCause(projectId: string, ticketIds: string[], cause: string): Promise<number>;
   projectMonths(projectId: string): Promise<string[]>;
   pivot(projectId: string, cfg: PivotConfig): Promise<PivotResult>;
   drill(projectId: string, cfg: PivotConfig, cell: DrillCell, limit: number): Promise<{ total: number; rows: TicketRow[] }>;
@@ -234,6 +236,7 @@ function createTauriBackend(): Backend {
     queryResults: (projectId, query) => call("query_results", { projectId, query: { ...query, filters: query.filters ?? [], sort: query.sort ?? null, desc: !!query.desc } }),
     sourceColumns: (projectId) => call("source_columns", { projectId }),
     setCategory: (projectId, ticketIds, fields) => call("set_category", { projectId, ticketIds, fields }),
+    setCause: (projectId, ticketIds, cause) => call("set_cause", { projectId, ticketIds, cause }),
     projectMonths: (projectId) => call("project_months", { projectId }),
     pivot: (projectId, cfg) => call("pivot_query", { projectId, config: cfg }),
     drill: (projectId, cfg, cell, limit) => call("pivot_drill", { projectId, config: cfg, cell, limit }),

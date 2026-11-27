@@ -92,6 +92,7 @@ pub fn run() {
             commands::query_results,
             commands::source_columns,
             commands::set_category,
+            commands::set_cause,
             commands::pivot_query,
             commands::pivot_drill,
             commands::pivot_charts,
