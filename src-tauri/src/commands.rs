@@ -737,6 +737,64 @@ fn report_template(app: &AppHandle) -> AppResult<String> {
     Err(AppError::new("report", "ไม่พบแม่แบบรายงาน HTML — รัน npm run build:report แล้วลองใหม่"))
 }
 
+// ------------------------------------------------------------------ สรุปวิเคราะห์ด้วย AI
+
+#[tauri::command]
+pub fn list_insights(state: S<'_>, project_id: String, from: String, to: String) -> AppResult<Vec<crate::insight::Insight>> {
+    crate::insight::list(&open_project(&state, &project_id)?, &from, &to)
+}
+
+#[tauri::command]
+pub fn insight_categories(state: S<'_>, project_id: String, from: String, to: String) -> AppResult<Vec<crate::insight::CatCount>> {
+    crate::insight::categories(&open_project(&state, &project_id)?, &from, &to)
+}
+
+#[derive(Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct InsightProgress {
+    project_id: String,
+    done: usize,
+    total: usize,
+}
+
+/// Analyse every category of the period that has tickets (or only `only`; `missing_only` skips the
+/// ones already analysed for this period). Emits `insight://progress`; returns when all are done.
+#[tauri::command]
+pub async fn analyze_categories(app: AppHandle, project_id: String, scope: Scope, only: Option<Vec<crate::insight::CatKey>>, missing_only: bool) -> AppResult<crate::insight::RunResult> {
+    let state = app.state::<AppState>();
+    let key = secrets::require_key()?;
+    let (inputs, cfg, url) = {
+        let conn = open_project(&state, &project_id)?;
+        let mut inputs = crate::insight::gather(&conn, &scope, only.as_deref())?;
+        if missing_only {
+            let have = crate::insight::list(&conn, &scope.from, &scope.to)?;
+            inputs.retain(|i| !have.iter().any(|h| h.service == i.key.service && h.values == i.key.values));
+        }
+        (inputs, job_config(&state, &conn), state.settings.lock().chat_url())
+    };
+    if inputs.is_empty() {
+        return Ok(crate::insight::RunResult::default());
+    }
+    let conn = Arc::new(parking_lot::Mutex::new(open_project(&state, &project_id)?));
+    let model = cfg.model.clone();
+    let save_scope = scope.clone();
+    let app2 = app.clone();
+    let pid = project_id.clone();
+    let llm = crate::classify::gateway_llm(url, key, cfg.model.clone());
+    Ok(crate::insight::run(
+        llm,
+        inputs,
+        scope,
+        cfg.concurrency,
+        cfg.backoff_base,
+        Arc::new(move |i, a, t| crate::insight::save(&conn.lock(), i, &save_scope, a, &model, t)),
+        Arc::new(move |done, total| {
+            let _ = app2.emit("insight://progress", InsightProgress { project_id: pid.clone(), done, total });
+        }),
+    )
+    .await)
+}
+
 /// Excel รายงานวิเคราะห์: rows = categories + Classification, columns = days, week and month totals.
 #[tauri::command]
 pub fn export_analysis(state: S<'_>, project_id: String, scope: Scope, path: String) -> AppResult<usize> {

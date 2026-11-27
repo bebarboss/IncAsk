@@ -3,7 +3,7 @@
 
 use rusqlite::{Connection, OptionalExtension};
 
-pub const SCHEMA_VERSION: i64 = 3;
+pub const SCHEMA_VERSION: i64 = 4;
 
 const V1: &str = r#"
 CREATE TABLE IF NOT EXISTS meta(key TEXT PRIMARY KEY, value TEXT);
@@ -59,7 +59,16 @@ ALTER TABLE cache ADD COLUMN cause TEXT;
 /// ต้นเหตุ fixed per category (Classification in the user's report): user | program | unclear | NULL = AI decides
 const V3: &str = "ALTER TABLE taxonomy_rows ADD COLUMN cause TEXT;";
 
-const MIGRATIONS: &[&str] = &[V1, V2, V3];
+/// สรุปวิเคราะห์รายหมวดด้วย AI: one per (service, category values, period)
+const V4: &str = r#"
+CREATE TABLE insights(
+  id TEXT PRIMARY KEY, service TEXT NOT NULL, values_json TEXT NOT NULL,
+  period_from TEXT NOT NULL, period_to TEXT NOT NULL, tickets INTEGER,
+  result_json TEXT NOT NULL, model TEXT, created_at TEXT, tokens_in INTEGER, tokens_out INTEGER);
+CREATE UNIQUE INDEX idx_insights_key ON insights(service, values_json, period_from, period_to);
+"#;
+
+const MIGRATIONS: &[&str] = &[V1, V2, V3, V4];
 
 pub fn current_version(conn: &Connection) -> rusqlite::Result<i64> {
     let has_meta: bool = conn
@@ -112,7 +121,7 @@ mod tests {
         assert_eq!(migrate(&mut c).unwrap(), SCHEMA_VERSION);
         assert_eq!(
             tables(&c),
-            vec!["cache", "classifications", "imports", "meta", "prefs", "report_patterns", "runs", "saved_views", "services", "taxonomy_rows", "tickets"]
+            vec!["cache", "classifications", "imports", "insights", "meta", "prefs", "report_patterns", "runs", "saved_views", "services", "taxonomy_rows", "tickets"]
         );
         // running again is a no-op
         assert_eq!(migrate(&mut c).unwrap(), SCHEMA_VERSION);

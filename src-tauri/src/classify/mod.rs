@@ -229,7 +229,7 @@ pub fn backoff(base: Duration, attempt: u32) -> Duration {
 }
 
 /// One LLM call with up to 5 retries on 429 / 5xx. `on_429` is told each time a 429 arrives.
-async fn call_with_retry(llm: &LlmFn, system: &str, user: &str, base: Duration, on_429: &(dyn Fn() + Send + Sync)) -> AppResult<Completion> {
+pub async fn call_with_retry(llm: &LlmFn, system: &str, user: &str, base: Duration, on_429: &(dyn Fn() + Send + Sync)) -> AppResult<Completion> {
     let mut attempt = 0;
     loop {
         match llm(system.to_string(), user.to_string()).await {

@@ -180,6 +180,8 @@ pub fn merge(target: &mut Connection, path: &Path, take_theirs: bool) -> AppResu
             tx.execute("INSERT OR IGNORE INTO main.saved_views SELECT * FROM src.saved_views WHERE name NOT IN (SELECT name FROM main.saved_views)", [])?;
             tx.execute("INSERT OR IGNORE INTO main.imports SELECT * FROM src.imports", [])?;
             tx.execute("INSERT OR IGNORE INTO main.cache SELECT * FROM src.cache", [])?;
+            // analyses we don't have yet (same category and period → ours stay)
+            tx.execute("INSERT OR IGNORE INTO main.insights SELECT * FROM src.insights", [])?;
             let clash: i64 = tx.query_row("SELECT COUNT(*) FROM src.tickets WHERE ticket_no IN (SELECT ticket_no FROM main.tickets)", [], |r| r.get(0))?;
             let total: i64 = tx.query_row("SELECT COUNT(*) FROM src.tickets", [], |r| r.get(0))?;
             if take_theirs {

@@ -200,6 +200,7 @@ function buildProject(project: Project, scale: number, seed: number, serviceName
 export function createMockBackend(): Backend {
   const listeners = new Map<string, Set<Listener>>();
   const emit = <E extends EventName>(e: E, p: EventMap[E]) => listeners.get(e)?.forEach((cb) => cb(p));
+  const insights: (import("./types").Insight & { projectId: string })[] = [];
   const params = new URLSearchParams(typeof location !== "undefined" ? location.search : "");
   const gatewayDown = params.get("gateway") === "down";
 
@@ -746,6 +747,51 @@ export function createMockBackend(): Backend {
       return { format: "incask", version: 1, exportedAt: new Date().toISOString(), appVersion: __APP_VERSION__, from: scope.from, to: scope.to, service: scope.service, projectName: p.name, projectColor: p.color, schemaVersion: 1, tickets: n };
     },
     exportHtml: async () => { await wait(700); return 512_000; },
+    listInsights: async (projectId, from, to) => clone(insights.filter((i) => i.projectId === projectId && i.from === from && i.to === to).map(({ projectId: _p, ...i }) => i)),
+    insightCategories: async (projectId, from, to) => {
+      const d = lazy(projectId);
+      const m = new Map<string, { service: string; values: Record<string, string>; label: string; cause: string | null; count: number }>();
+      d.tickets.filter((t) => t.month >= from && t.month <= to && Object.keys(t.fields).length).forEach((t) => {
+        const k = t.service + JSON.stringify(t.fields);
+        const svc = d.services.find((s) => s.name === t.service);
+        const row = d.taxonomy.find((r) => r.serviceId === svc?.id && svc!.columns.every((c) => r.values[c] === t.fields[c]));
+        const g = m.get(k) ?? { service: t.service, values: t.fields, label: (svc?.columns ?? []).map((c) => t.fields[c]).join(" › "), cause: row?.cause ?? null, count: 0 };
+        g.count++;
+        m.set(k, g);
+      });
+      return [...m.values()].sort((a, b) => b.count - a.count);
+    },
+    analyzeCategories: async (projectId, scope, only, missingOnly) => {
+      const d = lazy(projectId);
+      const rows = d.tickets.filter((t) => t.month >= scope.from && t.month <= scope.to && Object.keys(t.fields).length);
+      const groups = new Map<string, { service: string; values: Record<string, string>; n: number }>();
+      rows.forEach((t) => { const k = t.service + JSON.stringify(t.fields); const g = groups.get(k) ?? { service: t.service, values: t.fields, n: 0 }; g.n++; groups.set(k, g); });
+      let todo = [...groups.values()];
+      if (only) todo = todo.filter((g) => only.some((o) => o.service === g.service && JSON.stringify(o.values) === JSON.stringify(g.values)));
+      const has = (g: { service: string; values: Record<string, string> }) => insights.some((i) => i.projectId === projectId && i.service === g.service && JSON.stringify(i.values) === JSON.stringify(g.values) && i.from === scope.from && i.to === scope.to);
+      if (missingOnly) todo = todo.filter((g) => !has(g));
+      let done = 0;
+      for (const g of todo) {
+        await wait(gatewayDown ? 50 : 120);
+        if (gatewayDown) return { done, failed: todo.length - done, tokensIn: 0, tokensOut: 0, cost: null, errors: ["ต่อ Gateway ไม่ได้ — ตรวจ VPN แล้วลองใหม่", `หยุด — ยังไม่ได้วิเคราะห์อีก ${todo.length - done} หมวด`] };
+        const label = Object.values(g.values).join(" › ");
+        const i = insights.findIndex((x) => x.projectId === projectId && x.service === g.service && JSON.stringify(x.values) === JSON.stringify(g.values) && x.from === scope.from && x.to === scope.to);
+        const item = {
+          projectId, service: g.service, values: g.values, label, from: scope.from, to: scope.to, tickets: g.n, model: settings.model, createdAt: new Date().toISOString(),
+          analysis: {
+            summary: `${label} เกิด ${g.n} เคสในช่วงนี้ ส่วนใหญ่ลูกค้าแจ้งซ้ำหลังลองแก้เองไม่สำเร็จ และเพิ่มขึ้นช่วงปลายเดือน`,
+            symptoms: "- ใช้งานได้เป็นช่วงแล้วหลุด\n- เกิดซ้ำหลังรีสตาร์ท\n- แจ้งเข้ามามากช่วงเย็น",
+            rootCause: "- อุปกรณ์ฝั่งลูกค้าตั้งค่าไม่ถูกต้อง\n- ระบบปลายทางตอบช้าในช่วงโหลดสูง",
+            resolution: "- แนะนำรีสตาร์ทและล้างแคช\n- เปิด Incident ให้ทีมระบบตรวจสอบเมื่อพบหลายสาขา",
+            prevention: "- ทำคู่มือแก้ปัญหาเบื้องต้นให้สาขา\n- ตั้งการแจ้งเตือนเมื่อจำนวนเคสต่อวันเกินปกติ",
+          },
+        };
+        if (i >= 0) insights[i] = item; else insights.push(item);
+        done++;
+        emit("insight://progress", { projectId, done, total: todo.length });
+      }
+      return { done, failed: 0, tokensIn: done * 9200, tokensOut: done * 410, cost: done * 0.012, errors: [] };
+    },
     exportAnalysis: async (projectId, scope) => { await wait(500); return lazy(projectId).tickets.filter((t) => t.month >= scope.from && t.month <= scope.to && (!scope.service || t.service === scope.service)).length; },
     revealFile: async () => {},
     inspectIncask: async (_path, projectId) => {

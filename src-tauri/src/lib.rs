@@ -10,6 +10,7 @@ pub mod errors;
 pub mod export;
 pub mod gateway_test;
 pub mod ingest;
+pub mod insight;
 pub mod llm;
 pub mod pivot;
 pub mod redact;
@@ -105,6 +106,9 @@ pub fn run() {
             commands::export_incask,
             commands::export_html,
             commands::export_analysis,
+            commands::list_insights,
+            commands::insight_categories,
+            commands::analyze_categories,
             commands::reveal_file,
             commands::inspect_incask,
             commands::import_incask,

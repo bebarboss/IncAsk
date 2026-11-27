@@ -326,7 +326,10 @@ fn write_service(conn: &Connection, ws: &mut Worksheet, svc: &Service, rows: &[t
                 }
             };
         }
-        ws.write_blank(r, note_col, &f.wrap).map_err(err)?;
+        match (i < rows.len()).then(|| crate::insight::note_for(conn, &svc.name, &rows[i].values, &from, &to)).transpose()?.flatten() {
+            Some(note) => ws.write_string_with_format(r, note_col, &note, &f.wrap).map_err(err)?,
+            None => ws.write_blank(r, note_col, &f.wrap).map_err(err)?,
+        };
     }
     // merge repeated upper levels (and No) down the rows, like the hand-made report
     if n_rows > 1 {
@@ -401,7 +404,7 @@ fn write_service(conn: &Connection, ws: &mut Worksheet, svc: &Service, rows: &[t
         };
         ws.set_column_width(first_time + j as u16, w).map_err(err)?;
     }
-    ws.set_column_width(note_col, 40).map_err(err)?;
+    ws.set_column_width(note_col, 60).map_err(err)?;
     ws.set_row_height(2, 30).map_err(err)?;
     ws.set_freeze_panes(3, first_time).map_err(err)?;
     Ok(total)
@@ -430,6 +433,12 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let (_p, c) = crate::export::testdata::project(dir.path(), "A");
         c.execute("UPDATE taxonomy_rows SET cause = 'user'", []).unwrap();
+        let v = serde_json::to_string(&crate::export::testdata::vals("การเชื่อมต่อ", "เน็ตหลุด")).unwrap();
+        c.execute(
+            "INSERT INTO insights(id,service,values_json,period_from,period_to,tickets,result_json,model,created_at) VALUES('i1','Internet',?1,'2026-09','2026-10',2,?2,'m','2026-11-27T00:00:00Z')",
+            rusqlite::params![v, r#"{"summary":"หลุดตอนกลางคืน","symptoms":"","rootCause":"สายหลวม","resolution":"","prevention":""}"#],
+        )
+        .unwrap();
         let out = dir.path().join("a.xlsx");
         let n = export(&c, &Scope { from: "2026-09".into(), to: "2026-10".into(), service: None }, &out).unwrap();
         assert_eq!(n, 2); // Internet's 2 tickets (IPTV has no categories → no sheet)
@@ -449,6 +458,9 @@ mod tests {
         assert!((0..r.width()).any(|c| s(2, c) == "Oct 1-4"));
         assert_eq!(s(3, 1), "การเชื่อมต่อ");
         assert_eq!(s(3, 3), "User");
+        let note = s(3, r.width() - 1);
+        assert!(note.starts_with("หลุดตอนกลางคืน") && note.contains("สาเหตุ:
+สายหลวม"), "{note}");
         let f = wb.worksheet_formula("Internet").unwrap();
         assert!(f.used_cells().any(|(_, _, v)| v.starts_with("SUM(")));
     }

@@ -527,3 +527,10 @@ code { font-family: var(--mono); font-size: 12.5px; background: var(--code); col
 .tbl tr.row-open td { background: var(--accent-soft); }
 .tbl tr.row-open td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
 .drill-body > * { flex-shrink: 0; }
+
+/* สรุปวิเคราะห์ด้วย AI */
+.ins-card { border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; background: var(--surface); display: flex; flex-direction: column; gap: 8px; }
+.ins-card .collapse-btn { align-items: flex-start; }
+.ins-body { margin: 0; padding: 4px 0 2px 25px; display: flex; flex-direction: column; gap: 8px; }
+.ins-body dt { font-size: 12px; font-weight: 700; color: var(--text-2); }
+.ins-body dd { margin: 2px 0 0; font-size: 13px; line-height: 1.7; white-space: pre-line; }

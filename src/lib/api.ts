@@ -46,6 +46,7 @@ export interface EventMap {
   "gateway-status": GatewayStatus;
   "update-progress": UpdateProgress;
   "classify://progress": ClassifyProgress;
+  "insight://progress": import("./types").InsightProgress;
   /** a .incask double-clicked while IncAsk was already open */
   "open-incask": string;
 }
@@ -142,6 +143,11 @@ export interface Backend {
   exportHtml(projectId: string, scope: ExportScope, path: string): Promise<number>;
   /** Excel รายงานวิเคราะห์ (days / weeks / months per category); returns tickets counted */
   exportAnalysis(projectId: string, scope: ExportScope, path: string): Promise<number>;
+  // สรุปวิเคราะห์รายหมวดด้วย AI
+  listInsights(projectId: string, from: string, to: string): Promise<import("./types").Insight[]>;
+  /** categories with tickets in the period (largest first) */
+  insightCategories(projectId: string, from: string, to: string): Promise<import("./types").InsightCategory[]>;
+  analyzeCategories(projectId: string, scope: ExportScope, only: { service: string; values: Record<string, string> }[] | null, missingOnly: boolean): Promise<import("./types").InsightRun>;
   revealFile(path: string): Promise<void>;
   inspectIncask(path: string, projectId: string | null): Promise<IncaskInspect>;
   importIncask(path: string, name: string | null): Promise<Project>;
@@ -256,6 +262,9 @@ function createTauriBackend(): Backend {
     exportIncask: (projectId, scope, path) => call("export_incask", { projectId, scope, path }),
     exportHtml: (projectId, scope, path) => call("export_html", { projectId, scope, path }),
     exportAnalysis: (projectId, scope, path) => call("export_analysis", { projectId, scope, path }),
+    listInsights: (projectId, from, to) => call("list_insights", { projectId, from, to }),
+    insightCategories: (projectId, from, to) => call("insight_categories", { projectId, from, to }),
+    analyzeCategories: (projectId, scope, only, missingOnly) => call("analyze_categories", { projectId, scope, only, missingOnly }),
     revealFile: (path) => call("reveal_file", { path }),
     inspectIncask: (path, projectId) => call("inspect_incask", { path, projectId }),
     importIncask: (path, name) => call("import_incask", { path, name }),

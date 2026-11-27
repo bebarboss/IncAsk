@@ -419,3 +419,48 @@ export interface ConfigProjectDiff {
   viewsAdded: number;
   viewsChanged: number;
 }
+
+// ------------------------------------------------------------------ สรุปวิเคราะห์ด้วย AI
+
+export interface InsightAnalysis {
+  summary: string;
+  symptoms: string;
+  rootCause: string;
+  resolution: string;
+  prevention: string;
+}
+
+export interface Insight {
+  service: string;
+  values: Record<string, string>;
+  label: string;
+  from: string;
+  to: string;
+  tickets: number;
+  analysis: InsightAnalysis;
+  model: string;
+  createdAt: string;
+}
+
+export interface InsightRun {
+  done: number;
+  failed: number;
+  tokensIn: number;
+  tokensOut: number;
+  cost: number | null;
+  errors: string[];
+}
+
+export interface InsightCategory {
+  service: string;
+  values: Record<string, string>;
+  label: string;
+  cause: string | null;
+  count: number;
+}
+
+export interface InsightProgress {
+  projectId: string;
+  done: number;
+  total: number;
+}

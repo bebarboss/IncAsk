@@ -16,6 +16,7 @@ import { normalizeView } from "../lib/pivotjs";
 import { PivotConfigBar, placeField, type Zone } from "../components/PivotConfigBar";
 import { categoryLabel, useTaxonomy } from "../components/CategoryPicker";
 import { causeLabel } from "../lib/cause";
+import { InsightsPanel } from "../components/InsightsPanel";
 
 const DEFAULT_VIEW: ViewConfig = { rows: ["service"], col: "month", value: "count", filters: [], heat: true };
 
@@ -148,6 +149,7 @@ export default function SummaryPage({ project }: { project: Project }) {
               <PivotTable result={pivot} rows={view.rows} col={view.col} value={view.value} heatOn={view.heat} colors={colors} onCell={setCell} selected={cell} large={fs} />
             </div>
           </section>
+          {!fs && <InsightsPanel projectId={project.id} from={from} to={to} />}
         </>
       )}
     </>
