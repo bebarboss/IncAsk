@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import { AlertTriangle, Check, CircleAlert, Upload } from "lucide-react";
 import { api, errMsg } from "../lib/api";
-import type { Service, TaxonomyImportPreview } from "../lib/types";
+import type { ImportColumnRole, Service, TaxonomyImportPreview } from "../lib/types";
+import { CauseChip } from "./Cause";
 import { fmtInt } from "../lib/format";
 import { th } from "../i18n/th";
 import { useApp } from "../state";
@@ -11,6 +12,11 @@ import { Modal } from "./ui";
 import { useFileDrop } from "./useFileDrop";
 
 const EXT = ["xlsx", "xls", "csv"];
+
+const ROLE_LABEL: Record<ImportColumnRole, string> = {
+  level: "ชั้นหมวด", service: "เซอร์วิส", description: "คำอธิบาย", examples: "ตัวอย่าง", cause: "ต้นเหตุ (Classification)", ignore: "ไม่ใช้",
+};
+const ROLE_ORDER: ImportColumnRole[] = ["level", "service", "description", "examples", "cause", "ignore"];
 
 export async function downloadTemplate(toast: (m: string) => void) {
   const path = await api.pickSavePath("IncAsk_หมวดหมู่_เทมเพลต.xlsx", [{ name: "Excel", extensions: ["xlsx"] }]);
@@ -37,19 +43,34 @@ export function TaxonomyImportDialog({ projectId, service, initialPath, onClose,
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  const load = async (p: string) => {
+  /** roles the user set; null = let IncAsk guess from the headers */
+  const [roles, setRoles] = useState<ImportColumnRole[] | null>(null);
+  const [headers, setHeaders] = useState<string[]>([]);
+  const load = async (p: string, r: ImportColumnRole[] | null = null) => {
     setBusy(true);
     setError(null);
-    setPreview(null);
+    if (p !== path) setPreview(null);
     setPath(p);
     try {
-      setPreview(await api.previewTaxonomyImport(projectId, p, service?.name ?? null));
+      const pv = await api.previewTaxonomyImport(projectId, p, service?.name ?? null, r);
+      setPreview(pv);
+      setHeaders(pv.headers);
+      setRoles(pv.roles);
     } catch (e) {
       setError(errMsg(e));
+      // keep the column list so a wrong guess can be fixed
+      if (!r) setPreview(null);
     } finally {
       setBusy(false);
     }
   };
+  const setRole = (i: number, role: ImportColumnRole) => {
+    if (!roles || !path) return;
+    const next = roles.map((x, j) => (j === i ? role : x));
+    setRoles(next);
+    load(path, next);
+  };
+  const levelCount = roles?.filter((r) => r === "level").length ?? 0;
   useEffect(() => {
     if (initialPath) load(initialPath);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -64,7 +85,7 @@ export function TaxonomyImportDialog({ projectId, service, initialPath, onClose,
     setBusy(true);
     setError(null);
     try {
-      const done = await api.applyTaxonomyImport(projectId, path, service?.name ?? null);
+      const done = await api.applyTaxonomyImport(projectId, path, service?.name ?? null, roles);
       app.toast(`✓ นำเข้าหมวดหมู่ ${done.map((s) => s.name).join(", ")} แล้ว`);
       onDone(done);
       onClose();
@@ -79,7 +100,7 @@ export function TaxonomyImportDialog({ projectId, service, initialPath, onClose,
 
   return (
     <Modal title="นำเข้าหมวดหมู่จาก Excel" subtitle={'หนึ่งไฟล์ต่อหนึ่งเซอร์วิส หรือไฟล์เดียวที่มีคอลัมน์ "เซอร์วิส"'} onClose={onClose} width={680}>
-      {!preview && (
+      {!preview && !roles && (
         <div className="dropzone" style={hover ? { borderColor: "var(--accent)" } : undefined}>
           <Upload size={30} strokeWidth={1.8} color="var(--accent)" aria-hidden="true" />
           <span style={{ fontWeight: 600 }}>{busy ? "กำลังอ่านไฟล์…" : "ลากไฟล์ Excel หมวดหมู่มาวางที่นี่"}</span>
@@ -92,8 +113,26 @@ export function TaxonomyImportDialog({ projectId, service, initialPath, onClose,
         </div>
       )}
       {error && <div className="err-box" role="alert">{error}</div>}
+      {roles && headers.length > 0 && (
+        <details className="card" style={{ padding: "10px 14px" }} open={!preview || levelCount === 0 || levelCount > 6}>
+          <summary style={{ cursor: "pointer", fontWeight: 600, fontSize: 14 }}>
+            คอลัมน์ในไฟล์ · ชั้นหมวด {levelCount} คอลัมน์{roles.includes("cause") ? " · มีต้นเหตุ" : ""} <span className="muted" style={{ fontWeight: 400, fontSize: 12 }}>(เดาให้แล้ว แก้ได้)</span>
+          </summary>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(190px, 1fr))", gap: "6px 12px", marginTop: 10, maxHeight: 220, overflowY: "auto" }}>
+            {headers.map((h, i) => (
+              <label key={i} style={{ display: "flex", flexDirection: "column", gap: 2, fontSize: 12 }}>
+                <span className="ellipsis" title={h} style={{ fontWeight: 600, color: roles[i] === "ignore" ? "var(--muted)" : "var(--text)" }}>{h || `(คอลัมน์ ${i + 1})`}</span>
+                <select className="select sm" value={roles[i]} disabled={busy} onChange={(e) => setRole(i, e.target.value as ImportColumnRole)}>
+                  {ROLE_ORDER.map((r) => <option key={r} value={r}>{ROLE_LABEL[r]}</option>)}
+                </select>
+              </label>
+            ))}
+          </div>
+          <p className="field-hint" style={{ marginTop: 8 }}>ชั้นหมวดเรียงจากซ้ายไปขวาตามไฟล์ · ช่องชั้นสุดท้ายที่ว่างจะเป็น "ทั่วไป" · ต้นเหตุ: User → ผู้ใช้, Program/Software → โปรแกรม</p>
+        </details>
+      )}
       {preview && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 10, maxHeight: "52vh", overflowY: "auto" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 10, maxHeight: "44vh", overflowY: "auto" }}>
           <span className="muted" style={{ fontSize: 13 }}>{preview.fileName}</span>
           {preview.services.map((s) => (
             <section key={s.name} className="card" style={{ padding: "12px 14px", display: "flex", flexDirection: "column", gap: 8 }}>
@@ -120,10 +159,11 @@ export function TaxonomyImportDialog({ projectId, service, initialPath, onClose,
               {s.rows.length > 0 && (
                 <div className="table-wrap" style={{ maxHeight: 160, border: "1px solid var(--border-soft)", borderRadius: 8 }}>
                   <table className="tbl">
-                    <thead><tr>{s.columns.map((c) => <th key={c}>{c}</th>)}<th>คำอธิบาย</th></tr></thead>
+                    <thead><tr>{s.columns.map((c) => <th key={c}>{c}</th>)}<th>คำอธิบาย</th>{roles?.includes("cause") && <th>ต้นเหตุ</th>}</tr></thead>
                     <tbody>
                       {s.rows.slice(0, 6).map((r, i) => (
-                        <tr key={i}>{s.columns.map((c) => <td key={c}>{r.values[c]}</td>)}<td className="muted">{r.description || "—"}</td></tr>
+                        <tr key={i}>{s.columns.map((c) => <td key={c}>{r.values[c]}</td>)}<td className="muted">{r.description || "—"}</td>
+                          {roles?.includes("cause") && <td>{r.cause ? <CauseChip cause={r.cause} /> : <span className="muted">AI ประเมิน</span>}</td>}</tr>
                       ))}
                     </tbody>
                   </table>
@@ -137,7 +177,7 @@ export function TaxonomyImportDialog({ projectId, service, initialPath, onClose,
         <div className="warn-box">นำเข้าซ้ำจะ<b>แทนที่หมวดหมู่ทั้งหมด</b>ของ {replacing.map((s) => s.name).join(", ")} — ทิกเก็ตที่จัดหมวดไว้แล้วยังอยู่ แต่ครั้งต่อไปจะไม่ใช้ผลจากแคชเดิม</div>
       )}
       <div className="modal-actions">
-        {preview && <button className="btn btn-lg btn-ghost" onClick={() => { setPreview(null); setPath(null); }}>เลือกไฟล์อื่น</button>}
+        {(preview || roles) && <button className="btn btn-lg btn-ghost" onClick={() => { setPreview(null); setPath(null); setRoles(null); setHeaders([]); setError(null); }}>เลือกไฟล์อื่น</button>}
         <button className="btn btn-lg" onClick={onClose}>{th.cancel}</button>
         {preview && (
           <button className="btn btn-lg btn-primary" disabled={!usable || busy} onClick={apply}>

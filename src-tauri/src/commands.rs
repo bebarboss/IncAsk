@@ -334,13 +334,13 @@ pub fn delete_taxonomy_row(state: S<'_>, project_id: String, row_id: String, mov
 }
 
 #[tauri::command]
-pub fn preview_taxonomy_import(state: S<'_>, project_id: String, path: String, service: Option<String>) -> AppResult<ImportPreview> {
-    taxonomy::preview_import(&open_project(&state, &project_id)?, std::path::Path::new(&path), service.as_deref())
+pub fn preview_taxonomy_import(state: S<'_>, project_id: String, path: String, service: Option<String>, roles: Option<Vec<String>>) -> AppResult<ImportPreview> {
+    taxonomy::preview_import(&open_project(&state, &project_id)?, std::path::Path::new(&path), service.as_deref(), roles.as_deref())
 }
 
 #[tauri::command]
-pub fn apply_taxonomy_import(state: S<'_>, project_id: String, path: String, service: Option<String>) -> AppResult<Vec<Service>> {
-    taxonomy::apply_import(&mut open_project(&state, &project_id)?, std::path::Path::new(&path), service.as_deref())
+pub fn apply_taxonomy_import(state: S<'_>, project_id: String, path: String, service: Option<String>, roles: Option<Vec<String>>) -> AppResult<Vec<Service>> {
+    taxonomy::apply_import(&mut open_project(&state, &project_id)?, std::path::Path::new(&path), service.as_deref(), roles.as_deref())
 }
 
 #[tauri::command]

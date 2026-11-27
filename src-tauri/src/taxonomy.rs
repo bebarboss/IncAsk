@@ -39,6 +39,8 @@ pub struct TaxonomyRow {
     pub values: Values,
     pub description: String,
     pub examples: String,
+    /// ต้นเหตุ fixed for this category (user | program | unclear); None = the AI judges each ticket
+    pub cause: Option<String>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
@@ -50,6 +52,34 @@ pub struct RowInput {
     pub description: String,
     #[serde(default)]
     pub examples: String,
+    #[serde(default)]
+    pub cause: Option<String>,
+}
+
+/// "User", "Program/Software", "ผู้ใช้", "ระบบ" … → user | program | unclear (None if not recognised).
+pub fn cause_value(s: &str) -> Option<String> {
+    let l = s.trim().to_lowercase();
+    if l.is_empty() {
+        return None;
+    }
+    let has = |ws: &[&str]| ws.iter().any(|w| l.contains(w));
+    Some(
+        if has(&["program", "software", "system", "โปรแกรม", "ระบบ"]) {
+            "program"
+        } else if has(&["user", "ผู้ใช้", "ลูกค้า"]) {
+            "user"
+        } else if has(&["unclear", "unknown", "ไม่ชัดเจน", "ไม่แน่ใจ"]) {
+            "unclear"
+        } else {
+            return None;
+        }
+        .to_string(),
+    )
+}
+
+/// Line breaks kept (each line trimmed, blank lines dropped) — for descriptions and examples.
+fn tidy_text(s: &str) -> String {
+    s.lines().map(str::trim).filter(|l| !l.is_empty()).collect::<Vec<_>>().join("\n")
 }
 
 /// One column in "จัดการคอลัมน์": `from` = its current name (None for a new column).
@@ -70,7 +100,7 @@ fn tidy(s: &str) -> String {
 
 fn is_reserved(col: &str) -> bool {
     let c = col.trim().to_lowercase();
-    matches!(c.as_str(), "เซอร์วิส" | "service" | "คำอธิบาย" | "description" | "ตัวอย่าง" | "example" | "examples")
+    matches!(c.as_str(), "เซอร์วิส" | "service" | "คำอธิบาย" | "description" | "ตัวอย่าง" | "example" | "examples" | "ต้นเหตุ" | "cause" | "classification")
 }
 
 fn valid_color(c: &str) -> bool {
@@ -229,7 +259,7 @@ pub fn code_for(index: usize) -> String {
 
 fn list_rows(conn: &Connection, service_id: &str) -> AppResult<Vec<TaxonomyRow>> {
     let mut st = conn.prepare(
-        "SELECT id, service_id, values_json, COALESCE(description,''), COALESCE(examples,'') FROM taxonomy_rows
+        "SELECT id, service_id, values_json, COALESCE(description,''), COALESCE(examples,''), cause FROM taxonomy_rows
          WHERE service_id = ?1 ORDER BY sort, rowid",
     )?;
     let rows = st.query_map([service_id], |r| {
@@ -241,6 +271,7 @@ fn list_rows(conn: &Connection, service_id: &str) -> AppResult<Vec<TaxonomyRow>>
             values: serde_json::from_str(&v).unwrap_or_default(),
             description: r.get(3)?,
             examples: r.get(4)?,
+            cause: r.get(5)?,
         })
     })?;
     let mut out: Vec<TaxonomyRow> = rows.collect::<Result<_, _>>()?;
@@ -296,6 +327,7 @@ pub fn save_row(conn: &mut Connection, service_id: &str, row: &RowInput) -> AppR
     let svc = get_service(conn, service_id)?;
     let existing = list_rows(conn, service_id)?;
     let values = validate_row(&svc, &existing, row)?;
+    let cause = row.cause.as_deref().filter(|c| !c.trim().is_empty()).map(|c| cause_value(c).ok_or_else(|| AppError::new("invalid_cause", "ต้นเหตุต้องเป็น ผู้ใช้ โปรแกรม หรือ ไม่ชัดเจน"))).transpose()?;
     let tx = conn.transaction()?;
     let id = match &row.id {
         Some(id) => {
@@ -308,8 +340,8 @@ pub fn save_row(conn: &mut Connection, service_id: &str, row: &RowInput) -> AppR
                 }
             }
             tx.execute(
-                "UPDATE taxonomy_rows SET values_json = ?1, description = ?2, examples = ?3 WHERE id = ?4",
-                params![serde_json::to_string(&values)?, row.description.trim(), row.examples.trim(), id],
+                "UPDATE taxonomy_rows SET values_json = ?1, description = ?2, examples = ?3, cause = ?4 WHERE id = ?5",
+                params![serde_json::to_string(&values)?, row.description.trim(), row.examples.trim(), cause, id],
             )?;
             id.clone()
         }
@@ -317,8 +349,8 @@ pub fn save_row(conn: &mut Connection, service_id: &str, row: &RowInput) -> AppR
             let id = new_id("t-");
             let sort: i64 = tx.query_row("SELECT COALESCE(MAX(sort), -1) + 1 FROM taxonomy_rows WHERE service_id = ?1", [service_id], |r| r.get(0))?;
             tx.execute(
-                "INSERT INTO taxonomy_rows(id, service_id, values_json, description, examples, sort) VALUES(?1, ?2, ?3, ?4, ?5, ?6)",
-                params![id, service_id, serde_json::to_string(&values)?, row.description.trim(), row.examples.trim(), sort],
+                "INSERT INTO taxonomy_rows(id, service_id, values_json, description, examples, sort, cause) VALUES(?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+                params![id, service_id, serde_json::to_string(&values)?, row.description.trim(), row.examples.trim(), sort, cause],
             )?;
             id
         }
@@ -412,37 +444,91 @@ pub struct ServicePreview {
 #[serde(rename_all = "camelCase")]
 pub struct ImportPreview {
     pub file_name: String,
+    /// header of every column in the file
+    pub headers: Vec<String>,
+    /// what each column is used for (guessed, or as the user set it): see `ROLES`
+    pub roles: Vec<String>,
     pub services: Vec<ServicePreview>,
 }
 
+/// Column roles in a category file. `level` columns are the category levels, left to right.
+pub const ROLES: [&str; 6] = ["service", "level", "description", "examples", "cause", "ignore"];
+/// Value given to an empty last level ("สรุปวิเคราะห์" left blank under a Problem Type).
+pub const GENERAL: &str = "ทั่วไป";
+
+/// Guess from the headers: known names → their role, "No"/"ลำดับ" → ignore, anything else → a level
+/// until a description/examples/cause column has followed the levels (counts, notes … after it → ignore).
+pub fn guess_roles(headers: &[String]) -> Vec<String> {
+    let mut out = vec![];
+    let (mut levels, mut closed) = (false, false);
+    for h in headers {
+        let l = h.trim().to_lowercase();
+        let r = if l.is_empty() {
+            "ignore"
+        } else if matches!(l.as_str(), "เซอร์วิส" | "service") {
+            "service"
+        } else if matches!(l.as_str(), "คำอธิบาย" | "description") {
+            "description"
+        } else if matches!(l.as_str(), "ตัวอย่าง" | "example" | "examples") {
+            "examples"
+        } else if matches!(l.as_str(), "ต้นเหตุ" | "cause" | "classification") {
+            "cause"
+        } else if matches!(l.as_str(), "no" | "no." | "#" | "ลำดับ" | "ที่") || closed {
+            "ignore"
+        } else {
+            "level"
+        };
+        if r == "level" {
+            levels = true;
+        } else if levels && !matches!(r, "ignore" | "service") {
+            closed = true;
+        }
+        out.push(r.to_string());
+    }
+    out
+}
+
 /// Parse a category file: one service per file (named by `default_service`), or one file with a
-/// `เซอร์วิส` column. Every other header except `คำอธิบาย` / `ตัวอย่าง` is a category column, left
-/// to right. Upper-level cells left blank under a merged/grouped heading are filled down.
-pub fn parse_import(rows: &[Vec<String>], default_service: Option<&str>) -> AppResult<Vec<ServicePreview>> {
+/// service column. `roles` says what each column is (None → guessed). Upper-level cells left blank
+/// under a merged/grouped heading are filled down; an empty last level becomes "ทั่วไป"; rows with
+/// no level at all (blank, sub-headers, totals) are skipped quietly.
+pub fn parse_import(rows: &[Vec<String>], default_service: Option<&str>, roles: Option<&[String]>) -> AppResult<(Vec<String>, Vec<String>, Vec<ServicePreview>)> {
     let h = sheet::header_row(rows).ok_or_else(|| AppError::new("no_header", "ไม่พบแถวหัวตารางในไฟล์ (ต้องมีหัวคอลัมน์อย่างน้อย 2 ช่อง)"))?;
     let headers: Vec<String> = rows[h].iter().map(|c| tidy(c)).collect();
-    let find = |names: &[&str]| headers.iter().position(|x| names.iter().any(|n| x.eq_ignore_ascii_case(n)));
-    let svc_col = find(&[COL_SERVICE, "service"]);
-    let desc_col = find(&[COL_DESC, "description"]);
-    let ex_col = find(&[COL_EXAMPLES, "example", "examples"]);
-    let cat_cols: Vec<usize> = (0..headers.len())
-        .filter(|i| Some(*i) != svc_col && Some(*i) != desc_col && Some(*i) != ex_col && !headers[*i].is_empty())
-        .collect();
+    let roles: Vec<String> = match roles {
+        Some(r) if r.len() == headers.len() && r.iter().all(|x| ROLES.contains(&x.as_str())) => r.to_vec(),
+        _ => guess_roles(&headers),
+    };
+    let first = |role: &str| roles.iter().position(|r| r == role);
+    let svc_col = first("service");
+    let desc_col = first("description");
+    let ex_col = first("examples");
+    let cause_col = first("cause");
+    let cat_cols: Vec<usize> = (0..headers.len()).filter(|&i| roles[i] == "level").collect();
     if cat_cols.is_empty() {
-        return Err(AppError::new("no_columns", "ไม่พบคอลัมน์หมวดหมู่ (คอลัมน์อื่นนอกจาก เซอร์วิส, คำอธิบาย, ตัวอย่าง)"));
+        return Err(AppError::new("no_columns", "ยังไม่ได้เลือกคอลัมน์หมวด — ตั้งอย่างน้อย 1 คอลัมน์เป็น \"ชั้นหมวด\""));
     }
-    let columns: Vec<String> = cat_cols.iter().map(|&i| headers[i].clone()).collect();
+    let mut columns: Vec<String> = vec![];
+    for &i in &cat_cols {
+        let mut name = if headers[i].is_empty() { format!("ชั้น {}", columns.len() + 1) } else { headers[i].clone() };
+        if is_reserved(&name) || columns.contains(&name) {
+            name = format!("{name} ({})", columns.len() + 1);
+        }
+        columns.push(name);
+    }
     if svc_col.is_none() && default_service.map(str::trim).unwrap_or("").is_empty() {
         return Err(AppError::new("no_service", "ไฟล์ไม่มีคอลัมน์ \"เซอร์วิส\" — เลือกเซอร์วิสที่จะนำเข้าก่อน"));
     }
     let cell = |r: &Vec<String>, i: usize| tidy(r.get(i).map(|s| s.as_str()).unwrap_or(""));
+    let text = |r: &Vec<String>, i: usize| tidy_text(r.get(i).map(|s| s.as_str()).unwrap_or(""));
     let mut out: Vec<ServicePreview> = Vec::new();
     let mut last_service = String::new();
     // fill-down memory per service
     let mut carry: BTreeMap<String, Vec<String>> = BTreeMap::new();
     for (ri, r) in rows.iter().enumerate().skip(h + 1) {
-        if r.iter().all(|c| c.trim().is_empty()) {
-            continue;
+        let mut vals: Vec<String> = cat_cols.iter().map(|&i| cell(r, i)).collect();
+        if vals.iter().all(|v| v.is_empty()) {
+            continue; // blank, a sub-header or a totals row
         }
         let line = ri + 1;
         let service = match svc_col {
@@ -464,12 +550,14 @@ pub fn parse_import(rows: &[Vec<String>], default_service: Option<&str>) -> AppR
             }
         };
         let prev = carry.entry(service.clone()).or_insert_with(|| vec![String::new(); cat_cols.len()]);
-        let mut vals: Vec<String> = cat_cols.iter().map(|&i| cell(r, i)).collect();
         let last = vals.len() - 1;
         for (k, v) in vals.iter_mut().enumerate() {
             if v.is_empty() && k < last && !prev[k].is_empty() {
                 *v = prev[k].clone();
             }
+        }
+        if vals[last].is_empty() && last > 0 {
+            vals[last] = GENERAL.to_string();
         }
         *prev = vals.clone();
         let sp = &mut out[idx];
@@ -478,42 +566,51 @@ pub fn parse_import(rows: &[Vec<String>], default_service: Option<&str>) -> AppR
             continue;
         }
         let values: Values = columns.iter().cloned().zip(vals.iter().cloned()).collect();
-        if let Some(dup) = sp.rows.iter().position(|x| x.values == values) {
-            let _ = dup;
+        if sp.rows.iter().any(|x| x.values == values) {
             sp.errors.push(Issue { row: line, message: format!("ซ้ำกับแถวก่อนหน้า ({}) — ไม่นำเข้าแถวนี้", vals.join(" › ")) });
             continue;
         }
-        let description = desc_col.map(|i| cell(r, i)).unwrap_or_default();
-        if description.is_empty() {
+        let description = desc_col.map(|i| text(r, i)).unwrap_or_default();
+        if desc_col.is_some() && description.is_empty() {
             sp.warnings.push(Issue { row: line, message: format!("{} ไม่มีคำอธิบาย · AI อาจจัดได้แม่นน้อยลง", vals.join(" › ")) });
         }
-        sp.rows.push(RowInput { id: None, values, description, examples: ex_col.map(|i| cell(r, i)).unwrap_or_default() });
+        let cause = match cause_col.map(|i| cell(r, i)).filter(|c| !c.is_empty()) {
+            Some(c) => {
+                let v = cause_value(&c);
+                if v.is_none() {
+                    sp.warnings.push(Issue { row: line, message: format!("ไม่รู้จักต้นเหตุ \"{c}\" — ให้ AI ประเมินแทน") });
+                }
+                v
+            }
+            None => None,
+        };
+        sp.rows.push(RowInput { id: None, values, description, examples: ex_col.map(|i| text(r, i)).unwrap_or_default(), cause });
     }
     if out.iter().all(|s| s.rows.is_empty()) && out.iter().all(|s| s.errors.is_empty()) {
         return Err(AppError::new("empty", "ไม่พบแถวหมวดหมู่ในไฟล์"));
     }
-    Ok(out)
+    Ok((headers, roles, out))
 }
 
-/// A file without a `เซอร์วิส` column goes into `default_service`, else a service named after the file
+/// A file without a service column goes into `default_service`, else a service named after the file
 /// (`Internet.xlsx` → Internet), matching "one file per service".
-pub fn preview_import(conn: &Connection, path: &Path, default_service: Option<&str>) -> AppResult<ImportPreview> {
+pub fn preview_import(conn: &Connection, path: &Path, default_service: Option<&str>, roles: Option<&[String]>) -> AppResult<ImportPreview> {
     let table = sheet::read_table(path, None)?;
     let stem = path.file_stem().map(|s| s.to_string_lossy().into_owned()).unwrap_or_default();
     let target = default_service.filter(|s| !s.trim().is_empty()).unwrap_or(&stem);
-    let mut services = parse_import(&table.rows, Some(target))?;
+    let (headers, roles, mut services) = parse_import(&table.rows, Some(target), roles)?;
     for s in services.iter_mut() {
         if let Some(e) = find_service_by_name(conn, &s.name)? {
             s.exists = true;
             s.existing_rows = list_rows(conn, &e.id)?.len();
         }
     }
-    Ok(ImportPreview { file_name: path.file_name().map(|f| f.to_string_lossy().into_owned()).unwrap_or_default(), services })
+    Ok(ImportPreview { file_name: path.file_name().map(|f| f.to_string_lossy().into_owned()).unwrap_or_default(), headers, roles, services })
 }
 
 /// Replace each service in the file (create it if new): columns + every row.
-pub fn apply_import(conn: &mut Connection, path: &Path, default_service: Option<&str>) -> AppResult<Vec<Service>> {
-    let preview = preview_import(conn, path, default_service)?;
+pub fn apply_import(conn: &mut Connection, path: &Path, default_service: Option<&str>, roles: Option<&[String]>) -> AppResult<Vec<Service>> {
+    let preview = preview_import(conn, path, default_service, roles)?;
     let mut done = Vec::new();
     for sp in preview.services.iter().filter(|s| !s.rows.is_empty()) {
         let svc = match find_service_by_name(conn, &sp.name)? {
@@ -525,8 +622,8 @@ pub fn apply_import(conn: &mut Connection, path: &Path, default_service: Option<
         tx.execute("UPDATE services SET columns_json = ?1 WHERE id = ?2", params![serde_json::to_string(&sp.columns)?, svc.id])?;
         for (i, r) in sp.rows.iter().enumerate() {
             tx.execute(
-                "INSERT INTO taxonomy_rows(id, service_id, values_json, description, examples, sort) VALUES(?1, ?2, ?3, ?4, ?5, ?6)",
-                params![new_id("t-"), svc.id, serde_json::to_string(&r.values)?, r.description, r.examples, i as i64],
+                "INSERT INTO taxonomy_rows(id, service_id, values_json, description, examples, sort, cause) VALUES(?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+                params![new_id("t-"), svc.id, serde_json::to_string(&r.values)?, r.description, r.examples, i as i64, r.cause],
             )?;
         }
         bump_version(&tx, &svc.id)?;
@@ -586,7 +683,7 @@ mod tests {
         [("หัวข้อหลัก".to_string(), a.to_string()), ("หัวข้อย่อย".to_string(), b.to_string())].into_iter().collect()
     }
     fn row(a: &str, b: &str) -> RowInput {
-        RowInput { id: None, values: vals(a, b), description: "d".into(), examples: String::new() }
+        RowInput { id: None, values: vals(a, b), description: "d".into(), examples: String::new(), cause: None }
     }
     fn s(v: &[&str]) -> Vec<String> {
         v.iter().map(|x| x.to_string()).collect()
@@ -700,7 +797,8 @@ mod tests {
             &["Mobile", "บิล", "บิลผิด", "", ""],
             &["", "", "", "", ""],
         ]);
-        let p = parse_import(&rows, None).unwrap();
+        let (_, roles, p) = parse_import(&rows, None, None).unwrap();
+        assert_eq!(roles, s(&["service", "level", "level", "description", "examples"]));
         assert_eq!(p.len(), 2);
         let net = &p[0];
         assert_eq!(net.columns, s(&["หัวข้อหลัก", "หัวข้อย่อย"]));
@@ -709,16 +807,70 @@ mod tests {
         assert_eq!(net.errors.len(), 1);
         assert_eq!(net.errors[0].row, 5);
         let mob = &p[1];
-        assert_eq!(mob.rows.len(), 1);
-        assert_eq!(mob.errors[0].row, 6); // empty leaf
+        assert_eq!(mob.rows.len(), 2);
+        assert_eq!(mob.rows[0].values, vals("สัญญาณ", GENERAL)); // empty last level → ทั่วไป
+        assert!(mob.errors.is_empty());
         assert_eq!(mob.warnings.len(), 1); // no description
+    }
+
+    /// The shape of a real analysis workbook: No | 5 levels | Classification | day counts …, merged
+    /// upper levels with stray line breaks, sub-header rows, a totals row, an empty last level.
+    #[test]
+    fn analysis_workbook_roles_cause_and_noise_rows() {
+        let rows = grid(&[
+            &["No", "Category", "SubCategory", "ProductType", "Problem Type", "สรุปวิเคราะห์ Call", "Classification", "Jan", "Calls Jan 2026"],
+            &["", "", "", "", "", "", "", "Week1", ""],
+            &["", "", "", "", "", "", "", "1", ""],
+            &["1", "SC Process", "Store TM", "Login", "เด้งออก", "กด log in แล้วเด้งออก\n-ลองใหม่ได้", "User", "3", "=SUM(H4:H4)"],
+            &["", "SC Process\n\n", "Store TM\n\n", "", "", "หน้าจอค้าง ระบบประมวลผล", "Program/Software", "", ""],
+            &["", "", "", "", "หน้าขาว", "", "", "1", ""],
+            &["", "", "", "", "", "", "", "", "=SUM(I4:I6)"],
+        ]);
+        let (headers, roles, p) = parse_import(&rows, Some("HRM"), None).unwrap();
+        assert_eq!(headers.len(), 9);
+        assert_eq!(roles, s(&["ignore", "level", "level", "level", "level", "level", "cause", "ignore", "ignore"]));
+        let svc = &p[0];
+        assert_eq!(svc.columns, s(&["Category", "SubCategory", "ProductType", "Problem Type", "สรุปวิเคราะห์ Call"]));
+        assert_eq!(svc.rows.len(), 3, "{:?}", svc.errors);
+        assert!(svc.errors.is_empty());
+        assert_eq!(svc.rows[0].values["สรุปวิเคราะห์ Call"], "กด log in แล้วเด้งออก -ลองใหม่ได้");
+        assert_eq!(svc.rows[0].cause.as_deref(), Some("user"));
+        assert_eq!(svc.rows[1].values["Category"], "SC Process"); // line breaks from merged cells trimmed
+        assert_eq!(svc.rows[1].values["ProductType"], "Login"); // filled down
+        assert_eq!(svc.rows[1].cause.as_deref(), Some("program"));
+        assert_eq!(svc.rows[2].values["Problem Type"], "หน้าขาว");
+        assert_eq!(svc.rows[2].values["สรุปวิเคราะห์ Call"], GENERAL);
+        assert_eq!(svc.rows[2].cause, None);
+        assert!(svc.warnings.is_empty()); // no description column → no "no description" noise
+        // the user changes roles: สรุปวิเคราะห์ becomes the description, 4 levels
+        let mut r2 = roles.clone();
+        r2[5] = "description".into();
+        let (_, _, p) = parse_import(&rows, Some("HRM"), Some(&r2)).unwrap();
+        assert_eq!(p[0].columns.len(), 4);
+        assert_eq!(p[0].rows[0].description, "กด log in แล้วเด้งออก\n-ลองใหม่ได้");
+        // nothing chosen as a level
+        let none = vec!["ignore".to_string(); 9];
+        assert_eq!(parse_import(&rows, Some("HRM"), Some(&none)).unwrap_err().code, "no_columns");
+        assert_eq!(cause_value("PROGRAM/SOFTWARE").as_deref(), Some("program"));
+        assert_eq!(cause_value("HARDWARE FAULT"), None);
+    }
+
+    #[test]
+    fn fixed_cause_is_saved_validated_and_listed() {
+        let (_d, mut c) = db();
+        let svc = create_service(&c, "Internet", None, &cols()).unwrap();
+        let r = save_row(&mut c, &svc.id, &RowInput { cause: Some("Program/Software".into()), ..row("a", "b") }).unwrap();
+        assert_eq!(r.cause.as_deref(), Some("program"));
+        assert_eq!(save_row(&mut c, &svc.id, &RowInput { cause: Some("hardware".into()), ..row("a", "c") }).unwrap_err().code, "invalid_cause");
+        let r = save_row(&mut c, &svc.id, &RowInput { id: Some(r.id), cause: None, ..row("a", "b") }).unwrap();
+        assert_eq!(r.cause, None);
     }
 
     #[test]
     fn file_without_service_column_needs_a_target() {
         let rows = grid(&[&["หัวข้อหลัก", "หัวข้อย่อย", "คำอธิบาย"], &["สัญญาณ", "อ่อน", "ในอาคาร"]]);
-        assert_eq!(parse_import(&rows, None).unwrap_err().code, "no_service");
-        let p = parse_import(&rows, Some("Mobile")).unwrap();
+        assert_eq!(parse_import(&rows, None, None).unwrap_err().code, "no_service");
+        let (_, _, p) = parse_import(&rows, Some("Mobile"), None).unwrap();
         assert_eq!(p[0].name, "Mobile");
     }
 
@@ -729,8 +881,8 @@ mod tests {
         std::fs::write(&p, "หัวข้อหลัก,หัวข้อย่อย,คำอธิบาย
 สัญญาณ,อ่อน,ในอาคาร
 ").unwrap();
-        assert_eq!(preview_import(&c, &p, None).unwrap().services[0].name, "Mobile");
-        assert_eq!(preview_import(&c, &p, Some("IPTV")).unwrap().services[0].name, "IPTV");
+        assert_eq!(preview_import(&c, &p, None, None).unwrap().services[0].name, "Mobile");
+        assert_eq!(preview_import(&c, &p, Some("IPTV"), None).unwrap().services[0].name, "IPTV");
     }
 
     #[test]
@@ -738,17 +890,17 @@ mod tests {
         let (d, mut c) = db();
         let p = d.path().join("template.xlsx");
         write_template(&p).unwrap();
-        let prev = preview_import(&c, &p, None).unwrap();
+        let prev = preview_import(&c, &p, None, None).unwrap();
         assert_eq!(prev.services.len(), 1);
         assert!(!prev.services[0].exists);
-        let done = apply_import(&mut c, &p, None).unwrap();
+        let done = apply_import(&mut c, &p, None, None).unwrap();
         assert_eq!(done[0].name, "Internet");
         assert_eq!(list_taxonomy(&c, &done[0].id).unwrap().len(), 2);
         // importing again replaces, not appends
-        let prev = preview_import(&c, &p, None).unwrap();
+        let prev = preview_import(&c, &p, None, None).unwrap();
         assert!(prev.services[0].exists);
         assert_eq!(prev.services[0].existing_rows, 2);
-        let done = apply_import(&mut c, &p, None).unwrap();
+        let done = apply_import(&mut c, &p, None, None).unwrap();
         assert_eq!(list_taxonomy(&c, &done[0].id).unwrap().len(), 2);
     }
 }

@@ -445,7 +445,7 @@ mod tests {
         let cols = vec!["หัวข้อหลัก".to_string(), "หัวข้อย่อย".to_string()];
         for svc in ["Internet", "IPTV"] {
             let s = create_service(c, svc, None, &cols).unwrap();
-            save_row(c, &s.id, &RowInput { id: None, values: vals("x", "y"), description: String::new(), examples: String::new() }).unwrap();
+            save_row(c, &s.id, &RowInput { id: None, values: vals("x", "y"), description: String::new(), examples: String::new(), cause: None }).unwrap();
         }
         let tx = c.transaction().unwrap();
         for (i, (svc, month, main, sub, ch)) in rows.iter().enumerate() {

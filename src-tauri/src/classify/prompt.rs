@@ -10,11 +10,13 @@ pub struct Cat {
     pub values: Values,
     pub description: String,
     pub examples: String,
+    /// fixed ต้นเหตุ of this category, if set
+    pub cause: Option<String>,
 }
 
 impl Cat {
     pub fn from_row(r: &TaxonomyRow) -> Cat {
-        Cat { code: r.code.clone(), values: r.values.clone(), description: r.description.clone(), examples: r.examples.clone() }
+        Cat { code: r.code.clone(), values: r.values.clone(), description: r.description.clone(), examples: r.examples.clone(), cause: r.cause.clone() }
     }
     pub fn label(&self, columns: &[String]) -> String {
         columns.iter().map(|c| self.values.get(c).map(|s| s.as_str()).unwrap_or("")).collect::<Vec<_>>().join(" › ")
@@ -78,6 +80,7 @@ mod tests {
             values: [("หัวข้อหลัก".to_string(), a.to_string()), ("หัวข้อย่อย".to_string(), b.to_string())].into_iter().collect(),
             description: d.into(),
             examples: "เน็ตหลุดทุกคืน".into(),
+            cause: None,
         }
     }
 

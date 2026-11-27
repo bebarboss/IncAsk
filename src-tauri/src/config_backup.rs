@@ -19,6 +19,8 @@ pub struct CatRow {
     pub description: String,
     #[serde(default)]
     pub examples: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub cause: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -67,7 +69,7 @@ pub struct ConfigFile {
 fn project_conf(conn: &Connection, name: &str, color: &str) -> AppResult<ProjectConf> {
     let mut services = vec![];
     for s in taxonomy::list_services(conn)? {
-        let categories = taxonomy::list_taxonomy(conn, &s.id)?.into_iter().map(|r| CatRow { values: r.values, description: r.description, examples: r.examples }).collect();
+        let categories = taxonomy::list_taxonomy(conn, &s.id)?.into_iter().map(|r| CatRow { values: r.values, description: r.description, examples: r.examples, cause: r.cause }).collect();
         services.push(ServiceConf { name: s.name, color: s.color, columns: s.columns, categories });
     }
     let patterns = patterns::list(conn)?.into_iter().map(|p| PatternConf { name: p.name, headers: p.headers, roles: p.roles, date_format: p.date_format }).collect();
@@ -180,13 +182,13 @@ fn sync(conn: Option<&mut Connection>, pc: &ProjectConf, apply: bool) -> AppResu
                 None => {
                     d.categories_added += 1;
                     if apply {
-                        taxonomy::save_row(conn, &svc.id, &RowInput { id: None, values: cat.values.clone(), description: cat.description.clone(), examples: cat.examples.clone() })?;
+                        taxonomy::save_row(conn, &svc.id, &RowInput { id: None, values: cat.values.clone(), description: cat.description.clone(), examples: cat.examples.clone(), cause: cat.cause.clone() })?;
                     }
                 }
-                Some(m) if m.description.trim() != cat.description.trim() || m.examples.trim() != cat.examples.trim() => {
+                Some(m) if m.description.trim() != cat.description.trim() || m.examples.trim() != cat.examples.trim() || m.cause != cat.cause => {
                     d.categories_changed += 1;
                     if apply {
-                        taxonomy::save_row(conn, &svc.id, &RowInput { id: Some(m.id.clone()), values: m.values.clone(), description: cat.description.clone(), examples: cat.examples.clone() })?;
+                        taxonomy::save_row(conn, &svc.id, &RowInput { id: Some(m.id.clone()), values: m.values.clone(), description: cat.description.clone(), examples: cat.examples.clone(), cause: cat.cause.clone() })?;
                     }
                 }
                 Some(_) => {}
@@ -303,11 +305,11 @@ mod tests {
         // edit the file: change a description, add a category, drop one (in use), add a service + new project
         let net = &mut f.projects[0].services[0];
         net.categories[0].description = "ใหม่".into();
-        net.categories.push(CatRow { values: crate::export::testdata::vals("ความเร็ว", "เน็ตช้า"), description: "ช้า".into(), examples: String::new() });
+        net.categories.push(CatRow { values: crate::export::testdata::vals("ความเร็ว", "เน็ตช้า"), description: "ช้า".into(), examples: String::new(), cause: Some("user".into()) });
         let removed = net.categories.remove(0);
         net.categories.insert(0, CatRow { description: "ใหม่".into(), ..removed });
         f.projects[0].services[1].categories = vec![];
-        f.projects[0].services.push(ServiceConf { name: "Mobile".into(), color: "#C2631A".into(), columns: vec!["หัวข้อหลัก".into()], categories: vec![CatRow { values: [("หัวข้อหลัก".to_string(), "สัญญาณ".to_string())].into_iter().collect(), description: String::new(), examples: String::new() }] });
+        f.projects[0].services.push(ServiceConf { name: "Mobile".into(), color: "#C2631A".into(), columns: vec!["หัวข้อหลัก".into()], categories: vec![CatRow { values: [("หัวข้อหลัก".to_string(), "สัญญาณ".to_string())].into_iter().collect(), description: String::new(), examples: String::new(), cause: None }] });
         f.projects.push(ProjectConf { name: "NOC Incident".into(), color: "#4A5A7A".into(), services: vec![], patterns: vec![], views: vec![] });
         // remove the only Internet category from the file → its 2 classified tickets are affected
         let mut g = f.clone();

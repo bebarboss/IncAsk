@@ -95,8 +95,9 @@ export interface Backend {
   taxonomyRowUsage(projectId: string, rowId: string): Promise<number>;
   /** moveTo = another category of the same service; null = classify those tickets again */
   deleteTaxonomyRow(projectId: string, rowId: string, moveTo: string | null): Promise<number>;
-  previewTaxonomyImport(projectId: string, path: string, service: string | null): Promise<TaxonomyImportPreview>;
-  applyTaxonomyImport(projectId: string, path: string, service: string | null): Promise<Service[]>;
+  /** `roles` = what each column is (null → guessed from the headers) */
+  previewTaxonomyImport(projectId: string, path: string, service: string | null, roles?: string[] | null): Promise<TaxonomyImportPreview>;
+  applyTaxonomyImport(projectId: string, path: string, service: string | null, roles?: string[] | null): Promise<Service[]>;
   saveTaxonomyTemplate(path: string): Promise<void>;
   // import (step 5)
   previewImport(projectId: string, path: string, sheet: string | null): Promise<ImportPreview>;
@@ -215,8 +216,8 @@ function createTauriBackend(): Backend {
     saveTaxonomyRow: (projectId, serviceId, row) => call("save_taxonomy_row", { projectId, serviceId, row }),
     taxonomyRowUsage: (projectId, rowId) => call("taxonomy_row_usage", { projectId, rowId }),
     deleteTaxonomyRow: (projectId, rowId, moveTo) => call("delete_taxonomy_row", { projectId, rowId, moveTo }),
-    previewTaxonomyImport: (projectId, path, service) => call("preview_taxonomy_import", { projectId, path, service }),
-    applyTaxonomyImport: (projectId, path, service) => call("apply_taxonomy_import", { projectId, path, service }),
+    previewTaxonomyImport: (projectId, path, service, roles) => call("preview_taxonomy_import", { projectId, path, service, roles: roles ?? null }),
+    applyTaxonomyImport: (projectId, path, service, roles) => call("apply_taxonomy_import", { projectId, path, service, roles: roles ?? null }),
     saveTaxonomyTemplate: (path) => call("save_taxonomy_template", { path }),
     previewImport: (projectId, path, sheet) => call("import_preview", { projectId, path, sheet }),
     importAnalyze: (projectId, path, sheet, roles, dateOrder) => call("import_analyze", { projectId, path, sheet, roles, dateOrder }),

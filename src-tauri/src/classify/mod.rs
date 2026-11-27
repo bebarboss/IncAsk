@@ -156,6 +156,13 @@ impl ServiceCtx {
     pub fn cat(&self, code: &str) -> Option<&Cat> {
         self.cats.iter().find(|c| c.code == code)
     }
+    /// ต้นเหตุ for a ticket: the category's fixed one, else what the AI said
+    pub fn cause_for(&self, fields: Option<&Values>, ai: Option<&str>) -> Option<String> {
+        fields
+            .and_then(|f| self.cats.iter().find(|c| self.columns.iter().all(|col| c.values.get(col) == f.get(col))))
+            .and_then(|c| c.cause.clone())
+            .or_else(|| ai.map(str::to_string))
+    }
     pub fn code_of(&self, fields: &Values) -> Option<String> {
         self.cats.iter().find(|c| self.columns.iter().all(|col| c.values.get(col) == fields.get(col))).map(|c| c.code.clone())
     }
@@ -417,7 +424,9 @@ pub async fn run(job: Job) {
             let key = cache::key(&service, &text, svc.version, &cfg.model);
             if let Some(hit) = cache::get(&c, &key)? {
                 let conf = hit.confidence.unwrap_or(0.0);
-                write_answer(&c, &ticket_id, hit.fields_json.as_deref(), conf, hit.reason.as_deref().unwrap_or(""), hit.cause.as_deref(), "cache", &cfg.model, svc.version)?;
+                let hit_vals = hit.fields_json.as_deref().and_then(|j| serde_json::from_str::<Values>(j).ok());
+                let cause = svc.cause_for(hit_vals.as_ref(), hit.cause.as_deref());
+                write_answer(&c, &ticket_id, hit.fields_json.as_deref(), conf, hit.reason.as_deref().unwrap_or(""), cause.as_deref(), "cache", &cfg.model, svc.version)?;
                 let label = hit.fields_json.as_deref().and_then(|j| serde_json::from_str::<Values>(j).ok()).map(|v| svc.columns.iter().map(|c| v.get(c).cloned().unwrap_or_default()).collect::<Vec<_>>().join(" › ")).unwrap_or_else(|| "—".into());
                 let mut p = shared.progress.lock();
                 p.done += 1;
@@ -519,7 +528,8 @@ pub async fn run(job: Job) {
                             if let Some(a) = out.answers.get(&i) {
                                 let cat = a.code.as_deref().and_then(|code| svc.cat(code));
                                 let fields = cat.map(|c| serde_json::to_string(&c.values).unwrap_or_default());
-                                let ok = write_answer(&c, &item.ticket_id, fields.as_deref(), a.confidence, &a.reason, a.cause.as_deref(), "ai", &cfg.model, svc.version)
+                                let cause = cat.and_then(|c| c.cause.clone()).or_else(|| a.cause.clone());
+                                let ok = write_answer(&c, &item.ticket_id, fields.as_deref(), a.confidence, &a.reason, cause.as_deref(), "ai", &cfg.model, svc.version)
                                     .and_then(|_| cache::put(&c, &item.cache_key, fields.as_deref(), a.confidence, &a.reason, a.cause.as_deref()));
                                 if ok.is_err() {
                                     p.error += 1;
@@ -660,7 +670,7 @@ pub async fn trial(llm: &LlmFn, services: &HashMap<String, ServiceCtx>, sample: 
                             category: a.and_then(|a| a.code.as_deref()).and_then(|c| svc.cat(c)).map(|c| c.label(&svc.columns)),
                             confidence: a.map(|a| a.confidence),
                             reason: a.map(|a| a.reason.clone()),
-                            cause: a.and_then(|a| a.cause.clone()),
+                            cause: a.and_then(|a| a.code.as_deref().and_then(|c| svc.cat(c)).and_then(|c| c.cause.clone()).or_else(|| a.cause.clone())),
                             low: a.is_none_or_low(cfg.low_threshold),
                             error: a.is_none().then(|| "AI ตอบไม่ถูกรูปแบบ".to_string()),
                         });

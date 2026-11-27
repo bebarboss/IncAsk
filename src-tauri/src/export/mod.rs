@@ -83,7 +83,7 @@ pub mod testdata {
         crate::db::set_meta(&c, "project_name", name).unwrap();
         let cols = vec!["หัวข้อหลัก".to_string(), "หัวข้อย่อย".to_string()];
         let s = create_service(&c, "Internet", Some("#2F6FB0"), &cols).unwrap();
-        save_row(&mut c, &s.id, &RowInput { id: None, values: vals("การเชื่อมต่อ", "เน็ตหลุด"), description: "หลุดเป็นช่วง".into(), examples: String::new() }).unwrap();
+        save_row(&mut c, &s.id, &RowInput { id: None, values: vals("การเชื่อมต่อ", "เน็ตหลุด"), description: "หลุดเป็นช่วง".into(), examples: String::new(), cause: None }).unwrap();
         create_service(&c, "IPTV", Some("#7B4FB0"), &cols).unwrap();
         c.execute("INSERT INTO imports(id,file_name) VALUES('im1','oct.xlsx')", []).unwrap();
         for (id, no, month, svc, cls) in [

@@ -260,13 +260,14 @@ pub fn set_category(conn: &mut Connection, ticket_ids: &[String], fields: &Value
     let tx = conn.transaction()?;
     {
         let mut st = tx.prepare(
-            "INSERT INTO classifications(ticket_id, fields_json, ai_fields_json, source, taxonomy_version, updated_at, edited_by)
-             VALUES(?1, ?2, NULL, 'human', ?3, datetime('now'), ?4)
+            "INSERT INTO classifications(ticket_id, fields_json, ai_fields_json, source, taxonomy_version, updated_at, edited_by, cause)
+             VALUES(?1, ?2, NULL, 'human', ?3, datetime('now'), ?4, ?5)
              ON CONFLICT(ticket_id) DO UPDATE SET fields_json = excluded.fields_json, source = 'human',
-               taxonomy_version = excluded.taxonomy_version, updated_at = excluded.updated_at, edited_by = excluded.edited_by",
+               taxonomy_version = excluded.taxonomy_version, updated_at = excluded.updated_at, edited_by = excluded.edited_by,
+               cause = COALESCE(excluded.cause, classifications.cause)",
         )?;
         for id in ticket_ids {
-            st.execute(rusqlite::params![id, json, svc.taxonomy_version, user])?;
+            st.execute(rusqlite::params![id, json, svc.taxonomy_version, user, row.cause])?;
         }
     }
     tx.commit()?;
@@ -289,7 +290,7 @@ mod tests {
         let s = create_service(&c, "Internet", None, &cols).unwrap();
         create_service(&c, "IPTV", None, &cols).unwrap();
         for (a, b) in [("การเชื่อมต่อ", "เน็ตหลุด"), ("ความเร็ว", "เน็ตช้า")] {
-            save_row(&mut c, &s.id, &RowInput { id: None, values: vals(a, b), description: String::new(), examples: String::new() }).unwrap();
+            save_row(&mut c, &s.id, &RowInput { id: None, values: vals(a, b), description: String::new(), examples: String::new(), cause: None }).unwrap();
         }
         let rows = [
             ("T1", "2026-10-01", "Internet", "เน็ตหลุดทุกคืน", Some((vals("การเชื่อมต่อ", "เน็ตหลุด"), 0.95, "ai"))),

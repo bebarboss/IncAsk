@@ -495,9 +495,9 @@ export function createMockBackend(): Backend {
       if (t) {
         const old = t.values;
         d.tickets.filter((x) => x.service === s.name && s.columns.every((c) => x.fields[c] === old[c])).forEach((x) => { x.fields = { ...values }; });
-        Object.assign(t, { values, description: row.description.trim(), examples: row.examples.trim() });
+        Object.assign(t, { values, description: row.description.trim(), examples: row.examples.trim(), cause: row.cause ?? null });
       } else {
-        t = { id: `t-${Math.random().toString(16).slice(2, 14)}`, serviceId, code: "", values, description: row.description.trim(), examples: row.examples.trim() };
+        t = { id: `t-${Math.random().toString(16).slice(2, 14)}`, serviceId, code: "", values, description: row.description.trim(), examples: row.examples.trim(), cause: row.cause ?? null };
         d.taxonomy.push(t);
       }
       s.taxonomyVersion++;
@@ -524,7 +524,7 @@ export function createMockBackend(): Backend {
       s.taxonomyVersion++;
       return hit.length;
     },
-    previewTaxonomyImport: async (projectId, path) => {
+    previewTaxonomyImport: async (projectId, path, _service, roles) => {
       await wait(300);
       const d = lazy(projectId);
       const fileName = path.split(/[\\/]/).pop() ?? path;
@@ -536,7 +536,9 @@ export function createMockBackend(): Backend {
       smart.warnings.push({ row: 4, message: "อุปกรณ์ › เซ็นเซอร์ไม่ทำงาน ไม่มีคำอธิบาย · AI อาจจัดได้แม่นน้อยลง" });
       smart.errors.push({ row: 6, message: "ช่อง \"หัวข้อย่อย\" ว่าง — ไม่นำเข้าแถวนี้" });
       const mobile = mk("Mobile", TAXONOMY.Mobile.map(([a, b, c]) => [a, b, c] as [string, string, string]));
-      return { fileName, services: [mobile, smart] };
+      const headers = ["No", "เซอร์วิส", COLS[0], COLS[1], "คำอธิบาย", "Classification", "Jan"];
+      const guessed = ["ignore", "service", "level", "level", "description", "cause", "ignore"] as const;
+      return { fileName, headers, roles: (roles && roles.length === headers.length ? roles : [...guessed]) as typeof guessed[number][], services: [mobile, smart] };
     },
     applyTaxonomyImport: async (projectId, path, service) => {
       const prev = await backend.previewTaxonomyImport(projectId, path, service);
@@ -547,7 +549,7 @@ export function createMockBackend(): Backend {
         if (!s) s = await backend.createService(projectId, sp.name, sp.columns);
         const svc = d.services.find((x) => x.id === s!.id)!;
         d.taxonomy = d.taxonomy.filter((t) => t.serviceId !== svc.id);
-        sp.rows.forEach((r, i) => d.taxonomy.push({ id: `t-${svc.id}-${i}-${Date.now()}`, serviceId: svc.id, code: "", values: r.values, description: r.description, examples: r.examples }));
+        sp.rows.forEach((r, i) => d.taxonomy.push({ id: `t-${svc.id}-${i}-${Date.now()}`, serviceId: svc.id, code: "", values: r.values, description: r.description, examples: r.examples, cause: r.cause ?? null }));
         svc.columns = [...sp.columns];
         svc.taxonomyVersion++;
         out.push(clone(svc));

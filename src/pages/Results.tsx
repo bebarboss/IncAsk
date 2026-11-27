@@ -404,7 +404,7 @@ export default function ResultsPageView({ project }: { project: Project }) {
       )}
     </div>
     {openTicket && (
-      <TicketSidebar key={openTicket.id} ticket={openTicket} columns={tax?.[openTicket.service]?.service.columns ?? Object.keys(openTicket.fields)}
+      <TicketSidebar ticket={openTicket} columns={tax?.[openTicket.service]?.service.columns ?? Object.keys(openTicket.fields)}
         rows={tax?.[openTicket.service]?.rows} onClose={() => setOpenId(null)}
         onSave={tax?.[openTicket.service] ? saveFields : undefined}
         onSaveCause={async (t, c) => { await saveCause([t.id], c); }} />

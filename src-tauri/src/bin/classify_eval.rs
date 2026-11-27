@@ -38,7 +38,7 @@ async fn main() {
     // temporary project with the taxonomy
     let dir = std::env::temp_dir().join(format!("incask-eval-{}", std::process::id()));
     let mut conn = db::open(&dir.join("eval.sqlite")).unwrap_or_else(|e| fail(&e.message));
-    let imported = taxonomy::apply_import(&mut conn, &tax, None).unwrap_or_else(|e| fail(&e.message));
+    let imported = taxonomy::apply_import(&mut conn, &tax, None, None).unwrap_or_else(|e| fail(&e.message));
     println!("หมวดหมู่: {}", imported.iter().map(|s| s.name.as_str()).collect::<Vec<_>>().join(", "));
     let services = classify::load_services(&conn).unwrap_or_else(|e| fail(&e.message));
 

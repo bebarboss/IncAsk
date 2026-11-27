@@ -20,7 +20,7 @@ fn setup(n_internet: usize) -> (tempfile::TempDir, Arc<Mutex<Connection>>) {
     let cols = vec!["หัวข้อหลัก".to_string(), "หัวข้อย่อย".to_string()];
     let s = create_service(&c, "Internet", None, &cols).unwrap();
     for (a, b) in [("การเชื่อมต่อ", "เน็ตหลุด"), ("ความเร็ว", "เน็ตช้า")] {
-        save_row(&mut c, &s.id, &RowInput { id: None, values: vals(a, b), description: "d".into(), examples: String::new() }).unwrap();
+        save_row(&mut c, &s.id, &RowInput { id: None, values: vals(a, b), description: "d".into(), examples: String::new(), cause: None }).unwrap();
     }
     create_service(&c, "IPTV", None, &cols).unwrap(); // no categories → its tickets wait
     let ins = |id: &str, svc: &str, text: &str| {
@@ -243,4 +243,19 @@ fn backoff_doubles_and_caps_at_a_minute() {
     assert!(backoff(b, 0) >= Duration::from_secs(2) && backoff(b, 0) < Duration::from_secs(3));
     assert!(backoff(b, 2) >= Duration::from_secs(8));
     assert!(backoff(b, 9) <= Duration::from_secs(61));
+}
+
+/// A category with a fixed ต้นเหตุ (Classification) gives it to every ticket placed there, whatever
+/// the AI said; categories without one keep the AI's answer.
+#[tokio::test]
+async fn fixed_category_cause_wins_over_the_ai() {
+    let (_d, conn) = setup(4);
+    conn.lock().execute("UPDATE taxonomy_rows SET cause='user' WHERE values_json LIKE '%เน็ตหลุด%'", []).unwrap();
+    let calls = Arc::new(AtomicU32::new(0));
+    run_job(conn.clone(), fake_llm(calls, 0), "r").await;
+    let c = conn.lock();
+    // the fake AI answers "program" for หลุด tickets, but their category says user
+    assert_eq!(count(&c, "SELECT COUNT(*) FROM classifications WHERE fields_json LIKE '%เน็ตหลุด%' AND cause != 'user'"), 0);
+    assert!(count(&c, "SELECT COUNT(*) FROM classifications WHERE fields_json LIKE '%เน็ตหลุด%' AND ai_cause = 'user'") > 0);
+    assert!(count(&c, "SELECT COUNT(*) FROM classifications WHERE cause = 'user' AND fields_json NOT LIKE '%เน็ตหลุด%'") > 0); // ช้า → ผู้ใช้ from the AI
 }

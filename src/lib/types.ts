@@ -116,6 +116,8 @@ export interface TaxonomyRow {
   values: Record<string, string>;
   description: string;
   examples: string;
+  /** ต้นเหตุ fixed for this category (user | program | unclear); null = the AI judges each ticket */
+  cause?: string | null;
 }
 
 // ------------------------------------------------------------------ import
@@ -329,6 +331,7 @@ export interface RowInput {
   values: Record<string, string>;
   description: string;
   examples: string;
+  cause?: string | null;
 }
 
 export interface ColumnSpec {
@@ -352,8 +355,14 @@ export interface ServiceImportPreview {
   warnings: ImportIssue[];
 }
 
+export type ImportColumnRole = "service" | "level" | "description" | "examples" | "cause" | "ignore";
+
 export interface TaxonomyImportPreview {
   fileName: string;
+  /** every column header in the file */
+  headers: string[];
+  /** what each column is used for — guessed, or as set by the user */
+  roles: ImportColumnRole[];
   services: ServiceImportPreview[];
 }
 

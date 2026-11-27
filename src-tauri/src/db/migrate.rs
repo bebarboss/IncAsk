@@ -3,7 +3,7 @@
 
 use rusqlite::{Connection, OptionalExtension};
 
-pub const SCHEMA_VERSION: i64 = 2;
+pub const SCHEMA_VERSION: i64 = 3;
 
 const V1: &str = r#"
 CREATE TABLE IF NOT EXISTS meta(key TEXT PRIMARY KEY, value TEXT);
@@ -56,7 +56,10 @@ ALTER TABLE classifications ADD COLUMN ai_cause TEXT;
 ALTER TABLE cache ADD COLUMN cause TEXT;
 "#;
 
-const MIGRATIONS: &[&str] = &[V1, V2];
+/// ต้นเหตุ fixed per category (Classification in the user's report): user | program | unclear | NULL = AI decides
+const V3: &str = "ALTER TABLE taxonomy_rows ADD COLUMN cause TEXT;";
+
+const MIGRATIONS: &[&str] = &[V1, V2, V3];
 
 pub fn current_version(conn: &Connection) -> rusqlite::Result<i64> {
     let has_meta: bool = conn

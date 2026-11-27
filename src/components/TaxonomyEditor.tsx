@@ -4,6 +4,8 @@ import { useCallback, useEffect, useState } from "react";
 import { ArrowDown, ArrowUp, Check, Pencil, Plus, Trash2, Upload, X } from "lucide-react";
 import { api, errMsg } from "../lib/api";
 import type { Project, RowInput, Service, TaxonomyRow } from "../lib/types";
+import { CauseChip } from "./Cause";
+import { CAUSE_LABEL, CAUSES } from "../lib/cause";
 import { SERVICE_COLORS, SERVICE_COLOR_NAMES } from "../lib/gateway";
 import { fmtInt } from "../lib/format";
 import { th } from "../i18n/th";
@@ -143,12 +145,13 @@ export function TaxonomyEditor({ project }: { project: Project }) {
                       {svc.columns.map((c) => <th key={c} scope="col">{c}</th>)}
                       <th scope="col">คำอธิบาย (AI ใช้ตัดสินใจ)</th>
                       <th scope="col">ตัวอย่าง</th>
+                      <th scope="col" title="ตั้งไว้ = ทิกเก็ตในหมวดนี้ได้ต้นเหตุนี้เสมอ · ว่าง = ให้ AI ประเมินทีละทิกเก็ต">ต้นเหตุ</th>
                       <th scope="col" style={{ width: 84 }}><span className="sr-only">จัดการ</span></th>
                     </tr>
                   </thead>
                   <tbody>
                     {rows.length === 0 && editing !== "new" && (
-                      <tr><td colSpan={svc.columns.length + 4} className="muted" style={{ padding: 20, textAlign: "center" }}>ยังไม่มีหมวด — กด "เพิ่มหัวข้อ" หรือนำเข้าจาก Excel</td></tr>
+                      <tr><td colSpan={svc.columns.length + 5} className="muted" style={{ padding: 20, textAlign: "center" }}>ยังไม่มีหมวด — กด "เพิ่มหัวข้อ" หรือนำเข้าจาก Excel</td></tr>
                     )}
                     {rows.map((r) => editing === r.id ? (
                       <RowEditor key={r.id} projectId={project.id} service={svc} row={r} onDone={(saved) => { setEditing(null); if (saved) loadRows(); }} />
@@ -158,6 +161,7 @@ export function TaxonomyEditor({ project }: { project: Project }) {
                         {svc.columns.map((c) => <td key={c}>{r.values[c] || <span className="muted">—</span>}</td>)}
                         <td style={{ color: r.description ? "var(--text-2)" : "var(--warn-text)" }}>{r.description || "ยังไม่มีคำอธิบาย"}</td>
                         <td className="muted">{r.examples}</td>
+                        <td>{r.cause ? <CauseChip cause={r.cause} /> : <span className="muted" style={{ fontSize: 12 }}>AI ประเมิน</span>}</td>
                         <td style={{ whiteSpace: "nowrap", padding: "2px 6px" }}>
                           <button className="icon-btn" aria-label={`แก้ไข ${r.code}`} onClick={() => setEditing(r.id)}><Pencil size={15} strokeWidth={1.8} /></button>
                           <button className="icon-btn" aria-label={`ลบ ${r.code}`} onClick={() => setDeleting(r)}><Trash2 size={15} strokeWidth={1.8} /></button>
@@ -189,7 +193,7 @@ export function TaxonomyEditor({ project }: { project: Project }) {
 }
 
 function RowEditor({ projectId, service, row, onDone }: { projectId: string; service: Service; row: TaxonomyRow | null; onDone: (saved: boolean) => void }) {
-  const [v, setV] = useState<RowInput>({ id: row?.id ?? null, values: { ...(row?.values ?? {}) }, description: row?.description ?? "", examples: row?.examples ?? "" });
+  const [v, setV] = useState<RowInput>({ id: row?.id ?? null, values: { ...(row?.values ?? {}) }, description: row?.description ?? "", examples: row?.examples ?? "", cause: row?.cause ?? null });
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const save = async () => {
@@ -223,13 +227,19 @@ function RowEditor({ projectId, service, row, onDone }: { projectId: string; ser
         <td style={{ padding: 4 }}>
           <input className="input" style={{ minHeight: 34, padding: "4px 8px", fontSize: 13 }} aria-label="ตัวอย่าง" value={v.examples} onChange={(e) => setV({ ...v, examples: e.target.value })} />
         </td>
+        <td style={{ padding: 4 }}>
+          <select className="select" style={{ minHeight: 34, fontSize: 13 }} aria-label="ต้นเหตุ" value={v.cause ?? ""} onChange={(e) => setV({ ...v, cause: e.target.value || null })}>
+            <option value="">AI ประเมิน</option>
+            {CAUSES.map((c) => <option key={c} value={c}>{CAUSE_LABEL[c]}</option>)}
+          </select>
+        </td>
         <td style={{ whiteSpace: "nowrap", padding: "2px 6px" }}>
           <button className="icon-btn" aria-label={th.save} disabled={busy} onClick={save} style={{ color: "var(--accent)" }}><Check size={17} strokeWidth={2.4} /></button>
           <button className="icon-btn" aria-label={th.cancel} onClick={() => onDone(false)}><X size={17} strokeWidth={2} /></button>
         </td>
       </tr>
       {error && (
-        <tr><td colSpan={service.columns.length + 4} style={{ padding: "4px 12px", background: "var(--err-bg)", color: "var(--err-text)", fontSize: 12 }} role="alert">{error}</td></tr>
+        <tr><td colSpan={service.columns.length + 5} style={{ padding: "4px 12px", background: "var(--err-bg)", color: "var(--err-text)", fontSize: 12 }} role="alert">{error}</td></tr>
       )}
     </>
   );

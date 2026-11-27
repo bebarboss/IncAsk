@@ -401,7 +401,11 @@ code { font-family: var(--mono); font-size: 12.5px; background: var(--code); col
 .delta-down { color: var(--ok-text); }
 .collapse-btn { border: 0; background: transparent; padding: 0; display: inline-flex; align-items: center; gap: 8px; font-weight: inherit; }
 
-.drill { width: 380px; flex: none; border-left: 1px solid var(--border); background: var(--surface); display: flex; flex-direction: column; min-height: 0; }
+/* side panel: slides over the page (the page never shrinks); no backdrop, so other rows stay clickable */
+.drill { position: fixed; right: 0; top: 0; bottom: 0; z-index: 40; width: min(420px, 100vw); border-left: 1px solid var(--border); background: var(--surface);
+  display: flex; flex-direction: column; min-height: 0; box-shadow: -10px 0 32px rgba(0, 0, 0, .18); animation: drill-in .16s ease-out; }
+@keyframes drill-in { from { transform: translateX(24px); opacity: 0; } to { transform: none; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .drill { animation: none; } }
 .drill-head { padding: 16px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
 .tk { display: flex; flex-direction: column; gap: 4px; width: 100%; text-align: left; padding: 12px 16px; border: 0; border-bottom: 1px solid var(--border-soft); background: var(--surface); }
 .tk:hover { background: var(--surface-2); }
